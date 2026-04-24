@@ -1,2 +1,2 @@
 # FasalNet
-Hackoutsav - SYPSEM Hackathon
+Hackoutsav - DYPSEM Hackathon
