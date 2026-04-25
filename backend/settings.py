@@ -20,7 +20,7 @@ class Config:
     DB_USER     = os.getenv("DB_USER", "postgres")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
 
-    DATABASE_URL = os.getenv("DB_URL")
+    DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("DB_URL")
 
     # ── JWT ───────────────────────────────────────────────────
     JWT_SECRET_KEY            = os.getenv("JWT_SECRET_KEY", "jwt-fasalnet-secret")
