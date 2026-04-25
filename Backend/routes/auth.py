@@ -14,7 +14,7 @@ from utils.db import query
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
-ALLOWED_ROLES = ("farmer", "operator", "customer", "admin")
+ALLOWED_ROLES = ("farmer", "operator", "admin")
 
 
 def _safe_user(row: dict) -> dict:
@@ -100,12 +100,12 @@ def google_auth():
     """
     data    = request.get_json(silent=True) or {}
     id_tok  = data.get("id_token", "")
-    role    = data.get("role", "customer")
+    role    = data.get("role", "farmer")
 
     if not id_tok:
         return jsonify({"error": "id_token required"}), 400
     if role not in ALLOWED_ROLES:
-        role = "customer"
+        role = "farmer"
 
     # Verify with Google's tokeninfo endpoint
     resp = http_requests.get(

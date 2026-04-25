@@ -6,7 +6,7 @@ import psycopg2
 import psycopg2.pool
 from psycopg2.extras import RealDictCursor
 from flask import g, current_app
-from setting import Config
+from settings import Config
 
 # Module-level connection pool (initialised once on first import)
 _pool: psycopg2.pool.ThreadedConnectionPool | None = None

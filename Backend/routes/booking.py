@@ -77,6 +77,49 @@ def create_booking():
          data["pickup_date"], dur, total),
         commit=True
     )
+
+    operator_id = storage.get("operator_id")
+
+    if not operator_id:
+        # ── Unmanaged storage (no registered operator) ──────────────────
+        # Auto-confirm immediately: deduct capacity and mark confirmed so
+        # the farmer can proceed to payment without waiting for approval.
+        query(
+            "UPDATE storages SET available_capacity_kg = available_capacity_kg - %s WHERE id = %s",
+            (float(data["quantity_kg"]), data["storage_id"]), commit=True
+        )
+        booking = query(
+            "UPDATE bookings SET status='confirmed', updated_at=NOW() WHERE id=%s RETURNING *",
+            (booking["id"],), commit=True
+        )
+        _notify(
+            int(uid),
+            "Booking Confirmed ⚡ — Pay Now",
+            f"Your booking at {storage['name']} for {data['crop_type']} "
+            f"({data['quantity_kg']} kg) is instantly confirmed! "
+            f"Total: ₹{total}. Go to My Bookings to complete payment.",
+            "booking_confirmed"
+        )
+    else:
+        # ── Operator-managed storage — send for approval ────────────────
+        # Notify operator so they see it immediately (dashboard also polls every 30s)
+        _notify(
+            int(operator_id),
+            "New Booking Request 🔔",
+            f"A farmer has requested {data['quantity_kg']} kg for {data['crop_type']} "
+            f"at your storage '{storage['name']}'. "
+            f"Total value: ₹{total}. Please review in your dashboard.",
+            "booking_request"
+        )
+        _notify(
+            int(uid),
+            "Booking Sent — Awaiting Approval ⏳",
+            f"Your booking request at {storage['name']} for {data['crop_type']} "
+            f"({data['quantity_kg']} kg) has been sent to the operator. "
+            f"You will be notified once confirmed.",
+            "info"
+        )
+
     mod_until = (datetime.utcnow() + timedelta(minutes=10)).isoformat()
     return jsonify({
         "booking": _serial(booking),
@@ -156,7 +199,7 @@ def pay_booking(booking_id):
         (booking_id,), commit=True
     )
 
-    # Record in booking_payments (graceful if table missing)
+    # Record in booking_payments (graceful if table/enum missing)
     try:
         query(
             """INSERT INTO booking_payments
@@ -165,8 +208,12 @@ def pay_booking(booking_id):
             (booking_id, uid, float(booking["total_price"]), method, txn_id),
             commit=True
         )
-    except Exception:
-        pass
+    except Exception as payment_rec_err:
+        # Non-fatal — booking is already marked paid; log and continue
+        import logging as _log
+        _log.getLogger(__name__).warning(
+            "booking_payments insert failed for booking %s: %s", booking_id, payment_rec_err
+        )
 
     # Notify operator
     _notify(

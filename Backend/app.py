@@ -1,21 +1,25 @@
 """
-FasalNet v8 — Flask Application Entry Point
-New in v8:
-  - Dummy payment system for farmer bookings (POST /api/bookings/<id>/pay)
-  - Delivery boy assignment by operator
-  - Delivery boy sign up/in (delivery_boy role)
-  - Mapflow routing integration (frontend)
+FasalNet v9 — Flask Application Entry Point
+New in v9:
+  - ML Prediction endpoints (price, classification, market recommendation)
+  - Models loaded from Google Drive (singleton cached)
+  - Farmer "Add Crop" fix: commit=True ensured
+  - Assess Crop Risk removed (UI + backend)
 """
-import os
-from datetime import timedelta
+import os, logging
 from dotenv import load_dotenv
 load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
-from config import Config
+from settings import Config
 from utils import db as database
 
 from routes.auth     import auth_bp
@@ -25,6 +29,8 @@ from routes.operator import operator_bp
 from routes.customer import customer_bp
 from routes.settings import settings_bp
 from routes.delivery import delivery_bp
+from routes.otp      import otp_bp
+from routes.ml       import ml_bp          # ── NEW v9
 
 
 def create_app(cfg=Config) -> Flask:
@@ -33,30 +39,41 @@ def create_app(cfg=Config) -> Flask:
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = cfg.JWT_ACCESS_TOKEN_EXPIRES
 
     JWTManager(app)
-    CORS(app, resources={r"/api/*": {"origins": cfg.CORS_ORIGINS}}, supports_credentials=True)
+
+    cors_origins = (
+        cfg.CORS_ORIGINS.split(",")
+        if isinstance(cfg.CORS_ORIGINS, str)
+        else cfg.CORS_ORIGINS
+    )
+    CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=True)
     database.init_app(app)
 
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(farmer_bp)
-    app.register_blueprint(booking_bp)
-    app.register_blueprint(operator_bp)
-    app.register_blueprint(customer_bp)
-    app.register_blueprint(settings_bp)
-    app.register_blueprint(delivery_bp)
+    for bp in [auth_bp, farmer_bp, booking_bp, operator_bp,
+               customer_bp, settings_bp, delivery_bp, otp_bp, ml_bp]:
+        app.register_blueprint(bp)
 
     @app.route("/health")
     def health():
         return jsonify({
             "status": "ok",
-            "service": "FasalNet API v8",
-            "framework": "Flask",
-            "modules": ["farmer","operator","customer","delivery","booking","payment","ml","settings"],
-            "new_in_v8": ["dummy_payment", "delivery_boy_role", "mapflow_routing", "paid_booking_status"],
+            "service": "FasalNet API v9",
+            "modules": [
+                "farmer", "operator", "customer", "delivery",
+                "booking", "payment", "settings",
+                "email_otp", "ml_predictions",
+            ],
+            "new_in_v9": [
+                "ml_price_prediction",
+                "ml_price_classification",
+                "ml_market_recommendation",
+                "gdrive_model_loading",
+                "crop_risk_removed",
+            ],
         }), 200
 
     @app.route("/")
     def root():
-        return jsonify({"message": "FasalNet API v8"}), 200
+        return jsonify({"message": "FasalNet API v9"}), 200
 
     @app.errorhandler(404)
     def not_found(e):  return jsonify({"error": "Not found"}), 404

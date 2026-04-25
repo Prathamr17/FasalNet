@@ -115,64 +115,6 @@ def dashboard():
     }), 200
 
 
-# ── Approve farmer booking ─────────────────────────────────────────────────
-@operator_bp.route("/approve", methods=["POST"])
-@jwt_required()
-def approve_booking():
-    claims = get_jwt()
-    if claims.get("role") not in ("operator", "admin"):
-        return jsonify({"error": "Insufficient permissions"}), 403
-
-    data = request.get_json(silent=True) or {}
-    bid  = data.get("booking_id")
-    b = query(
-        "SELECT b.*, s.available_capacity_kg FROM bookings b JOIN storages s ON s.id=b.storage_id WHERE b.id=%s",
-        (bid,), fetchone=True
-    )
-    if not b:
-        return jsonify({"error": "Booking not found"}), 404
-    if b["status"] != "pending":
-        return jsonify({"error": f"Already {b['status']}"}), 409
-
-    query("UPDATE storages SET available_capacity_kg=available_capacity_kg-%s WHERE id=%s",
-          (float(b["quantity_kg"]), b["storage_id"]), commit=True)
-    updated = query(
-        "UPDATE bookings SET status='confirmed',operator_notes=%s,updated_at=NOW() WHERE id=%s RETURNING *",
-        (data.get("notes", ""), bid), commit=True
-    )
-    _notify(b["farmer_id"], "Booking Confirmed ✅ — Pay Now",
-            f"Your booking for {b['crop_type']} ({b['quantity_kg']} kg) has been confirmed! "
-            f"Total: ₹{b['total_price']}. Go to My Bookings to complete payment.",
-            "booking_confirmed")
-    return jsonify({"booking": _serial(updated), "message": "Booking confirmed"}), 200
-
-
-# ── Reject farmer booking ──────────────────────────────────────────────────
-@operator_bp.route("/reject", methods=["POST"])
-@jwt_required()
-def reject_booking():
-    claims = get_jwt()
-    if claims.get("role") not in ("operator", "admin"):
-        return jsonify({"error": "Insufficient permissions"}), 403
-
-    data = request.get_json(silent=True) or {}
-    bid  = data.get("booking_id")
-    b    = query("SELECT * FROM bookings WHERE id=%s", (bid,), fetchone=True)
-    if not b:
-        return jsonify({"error": "Booking not found"}), 404
-
-    reason = data.get("reason", "Storage unavailable")
-    updated = query(
-        "UPDATE bookings SET status='rejected',operator_notes=%s,updated_at=NOW() WHERE id=%s RETURNING *",
-        (reason, bid), commit=True
-    )
-    _notify(b["farmer_id"], "Booking Rejected — Refund Initiated 💰",
-            f"Your booking for {b['crop_type']} was declined. Reason: {reason}. "
-            f"Any payment of ₹{b['total_price']} will be refunded within 3-5 business days.",
-            "refund")
-    return jsonify({"booking": _serial(updated), "message": "Booking rejected, farmer notified"}), 200
-
-
 # ── Assign Delivery Boy ────────────────────────────────────────────────────
 @operator_bp.route("/orders/<int:order_id>/assign-delivery", methods=["POST"])
 @jwt_required()
