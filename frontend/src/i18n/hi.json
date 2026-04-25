@@ -1,0 +1,123 @@
+{
+  "app_name": "फसलनेट",
+  "tagline": "रियल-टाइम कोल्ड स्टोरेज खोज",
+  "nav": {
+    "home": "होम",
+    "discover": "खोजें",
+    "bookings": "मेरी बुकिंग",
+    "dashboard": "डैशबोर्ड",
+    "marketplace": "बाज़ार",
+    "orders": "मेरे ऑर्डर",
+    "map": "स्टोरेज नक्शा",
+    "settings": "सेटिंग्स",
+    "login": "लॉगिन",
+    "signup": "साइन अप",
+    "logout": "लॉगआउट",
+    "language": "भाषा"
+  },
+  "auth": {
+    "login_title": "वापस स्वागत है",
+    "signup_title": "खाता बनाएं",
+    "name": "पूरा नाम",
+    "phone": "फोन नंबर",
+    "email": "ईमेल (वैकल्पिक)",
+    "password": "पासवर्ड",
+    "role": "मैं हूं",
+    "farmer": "किसान",
+    "operator": "स्टोरेज ऑपरेटर",
+    "customer": "खरीदार",
+    "district": "जिला",
+    "state": "राज्य",
+    "login_btn": "लॉगिन",
+    "signup_btn": "खाता बनाएं",
+    "no_account": "खाता नहीं है?",
+    "have_account": "पहले से खाता है?",
+    "language": "भाषा",
+    "quick_login": "त्वरित लॉगिन — डेमो खाते",
+    "google_login": "Google से जारी रखें",
+    "invalid_creds": "अमान्य फोन या पासवर्ड"
+  },
+  "farmer": {
+    "title": "फसल जोखिम आकलन",
+    "crop_type": "फसल प्रकार",
+    "harvest_age": "कटाई के बाद दिन",
+    "quantity": "मात्रा (किग्रा)",
+    "location": "आपका स्थान",
+    "weather_temp": "तापमान (°C)",
+    "travel_delay": "यात्रा विलंब (घंटे)",
+    "assess_btn": "जोखिम जांचें",
+    "find_storage": "कोल्ड स्टोरेज खोजें"
+  },
+  "risk": {
+    "safe": "सुरक्षित",
+    "risky": "जोखिम",
+    "critical": "गंभीर",
+    "score": "जोखिम स्कोर",
+    "days_risky": "जोखिम तक दिन",
+    "days_critical": "गंभीर तक दिन"
+  },
+  "storage": {
+    "available": "उपलब्ध",
+    "full": "भरा",
+    "maintenance": "रखरखाव",
+    "distance": "किमी दूर",
+    "capacity": "क्षमता",
+    "available_cap": "उपलब्ध",
+    "price": "₹/किग्रा/दिन",
+    "book_now": "अभी बुक करें",
+    "temp_range": "तापमान सीमा"
+  },
+  "booking": {
+    "title": "स्टोरेज बुक करें",
+    "subtitle": "अपने सभी बुकिंग अनुरोध ट्रैक करें।",
+    "confirm": "बुकिंग कन्फर्म करें",
+    "cancel": "रद्द करें",
+    "modify": "बदलें",
+    "modify_window": "बदलाव विंडो",
+    "status": "स्थिति",
+    "pending": "लंबित",
+    "confirmed": "पुष्टि",
+    "rejected": "अस्वीकृत",
+    "completed": "पूर्ण",
+    "cancelled": "रद्द",
+    "pickup_date": "पिकअप तारीख",
+    "duration": "अवधि (दिन)",
+    "total_price": "कुल मूल्य",
+    "my_bookings": "मेरी बुकिंग",
+    "no_bookings": "अभी तक कोई बुकिंग नहीं"
+  },
+  "operator": {
+    "dashboard": "ऑपरेटर डैशबोर्ड",
+    "approve": "स्वीकृत",
+    "reject": "अस्वीकार",
+    "update": "अपडेट",
+    "pending_requests": "लंबित अनुरोध",
+    "storage_capacity": "क्षमता अपडेट",
+    "occupancy": "अधिभोग",
+    "notes": "नोट्स",
+    "reason": "अस्वीकृति कारण"
+  },
+  "customer": {
+    "marketplace_title": "हमारे जैविक उत्पाद खरीदें",
+    "map_title": "स्टोरेज मानचित्र और डिलीवरी योजनाकार",
+    "my_orders": "मेरे ऑर्डर",
+    "order_now": "अभी ऑर्डर करें",
+    "no_orders": "अभी तक कोई ऑर्डर नहीं"
+  },
+  "settings": {
+    "title": "सेटिंग्स",
+    "profile": "प्रोफाइल",
+    "security": "सुरक्षा",
+    "payments": "भुगतान इतिहास",
+    "change_password": "पासवर्ड बदलें",
+    "change_phone": "मोबाइल नंबर बदलें",
+    "save": "परिवर्तन सहेजें"
+  },
+  "map": {
+    "your_location": "आपका स्थान",
+    "route": "रूट और ETA देखें",
+    "distance": "दूरी",
+    "eta": "अनुमानित समय",
+    "arrival": "आगमन"
+  }
+}
