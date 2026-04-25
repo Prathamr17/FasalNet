@@ -18,6 +18,7 @@ logging.basicConfig(
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+import re
 
 from settings import Config
 from utils import db as database
@@ -45,7 +46,11 @@ def create_app(cfg=Config) -> Flask:
         if isinstance(cfg.CORS_ORIGINS, str)
         else cfg.CORS_ORIGINS
     )
-    CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=True)
+    CORS(app, resources={r"/api/*": {"origins": [
+    re.compile(r"https://.*\.vercel\.app"),
+    "https://fasal-net.vercel.app",
+    "http://localhost:3000"
+]}}, supports_credentials=True)
     database.init_app(app)
 
     for bp in [auth_bp, farmer_bp, booking_bp, operator_bp,
