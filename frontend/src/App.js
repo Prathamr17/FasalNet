@@ -1,21 +1,25 @@
-// src/App.js — cleaned: farmer only, no customer/delivery, single Navbar
+// src/App.js — v10
+// New routes: /market → FarmerMarketIntelligencePage (ARIMA primary)
+// /ml-predict → MLPredictionsPage (Price + Market Rec only, Spoilage moved to /discover)
+
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { ThemeProvider } from "./context/ThemeContext";
+import { ThemeProvider }         from "./context/ThemeContext";
 import "./i18n";
 
-import Navbar               from "./components/common/Navbar";
-import HomePage             from "./pages/HomePage";
-import LoginPage            from "./pages/LoginPage";
-import SignupPage           from "./pages/SignupPage";
-import ForgotPasswordPage   from "./pages/ForgotPasswordPage";
-import DiscoverPage         from "./pages/DiscoverPage";
-import BookingsPage         from "./pages/BookingsPage";
-import OperatorPage         from "./pages/OperatorPage";
-import NotFoundPage         from "./pages/NotFoundPage";
-import SettingsPage         from "./pages/settings/SettingsPage";
-import FarmerOrders         from "./pages/farmer/FarmerOrders";
-import MLPredictionsPage    from "./pages/farmer/MLPredictionsPage";
+import Navbar                        from "./components/common/Navbar";
+import HomePage                      from "./pages/HomePage";
+import LoginPage                     from "./pages/LoginPage";
+import SignupPage                    from "./pages/SignupPage";
+import ForgotPasswordPage            from "./pages/ForgotPasswordPage";
+import DiscoverPage                  from "./pages/DiscoverPage";           // ← has Spoilage Risk
+import BookingsPage                  from "./pages/BookingsPage";
+import OperatorPage                  from "./pages/OperatorPage";
+import NotFoundPage                  from "./pages/NotFoundPage";
+import SettingsPage                  from "./pages/settings/SettingsPage";
+import FarmerOrders                  from "./pages/farmer/FarmerOrders";
+import MLPredictionsPage             from "./pages/farmer/MLPredictionsPage";       // Price + Market Rec
+import FarmerMarketIntelligencePage  from "./pages/farmer/FarmerMarketIntelligencePage"; // ARIMA + live DB
 
 function PrivateRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -27,14 +31,14 @@ function PrivateRoute({ children, roles }) {
       Loading…
     </div>
   );
-  if (!user) return <Navigate to="/login" replace />;
-  if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
+  if (!user)                              return <Navigate to="/login"    replace />;
+  if (roles && !roles.includes(user.role)) return <Navigate to="/"        replace />;
   return children;
 }
 
 function AppInner() {
   const { user } = useAuth();
-  const role     = user?.role || "guest";
+  const role      = user?.role || "guest";
 
   return (
     <div data-role={role} style={{ minHeight:"100vh", display:"flex", flexDirection:"column",
@@ -49,13 +53,38 @@ function AppInner() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
           {/* Farmer */}
-          <Route path="/discover"      element={<PrivateRoute roles={["farmer","admin"]}><DiscoverPage /></PrivateRoute>} />
-          <Route path="/bookings"      element={<PrivateRoute roles={["farmer","admin"]}><BookingsPage /></PrivateRoute>} />
-          <Route path="/farmer-orders" element={<PrivateRoute roles={["farmer","admin"]}><FarmerOrders /></PrivateRoute>} />
-          <Route path="/ml-predict"    element={<PrivateRoute roles={["farmer","admin"]}><MLPredictionsPage /></PrivateRoute>} />
+          <Route path="/discover"
+            element={<PrivateRoute roles={["farmer","admin"]}>
+              <DiscoverPage />                  {/* Cold storage + Spoilage Risk → optimal route */}
+            </PrivateRoute>} />
+
+          <Route path="/bookings"
+            element={<PrivateRoute roles={["farmer","admin"]}>
+              <BookingsPage />
+            </PrivateRoute>} />
+
+          <Route path="/farmer-orders"
+            element={<PrivateRoute roles={["farmer","admin"]}>
+              <FarmerOrders />
+            </PrivateRoute>} />
+
+          {/* Market Intelligence (ARIMA primary, ML secondary) — v10 */}
+          <Route path="/market"
+            element={<PrivateRoute roles={["farmer","admin"]}>
+              <FarmerMarketIntelligencePage />
+            </PrivateRoute>} />
+
+          {/* ML Predictions — Price + Market Rec only (Spoilage moved to /discover) */}
+          <Route path="/ml-predict"
+            element={<PrivateRoute roles={["farmer","admin"]}>
+              <MLPredictionsPage />
+            </PrivateRoute>} />
 
           {/* Operator */}
-          <Route path="/operator" element={<PrivateRoute roles={["operator","admin"]}><OperatorPage /></PrivateRoute>} />
+          <Route path="/operator"
+            element={<PrivateRoute roles={["operator","admin"]}>
+              <OperatorPage />
+            </PrivateRoute>} />
 
           {/* Shared */}
           <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />

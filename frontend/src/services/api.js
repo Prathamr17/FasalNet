@@ -1,4 +1,4 @@
-// services/api.js — v10 + Spoilage XGBoost integration
+// services/api.js — v10 + Market Intelligence (ARIMA data layer)
 import axios from "axios";
 
 const BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -10,7 +10,6 @@ api.interceptors.request.use((cfg) => {
   return cfg;
 });
 
-// Generic error extractor
 export const apiError = (err) =>
   err?.response?.data?.error || err?.message || "An unexpected error occurred.";
 
@@ -22,7 +21,7 @@ export const authAPI = {
   googleLogin: (data) => api.post("/api/auth/google",  data),
 };
 
-// ── OTP (Email verification & Forgot Password) ────────────────────
+// ── OTP ───────────────────────────────────────────────────────────
 export const otpAPI = {
   send:          (data) => api.post("/api/otp/send",            data),
   verify:        (data) => api.post("/api/otp/verify",          data),
@@ -42,7 +41,7 @@ export const farmerAPI = {
   getMyProducts:     ()         => api.get("/api/farmer/products"),
 };
 
-// ── Booking (farmer) ──────────────────────────────────────────────
+// ── Booking ───────────────────────────────────────────────────────
 export const bookingAPI = {
   create:  (data)           => api.post("/api/book",                    data),
   list:    ()               => api.get("/api/bookings"),
@@ -86,7 +85,7 @@ export const settingsAPI = {
   paymentHistory: ()     => api.get("/api/settings/payment-history"),
 };
 
-// ── Delivery Boy ──────────────────────────────────────────────────
+// ── Delivery ──────────────────────────────────────────────────────
 export const deliveryAPI = {
   getMyDeliveries:    ()           => api.get("/api/delivery/my-deliveries"),
   updateStatus:       (id, status) => api.put(`/api/delivery/${id}/status`, { status }),
@@ -94,17 +93,27 @@ export const deliveryAPI = {
   getDeliveryDetails: (id)         => api.get(`/api/delivery/${id}`),
 };
 
-export default api;
-
-// ── ML Predictions ────────────────────────────────────────────────────────
+// ── ML Predictions ────────────────────────────────────────────────
 export const mlAPI = {
-  // Price / market models (loaded from Google Drive)
   metadata:    ()     => api.get("/api/predict/metadata"),
   price:       (data) => api.post("/api/predict/price",       data),
   priceClass:  (data) => api.post("/api/predict/price-class", data),
   market:      (data) => api.post("/api/predict/market",      data),
-
-  // Spoilage XGBoost model (bundled with backend)
   spoilage:     (data) => api.post("/api/predict/spoilage",      data),
   spoilageMeta: ()     => api.get("/api/predict/spoilage/meta"),
 };
+
+// ── Market Intelligence (v12 — ARIMA data layer) ──────────────────
+export const marketAPI = {
+  cities:         ()       => api.get("/api/market/cities"),
+  commodities:    (city)   => api.get("/api/market/commodities",   { params: { city } }),
+  summary:        (params) => api.get("/api/market/summary",       { params }),
+  trend:          (params) => api.get("/api/market/trend",         { params }),
+  heatmap:        (params) => api.get("/api/market/heatmap",       { params }),
+  compare:        (params) => api.get("/api/market/compare",       { params }),
+  arimaForecast:  (params) => api.get("/api/market/arima-forecast",{ params }),
+  refresh:        (data)   => api.post("/api/market/refresh",      data),
+  syncStatus:     ()       => api.get("/api/market/sync-status"),
+};
+
+export default api;

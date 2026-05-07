@@ -1,6 +1,13 @@
-// components/booking/BookingModal.js — v8: crop name input added
+// components/booking/BookingModal.js — v10: harvest_age fix + demo guard
 import { useState, useEffect } from "react";
 import { bookingAPI } from "../../services/api";
+
+// IDs used by DEMO_STORAGES (fallback data) — these don't exist in the real DB.
+// If we detect a demo storage, block booking and show a clear message.
+const DEMO_IDS = new Set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]);
+const isDemo = (storage) =>
+  storage?._isDemo === true ||
+  (DEMO_IDS.has(storage?.id) && !storage?.has_operator);
 
 export default function BookingModal({ storage, riskData, onClose, onSuccess }) {
   const today = new Date().toISOString().split("T")[0];
@@ -33,9 +40,17 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.crop_name.trim()) { setError("Please enter a crop name."); return; }
+    // Block booking on demo/fallback storages (they don't exist in the real DB)
+    if (isDemo(storage)) {
+      setError("This is a demo storage — connect the backend to book real storage.");
+      return;
+    }
     setError(""); setLoading(true);
     try {
-      const harvestAge = riskData?.harvest_age_days ?? 0;
+      // riskData.harvest_age_hrs comes from SpoilageRiskPanel
+      // backend expects harvest_age_days (integer)
+      const harvestHrs = riskData?.harvest_age_hrs ?? (riskData?.harvest_age_days ? riskData.harvest_age_days * 24 : 0);
+      const harvestAge = Math.round(harvestHrs / 24);
       await bookingAPI.create({
         storage_id:       storage.id,
         crop_type:        form.crop_name.trim(),

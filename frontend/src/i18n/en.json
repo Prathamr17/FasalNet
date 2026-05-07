@@ -15,7 +15,9 @@
     "logout": "Logout",
     "language": "Language",
     "ml_predictions": "ML Predictions",
-    "sign_out": "Sign Out"
+    "sign_out": "Sign Out",
+    "crop_advisor": "Crop Advisor",
+    "market": "Market"
   },
   "auth": {
     "login_title": "Welcome Back",
