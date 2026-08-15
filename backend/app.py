@@ -90,6 +90,9 @@ def create_app(cfg=Config) -> Flask:
         re.compile(r"https://.*\.vercel\.app"),
         "https://fasal-net.vercel.app",
         "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
     ]}}, supports_credentials=True)
 
     database.init_app(app)

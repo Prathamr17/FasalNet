@@ -11,10 +11,12 @@ import { useTranslation } from "react-i18next";
 import { useAuth }  from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import i18n from "../../i18n";
+import Logo from "./Logo";
 
 const LANGUAGES = [
-  { code: "en", label: "EN" },
-  { code: "mr", label: "म"  },
+  { code: "en", label: "EN"   },
+  { code: "hi", label: "हिं"  },
+  { code: "mr", label: "मरा"  },
 ];
 
 export default function Navbar() {
@@ -44,12 +46,22 @@ export default function Navbar() {
       { to: "/market",     label: t("nav.market")    },
       { to: "/operator",   label: t("nav.dashboard") },
     ],
+    customer: [
+      { to: "/marketplace",      label: t("nav.marketplace") },
+      { to: "/customer-orders",  label: t("nav.orders")      },
+      { to: "/customer-map",     label: t("nav.map")         },
+    ],
+    delivery_boy: [
+      { to: "/delivery",   label: t("nav.deliveries") },
+    ],
   };
 
   const ROLE_COLORS = {
-    farmer:   { bg: "#DCE8D2", color: "#3F6B33" },
-    operator: { bg: "#DCE2EC", color: "#2B4570" },
-    admin:    { bg: "#E7DCE7", color: "#5C3A5C" },
+    farmer:       { bg: "#DCE8D2", color: "#3F6B33" },
+    operator:     { bg: "#DCE2EC", color: "#2B4570" },
+    admin:        { bg: "#E7DCE7", color: "#5C3A5C" },
+    customer:     { bg: "#F1E1BF", color: "#B4741E" },
+    delivery_boy: { bg: "#E7DCE7", color: "#5C3A5C" },
   };
 
   // Close user-menu on outside click
@@ -87,17 +99,9 @@ export default function Navbar() {
         }}>
 
           {/* Logo */}
-          <Link to="/" style={{ display: "flex", alignItems: "center", gap: "8px",
+          <Link to="/" style={{ display: "flex", alignItems: "center",
             textDecoration: "none", flexShrink: 0 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 6,
-              background: "linear-gradient(135deg,#3F6B33,#2E4F25)",
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>
-              🌿
-            </div>
-            <span style={{ fontFamily: "var(--fd)", fontWeight: 600, fontSize: 18,
-              color: "var(--tx)", letterSpacing: "-.2px" }}>
-              {t("app_name")}
-            </span>
+            <Logo size={30} wordmarkSize={18} />
           </Link>
 
           {/* Divider — desktop only */}
@@ -108,7 +112,7 @@ export default function Navbar() {
           <div className="fnav-desktop-only"
             style={{ display: "flex", gap: 2, alignItems: "center", flex: 1 }}>
             {links.map(({ to, label }) => (
-              <Link key={to} to={to} style={{
+              <Link key={to} to={to} className={`nav-link ${isActive(to) ? "active" : ""}`} style={{
                 padding: "6px 12px", borderRadius: 8, textDecoration: "none",
                 fontSize: 13, fontWeight: isActive(to) ? 700 : 500,
                 color:      isActive(to) ? "var(--cp)"      : "var(--tx-m)",
@@ -234,11 +238,12 @@ export default function Navbar() {
 
       {/* ── Mobile drawer (only mounts when open) ──────────────── */}
       {mobileOpen && (
-        <div className="card" style={{
+        <div className="card anim-fade" style={{
           position: "fixed", top: 57, left: 0, right: 0, zIndex: 199,
           borderTop: 0, borderRadius: 0, borderLeft: "none", borderRight: "none",
           padding: "8px 16px 16px",
           boxShadow: "0 8px 24px rgba(0,0,0,.08)",
+          maxHeight: "calc(100vh - 57px)", overflowY: "auto",
         }}>
           {links.map(({ to, label }) => (
             <Link key={to} to={to} style={{

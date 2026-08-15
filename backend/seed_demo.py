@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import psycopg2
 from werkzeug.security import generate_password_hash
-from config import Config
+from settings import Config
 
 DEMO_USERS = [
     {"name":"Ramesh Jadhav",  "phone":"9000000001", "email":"ramesh@demo.com",   "password":"farmer123",   "role":"farmer",       "district":"Kolhapur", "state":"Maharashtra"},
@@ -21,23 +21,26 @@ DEMO_USERS = [
 def seed():
     conn = psycopg2.connect(Config.DATABASE_URL)
     cur  = conn.cursor()
-    print("Seeding demo users…")
+    print("Seeding demo users...")
     for u in DEMO_USERS:
         cur.execute("SELECT id FROM users WHERE phone=%s", (u["phone"],))
-        if cur.fetchone():
-            print(f"  ↳ {u['phone']} ({u['role']}) already exists, skipping.")
-            continue
+        row = cur.fetchone()
         pw = generate_password_hash(u["password"])
+        if row:
+            # Update password hash for existing demo user to ensure correct password works
+            cur.execute("UPDATE users SET password_hash=%s WHERE id=%s", (pw, row[0]))
+            print(f"  -> Reset password for {u['role']:12} {u['name']} (phone={u['phone']})")
+            continue
         cur.execute(
             """INSERT INTO users (name, phone, email, password_hash, role, district, state)
                VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
             (u["name"], u["phone"], u["email"], pw, u["role"], u["district"], u["state"])
         )
         new_id = cur.fetchone()[0]
-        print(f"  ✓ Created {u['role']:12} {u['name']} (id={new_id})")
+        print(f"  [OK] Created {u['role']:12} {u['name']} (id={new_id})")
         if u["role"] == "operator":
             cur.execute("UPDATE storages SET operator_id=%s WHERE operator_id IS NULL", (new_id,))
-            print(f"    → Assigned storages to operator id={new_id}")
+            print(f"    -> Assigned storages to operator id={new_id}")
     conn.commit(); cur.close(); conn.close()
     print("\nDone! Login credentials:")
     print("-" * 55)

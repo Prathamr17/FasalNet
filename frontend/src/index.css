@@ -420,3 +420,106 @@ h1,h2,h3,h4 {
 /* ═══ UTILITY ══════════════════════════════════════════════ */
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .aspin    { animation: spin .8s linear infinite; border-radius: 50%; }
+
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM SMART-AGRICULTURE MOTION & VISUAL SYSTEM
+═══════════════════════════════════════════════════════════════ */
+
+/* Scroll reveal — used by <Reveal> component */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity .6s cubic-bezier(.22,1,.36,1), transform .6s cubic-bezier(.22,1,.36,1);
+  will-change: opacity, transform;
+}
+.reveal-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* Hover-lift — cards, buttons, tappable rows */
+.hover-lift {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, border-color .25s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sh3);
+  border-color: var(--cp);
+}
+
+/* Premium card — for hero/CTA surfaces, sits above .card */
+.card-premium {
+  background: var(--bg-card);
+  border: 1.5px solid var(--bd);
+  border-radius: var(--r2);
+  box-shadow: var(--sh);
+  position: relative;
+  overflow: hidden;
+}
+.card-premium::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(600px circle at 15% 0%, var(--cp-glow), transparent 60%);
+  pointer-events: none;
+}
+
+/* Field-row texture — subtle furrow lines for hero/section backgrounds.
+   Grounded in the actual visual of a ploughed field seen from above. */
+.field-texture {
+  background-image:
+    repeating-linear-gradient(100deg, transparent 0 46px, var(--cp-glow) 46px 47px),
+    linear-gradient(180deg, var(--cp-pale) 0%, transparent 55%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+/* Soft organic blob accent — sits behind hero copy, agriculture-shaped */
+.leaf-blob {
+  position: absolute;
+  width: 480px; height: 480px;
+  background: radial-gradient(circle, var(--cp-glow) 0%, transparent 70%);
+  border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%;
+  filter: blur(4px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Chip / pill tag — eyebrow labels, filter chips */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .12em;
+  padding: 5px 14px; border-radius: 99px;
+  background: var(--cp-pale); color: var(--cp);
+  border: 1px solid var(--cp-glow);
+}
+
+/* Section wrapper spacing — consistent rhythm across every rebuilt page */
+.fn-section { padding: 64px 20px; }
+@media (max-width: 720px) { .fn-section { padding: 40px 16px; } }
+
+/* Responsive container */
+.fn-container { max-width: 1120px; margin: 0 auto; }
+
+/* Icon tile — used for role/feature cards throughout */
+.icon-tile {
+  width: 46px; height: 46px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+
+/* Nav link underline-grow hover */
+.nav-link { position: relative; }
+.nav-link::after {
+  content: ""; position: absolute; left: 0; bottom: -3px;
+  width: 0; height: 2px; background: var(--cp);
+  transition: width .2s ease;
+}
+.nav-link:hover::after, .nav-link.active::after { width: 100%; }
+
+/* Footer */
+.fn-footer {
+  background: var(--bg-m);
+  border-top: 1.5px solid var(--bd);
+  margin-top: 48px;
+}
