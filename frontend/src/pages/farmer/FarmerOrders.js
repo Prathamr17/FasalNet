@@ -195,7 +195,7 @@ export default function FarmerOrders() {
               {/* Delivery info if assigned */}
               {order.delivery_boy_name && (
                 <div style={{ background:"var(--info-bg)", borderRadius:"8px", padding:"10px",
-                  border:"1px solid rgba(37,99,235,.2)" }}>
+                  border:"1px solid rgba(43,69,112,.2)" }}>
                   <div style={{ fontSize:"11px", fontWeight:600, color:"var(--info)", marginBottom:"3px" }}>
                     🚚 Delivery Assigned
                   </div>

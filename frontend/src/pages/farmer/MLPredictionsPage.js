@@ -28,7 +28,7 @@ const CARD = {
   padding:"20px", border:"1px solid var(--bd)",
 };
 const ERR_BOX = {
-  background:"rgba(239,68,68,.08)", border:"1px solid rgba(239,68,68,.25)",
+  background:"rgba(139,58,43,.08)", border:"1px solid rgba(139,58,43,.25)",
   color:"var(--danger)", borderRadius:"10px", padding:"10px 14px",
   fontSize:"13px", marginBottom:"12px",
 };
@@ -157,7 +157,7 @@ function PricePrediction({ meta }) {
           </div>
           {/* Quick link to Market Intelligence for ARIMA context */}
           <div style={{ marginTop:"14px", padding:"10px 14px",
-            background:"rgba(37,99,235,.06)", border:"1px solid rgba(37,99,235,.15)",
+            background:"rgba(43,69,112,.06)", border:"1px solid rgba(43,69,112,.15)",
             borderRadius:"10px", fontSize:"12px", color:"var(--tx-m)" }}>
             💡 Compare with live APMC data →{" "}
             <a href="/market" style={{ color:"var(--cp)", fontWeight:700, textDecoration:"none" }}>
@@ -320,9 +320,9 @@ export default function MLPredictionsPage() {
             📊 Live APMC Data + ARIMA → Market Intelligence
           </a>
           <a href="/discover" style={{ display:"inline-flex", alignItems:"center", gap:"5px",
-            fontSize:"11px", fontWeight:700, color:"#D97706", textDecoration:"none",
-            background:"rgba(217,119,6,.08)", padding:"4px 10px", borderRadius:"20px",
-            border:"1px solid rgba(217,119,6,.3)" }}>
+            fontSize:"11px", fontWeight:700, color:"#B4741E", textDecoration:"none",
+            background:"rgba(180,116,30,.08)", padding:"4px 10px", borderRadius:"20px",
+            border:"1px solid rgba(180,116,30,.3)" }}>
             🌿 Crop Spoilage Risk → Discover Storage
           </a>
         </div>
@@ -330,7 +330,7 @@ export default function MLPredictionsPage() {
 
       {metaErr && (
         <div className="card" style={{ padding:"16px", marginBottom:"20px",
-          background:"rgba(239,68,68,.06)", border:"1px solid rgba(239,68,68,.2)" }}>
+          background:"rgba(139,58,43,.06)", border:"1px solid rgba(139,58,43,.2)" }}>
           <span style={{ color:"var(--danger)", fontSize:"13px" }}>
             ⚠️ Could not load ML metadata. Showing default options.
             Check that the backend is running and models are configured.

@@ -47,9 +47,9 @@ export default function Navbar() {
   };
 
   const ROLE_COLORS = {
-    farmer:   { bg: "#DCFCE7", color: "#16A34A" },
-    operator: { bg: "#DBEAFE", color: "#2563EB" },
-    admin:    { bg: "#EDE9FE", color: "#7C3AED" },
+    farmer:   { bg: "#DCE8D2", color: "#3F6B33" },
+    operator: { bg: "#DCE2EC", color: "#2B4570" },
+    admin:    { bg: "#E7DCE7", color: "#5C3A5C" },
   };
 
   // Close user-menu on outside click
@@ -89,13 +89,13 @@ export default function Navbar() {
           {/* Logo */}
           <Link to="/" style={{ display: "flex", alignItems: "center", gap: "8px",
             textDecoration: "none", flexShrink: 0 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8,
-              background: "linear-gradient(135deg,#16A34A,#15803D)",
+            <div style={{ width: 30, height: 30, borderRadius: 6,
+              background: "linear-gradient(135deg,#3F6B33,#2E4F25)",
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>
               🌿
             </div>
-            <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: 16,
-              color: "var(--tx)", letterSpacing: "-.3px" }}>
+            <span style={{ fontFamily: "var(--fd)", fontWeight: 600, fontSize: 18,
+              color: "var(--tx)", letterSpacing: "-.2px" }}>
               {t("app_name")}
             </span>
           </Link>
@@ -219,6 +219,18 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+
+      {/* ── Signature strip: mandi rate-board ticker ────────────── */}
+      {user && (
+        <div className="fn-ticker">
+          <span className="fn-ticker-dot" />
+          <span>{t(`nav.role_${user.role}`, user.role)?.toString().toUpperCase()}</span>
+          <span className="fn-ticker-sep">·</span>
+          <span>{t("app_name")?.toString().toUpperCase()} COORDINATION BOARD</span>
+          <span className="fn-ticker-sep">·</span>
+          <span>{new Date().toLocaleDateString(i18n.language === "mr" ? "mr-IN" : "en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
+        </div>
+      )}
 
       {/* ── Mobile drawer (only mounts when open) ──────────────── */}
       {mobileOpen && (

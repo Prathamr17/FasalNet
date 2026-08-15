@@ -13,7 +13,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl:     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-const STATUS_COLOR = { available: "#16A34A", full: "#DC2626", maintenance: "#D97706" };
+const STATUS_COLOR = { available: "#3F6B33", full: "#8B3A2B", maintenance: "#B4741E" };
 
 const makePin = (color, rank) =>
   L.divIcon({
@@ -31,15 +31,15 @@ const makePin = (color, rank) =>
 const farmerIcon = L.divIcon({
   className: "",
   html: `<div style="position:relative;">
-    <div style="position:absolute;inset:-8px;background:rgba(37,99,235,.15);border-radius:50%;animation:ping 1.5s ease-in-out infinite;"></div>
-    <div style="width:16px;height:16px;border-radius:50%;background:#2563EB;border:3px solid #fff;box-shadow:0 0 0 4px rgba(37,99,235,.2);position:relative;"></div>
+    <div style="position:absolute;inset:-8px;background:rgba(43,69,112,.15);border-radius:50%;animation:ping 1.5s ease-in-out infinite;"></div>
+    <div style="width:16px;height:16px;border-radius:50%;background:#2B4570;border:3px solid #fff;box-shadow:0 0 0 4px rgba(43,69,112,.2);position:relative;"></div>
   </div>`,
   iconSize: [16, 16], iconAnchor: [8, 8],
 });
 
 const destinationIcon = L.divIcon({
   className: "",
-  html: `<div style="width:20px;height:20px;border-radius:50%;background:#DC2626;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);"></div>`,
+  html: `<div style="width:20px;height:20px;border-radius:50%;background:#8B3A2B;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);"></div>`,
   iconSize: [20, 20], iconAnchor: [10, 10],
 });
 
@@ -67,7 +67,7 @@ function RoutingMachine({ start, end, onRouteFound }) {
         routeWhileDragging: false,
         showAlternatives: false,
         lineOptions: {
-          styles: [{ color: "#2563EB", weight: 5, opacity: 0.85 }],
+          styles: [{ color: "#2B4570", weight: 5, opacity: 0.85 }],
           extendToWaypoints: true,
           missingRouteTolerance: 0,
         },
@@ -196,7 +196,7 @@ export default function StorageMap({ storages = [], farmerPos, onSelectStorage, 
             <Marker position={farmerPos} icon={farmerIcon} zIndexOffset={1000}>
               <Popup>
                 <div style={{ padding: "8px", fontFamily: "sans-serif" }}>
-                  <strong style={{ color: "#2563EB" }}>📍 Your Location</strong>
+                  <strong style={{ color: "#2B4570" }}>📍 Your Location</strong>
                 </div>
               </Popup>
             </Marker>
@@ -212,44 +212,44 @@ export default function StorageMap({ storages = [], farmerPos, onSelectStorage, 
             <Marker
               key={s.id}
               position={[parseFloat(s.lat), parseFloat(s.lon)]}
-              icon={makePin(STATUS_COLOR[s.status] || "#16A34A", idx + 1)}
+              icon={makePin(STATUS_COLOR[s.status] || "#3F6B33", idx + 1)}
               eventHandlers={{ click: () => onSelectStorage?.(s) }}
             >
               <Popup maxWidth={230}>
                 <div style={{ padding: "14px", fontFamily: "sans-serif", minWidth: "180px" }}>
-                  <div style={{ fontWeight: 700, fontSize: "13px", color: "#111827", marginBottom: "4px" }}>
+                  <div style={{ fontWeight: 700, fontSize: "13px", color: "var(--tx)", marginBottom: "4px" }}>
                     {s.name}
                   </div>
-                  <div style={{ fontSize: "11px", color: "#6B7280", marginBottom: "10px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--tx-m)", marginBottom: "10px" }}>
                     {s.district}{s.state ? `, ${s.state}` : ""}
                     {s.distance_km && (
-                      <span style={{ marginLeft: "8px", color: "#16A34A" }}>📍 {s.distance_km} km</span>
+                      <span style={{ marginLeft: "8px", color: "#3F6B33" }}>📍 {s.distance_km} km</span>
                     )}
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px",
                     fontSize: "11px", marginBottom: "10px" }}>
-                    <div><span style={{ color: "#9CA3AF" }}>Available</span><br />
+                    <div><span style={{ color: "var(--tx-s)" }}>Available</span><br />
                       <strong>{(parseFloat(s.available_capacity_kg) / 1000).toFixed(1)} MT</strong></div>
-                    <div><span style={{ color: "#9CA3AF" }}>Rate</span><br />
+                    <div><span style={{ color: "var(--tx-s)" }}>Rate</span><br />
                       <strong>₹{parseFloat(s.price_per_kg_per_day).toFixed(2)}/kg/d</strong></div>
-                    <div><span style={{ color: "#9CA3AF" }}>Temp</span><br />
+                    <div><span style={{ color: "var(--tx-s)" }}>Temp</span><br />
                       <strong>{s.temp_min_celsius}–{s.temp_max_celsius}°C</strong></div>
-                    <div><span style={{ color: "#9CA3AF" }}>Status</span><br />
-                      <strong style={{ color: STATUS_COLOR[s.status] || "#16A34A", textTransform: "capitalize" }}>
+                    <div><span style={{ color: "var(--tx-s)" }}>Status</span><br />
+                      <strong style={{ color: STATUS_COLOR[s.status] || "#3F6B33", textTransform: "capitalize" }}>
                         {s.status}
                       </strong></div>
                   </div>
 
                   <div style={{ display: "flex", gap: "6px" }}>
                     <button onClick={e => { e.stopPropagation(); onBookStorage?.(s); }}
-                      style={{ flex: 2, background: "#16A34A", color: "#fff", border: "none",
+                      style={{ flex: 2, background: "#3F6B33", color: "#fff", border: "none",
                         borderRadius: "7px", padding: "7px", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>
                       Book Now →
                     </button>
                     {farmerPos && (
                       <button onClick={e => { e.stopPropagation(); handleGetDirections(s); }}
-                        style={{ flex: 1, background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE",
+                        style={{ flex: 1, background: "#DCE2EC", color: "#2B4570", border: "1px solid #2B4570",
                           borderRadius: "7px", padding: "7px", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>
                         🗺 Route
                       </button>

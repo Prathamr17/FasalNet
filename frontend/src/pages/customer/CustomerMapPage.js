@@ -24,11 +24,11 @@ const makeIcon = (emoji, color, size=36) => L.divIcon({
   popupAnchor: [0,-size/2-4],
 });
 
-const customerIcon  = makeIcon("📍","#F97316");
-const deliveryIcon  = makeIcon("🏠","#16A34A");
+const customerIcon  = makeIcon("📍","#B4741E");
+const deliveryIcon  = makeIcon("🏠","#3F6B33");
 const storageIcon   = (status) => makeIcon(
   status==="available" ? "❄️" : status==="full" ? "🔴" : "🔧",
-  status==="available" ? "#22D3EE" : status==="full" ? "#FF5252" : "#F5B942",
+  status==="available" ? "#2B4570" : status==="full" ? "#8B3A2B" : "#B4741E",
   40
 );
 
@@ -175,8 +175,8 @@ export default function CustomerMapPage() {
               <Marker position={customerPos} icon={customerIcon}>
                 <Popup>
                   <div style={{ padding:"8px", fontFamily:"var(--fb)" }}>
-                    <strong style={{ color:"var(--cp,#F97316)" }}>📍 Your Location</strong>
-                    <div style={{ fontSize:"11px", marginTop:"4px", color:"#666" }}>Tap a storage to plan route</div>
+                    <strong style={{ color:"var(--cp,#B4741E)" }}>📍 Your Location</strong>
+                    <div style={{ fontSize:"11px", marginTop:"4px", color:"var(--tx-m)" }}>Tap a storage to plan route</div>
                   </div>
                 </Popup>
               </Marker>
@@ -187,15 +187,15 @@ export default function CustomerMapPage() {
                   <Marker position={deliveryPos} icon={deliveryIcon}>
                     <Popup>
                       <div style={{ padding:"8px", fontFamily:"var(--fb)" }}>
-                        <strong style={{ color:"#16A34A" }}>🏠 Storage / Delivery Point</strong>
+                        <strong style={{ color:"#3F6B33" }}>🏠 Storage / Delivery Point</strong>
                         {eta && <div style={{ fontSize:"11px", marginTop:"4px" }}>ETA: ~{eta.hrs}h · {eta.dist} km</div>}
                       </div>
                     </Popup>
                   </Marker>
-                  <RoutePolyline from={customerPos} to={deliveryPos} color="var(--cp,#F97316)" />
+                  <RoutePolyline from={customerPos} to={deliveryPos} color="var(--cp,#B4741E)" />
                   {/* Arrival radius ring */}
                   <Circle center={deliveryPos} radius={800}
-                    pathOptions={{ color:"var(--cp,#F97316)", fillColor:"var(--cp,#F97316)", fillOpacity:0.07, weight:1.5, dashArray:"6 4" }} />
+                    pathOptions={{ color:"var(--cp,#B4741E)", fillColor:"var(--cp,#B4741E)", fillOpacity:0.07, weight:1.5, dashArray:"6 4" }} />
                 </>
               )}
 
@@ -209,17 +209,17 @@ export default function CustomerMapPage() {
                   <Popup maxWidth={240}>
                     <div style={{ padding:"12px", fontFamily:"var(--fb)", minWidth:"200px" }}>
                       <div style={{ fontWeight:800, fontSize:"13px", marginBottom:"4px" }}>{s.name}</div>
-                      <div style={{ fontSize:"11px", color:"#666", marginBottom:"8px" }}>{s.district}, {s.state}</div>
+                      <div style={{ fontSize:"11px", color:"var(--tx-m)", marginBottom:"8px" }}>{s.district}, {s.state}</div>
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px", fontSize:"11px", marginBottom:"10px" }}>
-                        <div><span style={{color:"#888"}}>Available:</span><br/><strong>{(parseFloat(s.available_capacity_kg)/1000).toFixed(1)} MT</strong></div>
-                        <div><span style={{color:"#888"}}>Rate:</span><br/><strong>₹{parseFloat(s.price_per_kg_per_day).toFixed(2)}/kg/day</strong></div>
-                        <div><span style={{color:"#888"}}>Temp:</span><br/><strong>{s.temp_min_celsius}–{s.temp_max_celsius}°C</strong></div>
-                        <div><span style={{color:"#888"}}>Dist:</span><br/><strong>{haversine(customerPos[0],customerPos[1],parseFloat(s.lat),parseFloat(s.lon)).toFixed(1)} km</strong></div>
+                        <div><span style={{color:"var(--tx-s)"}}>Available:</span><br/><strong>{(parseFloat(s.available_capacity_kg)/1000).toFixed(1)} MT</strong></div>
+                        <div><span style={{color:"var(--tx-s)"}}>Rate:</span><br/><strong>₹{parseFloat(s.price_per_kg_per_day).toFixed(2)}/kg/day</strong></div>
+                        <div><span style={{color:"var(--tx-s)"}}>Temp:</span><br/><strong>{s.temp_min_celsius}–{s.temp_max_celsius}°C</strong></div>
+                        <div><span style={{color:"var(--tx-s)"}}>Dist:</span><br/><strong>{haversine(customerPos[0],customerPos[1],parseFloat(s.lat),parseFloat(s.lon)).toFixed(1)} km</strong></div>
                       </div>
                       <button
                         onClick={() => handleRoute(s)}
                         style={{ width:"100%", padding:"7px", borderRadius:"8px",
-                          background:"#F97316", color:"#fff", border:"none",
+                          background:"#B4741E", color:"#fff", border:"none",
                           fontWeight:700, fontSize:"12px", cursor:"pointer" }}>
                         🗺 Show Route & ETA
                       </button>

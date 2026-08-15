@@ -137,8 +137,8 @@ function OrderDonut({ orders }) {
   const r = 36; const circum = 2*Math.PI*r;
 
   const segments = [
-    { val:conf/total,  color:"#16A34A" },
-    { val:pend/total,  color:"#D97706" },
+    { val:conf/total,  color:"#3F6B33" },
+    { val:pend/total,  color:"#B4741E" },
     { val:other/total, color:"#E5E7EB" },
   ];
   let offset = 0;
@@ -172,9 +172,9 @@ function OrderDonut({ orders }) {
       </div>
       <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
         {[
-          { label:"Confirmed",  val:conf,  color:"#16A34A" },
-          { label:"Pending",    val:pend,  color:"#D97706" },
-          { label:"Other",      val:other, color:"#9CA3AF" },
+          { label:"Confirmed",  val:conf,  color:"#3F6B33" },
+          { label:"Pending",    val:pend,  color:"#B4741E" },
+          { label:"Other",      val:other, color:"var(--tx-s)" },
         ].map(({ label, val, color }) => (
           <div key={label} style={{ display:"flex", alignItems:"center", gap:"6px" }}>
             <div style={{ width:"8px", height:"8px", borderRadius:"50%", background:color }}/>
@@ -342,7 +342,7 @@ export default function CustomerOrders() {
           <div key={order.id} className="card anim-fadeup" style={{
             marginBottom:"12px", padding:"16px 18px",
             animationDelay:`${idx*.06}s`,
-            border: order.status==="rejected" ? "1.5px solid rgba(220,38,38,.25)" : "1.5px solid var(--bd)",
+            border: order.status==="rejected" ? "1.5px solid rgba(139,58,43,.25)" : "1.5px solid var(--bd)",
           }}>
             {/* Row header */}
             <div onClick={() => setExpanded(isOpen ? null : order.id)}

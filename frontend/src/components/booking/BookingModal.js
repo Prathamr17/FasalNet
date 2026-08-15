@@ -166,7 +166,7 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
                 onChange={e => set("pickup_date", e.target.value)} />
             </div>
 
-            <div style={{ background:"var(--cp-pale)", border:"1px solid rgba(22,163,74,.2)",
+            <div style={{ background:"var(--cp-pale)", border:"1px solid rgba(63,107,51,.2)",
               borderRadius:"12px", padding:"14px", textAlign:"center" }}>
               <div style={{ fontFamily:"var(--fm)", fontWeight:800, fontSize:"24px",
                 color:"var(--cp)", lineHeight:1 }}>

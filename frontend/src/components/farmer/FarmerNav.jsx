@@ -38,7 +38,7 @@ export default function FarmerNav() {
               fontWeight: isActive ? 700 : 500,
               fontSize:"13px",
               color: isActive ? "var(--cp)" : "var(--tx-m)",
-              background: isActive ? "var(--cp-bg,rgba(204,218,71,.12))" : "transparent",
+              background: isActive ? "var(--cp-bg,rgba(63,107,51,.12))" : "transparent",
               textDecoration:"none",
               transition:"all .2s",
               whiteSpace:"nowrap",

@@ -176,7 +176,7 @@ function DeliveryCard({ delivery, onUpdate }) {
 
         {delivery.status === "delivered" && (
           <div style={{ background:"var(--safe-bg)", borderRadius:"8px", padding:"12px",
-            textAlign:"center", border:"1px solid rgba(22,163,74,.2)" }}>
+            textAlign:"center", border:"1px solid rgba(63,107,51,.2)" }}>
             <div style={{ fontSize:"13px", fontWeight:700, color:"var(--safe)" }}>
               ✓ Delivery Completed
             </div>

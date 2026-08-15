@@ -11,8 +11,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { marketAPI, mlAPI } from "../../services/api";
 
 const PALETTE = [
-  "#16A34A","#2563EB","#D97706","#DC2626",
-  "#7C3AED","#0891B2","#EA580C","#BE185D",
+  "#3F6B33","#2B4570","#B4741E","#8B3A2B",
+  "#5C3A5C","#0891B2","#EA580C","#5C3A5C",
 ];
 
 function useDims(ref) {
@@ -64,7 +64,7 @@ function CitySearchSelect({ cities, selectedCities, onToggle }) {
           {selectedCities.map(city => (
             <div key={city} style={{
               display: "flex", alignItems: "center", gap: "4px",
-              background: "var(--cp-pale)", border: "1px solid rgba(22,163,74,.3)",
+              background: "var(--cp-pale)", border: "1px solid rgba(63,107,51,.3)",
               borderRadius: "20px", padding: "2px 8px 2px 10px",
               fontSize: "10px", color: "var(--cp)", fontWeight: 600,
             }}>
@@ -268,13 +268,13 @@ function LineChart({ series, forecastSeries = [] }) {
 
         {/* Today/Tomorrow markers */}
         <g>
-          <line x1={todayX} y1={PAD.t} x2={todayX} y2={PAD.t + cH} stroke="#2563EB" strokeWidth="1.5" strokeDasharray="5 3" opacity="0.8" />
-          <text x={todayX} y={PAD.t + 6} textAnchor="start" fontSize="9" fontWeight="700" fill="#2563EB" letterSpacing="0.5"
+          <line x1={todayX} y1={PAD.t} x2={todayX} y2={PAD.t + cH} stroke="#2B4570" strokeWidth="1.5" strokeDasharray="5 3" opacity="0.8" />
+          <text x={todayX} y={PAD.t + 6} textAnchor="start" fontSize="9" fontWeight="700" fill="#2B4570" letterSpacing="0.5"
             transform={`rotate(-90, ${todayX}, ${PAD.t + 6})`}>TODAY</text>
         </g>
         <g>
-          <line x1={tomorrowX} y1={PAD.t} x2={tomorrowX} y2={PAD.t + cH} stroke="#D97706" strokeWidth="1.5" strokeDasharray="5 3" opacity="0.8" />
-          <text x={tomorrowX} y={PAD.t + 6} textAnchor="start" fontSize="9" fontWeight="700" fill="#D97706" letterSpacing="0.5"
+          <line x1={tomorrowX} y1={PAD.t} x2={tomorrowX} y2={PAD.t + cH} stroke="#B4741E" strokeWidth="1.5" strokeDasharray="5 3" opacity="0.8" />
+          <text x={tomorrowX} y={PAD.t + 6} textAnchor="start" fontSize="9" fontWeight="700" fill="#B4741E" letterSpacing="0.5"
             transform={`rotate(-90, ${tomorrowX}, ${PAD.t + 6})`}>TOMORROW</text>
         </g>
 
@@ -282,7 +282,7 @@ function LineChart({ series, forecastSeries = [] }) {
           <text key={date} x={x} y={h - 6} textAnchor="middle"
             fontSize={isToday || isTomorrow ? "9" : "10"}
             fontWeight={isToday || isTomorrow ? "700" : "400"}
-            fill={isToday ? "#2563EB" : isTomorrow ? "#D97706" : "var(--tx-s)"}>
+            fill={isToday ? "#2B4570" : isTomorrow ? "#B4741E" : "var(--tx-s)"}>
             {isToday ? "Today" : isTomorrow ? "Tmrw" : date.slice(5)}
           </text>
         ))}
@@ -368,7 +368,7 @@ function LineChart({ series, forecastSeries = [] }) {
                 <div style={{ width: 9, height: 9, borderRadius: "50%", background: hit.color, flexShrink: 0 }} />
                 <div style={{ flex: 1, fontSize: "11px", color: "var(--tx-m)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {hit.label.replace(/ APMC$/, "")}
-                  {hit.isForecast && <span style={{ color: "#7C3AED", marginLeft: 4, fontSize: "9px", fontWeight: 700 }}>ARIMA</span>}
+                  {hit.isForecast && <span style={{ color: "#5C3A5C", marginLeft: 4, fontSize: "9px", fontWeight: 700 }}>ARIMA</span>}
                 </div>
                 <div style={{ fontWeight: 800, fontSize: "12px", color: "var(--tx)", fontFamily: "var(--fd)", flexShrink: 0 }}>
                   ₹{hit.price.toLocaleString("en-IN")}
@@ -396,16 +396,16 @@ function LineChart({ series, forecastSeries = [] }) {
           </div>
         ))}
         <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-          <svg width="16" height="6"><line x1="0" y1="3" x2="16" y2="3" stroke="#2563EB" strokeWidth="2" strokeDasharray="4 3" /></svg>
-          <span style={{ fontSize: "11px", color: "#2563EB", fontWeight: 600 }}>Today</span>
+          <svg width="16" height="6"><line x1="0" y1="3" x2="16" y2="3" stroke="#2B4570" strokeWidth="2" strokeDasharray="4 3" /></svg>
+          <span style={{ fontSize: "11px", color: "#2B4570", fontWeight: 600 }}>Today</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-          <svg width="16" height="6"><line x1="0" y1="3" x2="16" y2="3" stroke="#D97706" strokeWidth="2" strokeDasharray="4 3" /></svg>
-          <span style={{ fontSize: "11px", color: "#D97706", fontWeight: 600 }}>Tomorrow</span>
+          <svg width="16" height="6"><line x1="0" y1="3" x2="16" y2="3" stroke="#B4741E" strokeWidth="2" strokeDasharray="4 3" /></svg>
+          <span style={{ fontSize: "11px", color: "#B4741E", fontWeight: 600 }}>Tomorrow</span>
         </div>
         {(series.some(s => s.points.some(p => p.min_price)) || forecastSeries.some(s => s.points.some(p => p.min_price))) && (
           <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-            <div style={{ width: 12, height: 8, background: "rgba(22,163,74,0.18)", borderRadius: 2 }} />
+            <div style={{ width: 12, height: 8, background: "rgba(63,107,51,0.18)", borderRadius: 2 }} />
             <span style={{ fontSize: "11px", color: "var(--tx-s)" }}>Min–Max band</span>
           </div>
         )}
@@ -415,7 +415,7 @@ function LineChart({ series, forecastSeries = [] }) {
 }
 
 // ─── BAR CHART ────────────────────────────────────────────────────────────────
-function BarChart({ data, valueKey, labelKey, color = "#16A34A" }) {
+function BarChart({ data, valueKey, labelKey, color = "#3F6B33" }) {
   const ref  = useRef(null);
   const dims = useDims(ref);
   const { w } = dims;
@@ -459,7 +459,7 @@ function HeatmapGrid({ matrix, dates, commodities }) {
     return <div style={{ color: "var(--tx-s)", fontSize: "13px", padding: "24px 0" }}>No data</div>;
   const allVals = commodities.flatMap(c => dates.map(d => matrix?.[c]?.[d] || 0).filter(Boolean));
   const maxV    = Math.max(...allVals, 1);
-  const toColor = (v) => `rgba(22,163,74,${Math.min(1, (v / maxV) * 0.9 + 0.1).toFixed(2)})`;
+  const toColor = (v) => `rgba(63,107,51,${Math.min(1, (v / maxV) * 0.9 + 0.1).toFixed(2)})`;
   const shown      = commodities.slice(0, 20);
   const shownDates = dates.filter((_, i) => i % Math.max(1, Math.floor(dates.length / 15)) === 0 || i === dates.length - 1);
   return (
@@ -802,9 +802,9 @@ export default function FarmerMarketIntelligencePage() {
         <div style={{ marginBottom: "20px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: "10px", marginBottom: "10px" }}>
             <StatCard label="Latest Date" value={syncStatus.newest || "—"}
-              sub={syncStatus.oldest ? `from ${syncStatus.oldest}` : ""} color="#2563EB" />
-            <StatCard label="Cities Tracked" value={cities.length || "—"} color="#D97706" />
-            <StatCard label="Commodities"    value={commodities.length || "—"} color="#7C3AED" />
+              sub={syncStatus.oldest ? `from ${syncStatus.oldest}` : ""} color="#2B4570" />
+            <StatCard label="Cities Tracked" value={cities.length || "—"} color="#B4741E" />
+            <StatCard label="Commodities"    value={commodities.length || "—"} color="#5C3A5C" />
           </div>
           {/* Cities list reveal */}
           {syncStatus.cities?.length > 0 && (
@@ -859,10 +859,10 @@ export default function FarmerMarketIntelligencePage() {
               <div><div style={{ ...LBL, marginBottom: "3px" }}>From</div><input type="date" style={INP} value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
               <div><div style={{ ...LBL, marginBottom: "3px" }}>To</div><input type="date" style={INP} value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
             </div>
-            <div style={{ marginTop: "8px", padding: "8px 10px", background: "rgba(37,99,235,.06)", border: "1px solid rgba(37,99,235,.15)", borderRadius: "8px", fontSize: "11px", lineHeight: 1.7 }}>
-              <span style={{ color: "#2563EB", fontWeight: 700 }}>● Today:</span>
+            <div style={{ marginTop: "8px", padding: "8px 10px", background: "rgba(43,69,112,.06)", border: "1px solid rgba(43,69,112,.15)", borderRadius: "8px", fontSize: "11px", lineHeight: 1.7 }}>
+              <span style={{ color: "#2B4570", fontWeight: 700 }}>● Today:</span>
               <span style={{ color: "var(--tx-m)", marginLeft: "4px" }}>{todayFmt}</span><br />
-              <span style={{ color: "#D97706", fontWeight: 700 }}>● Tomorrow:</span>
+              <span style={{ color: "#B4741E", fontWeight: 700 }}>● Tomorrow:</span>
               <span style={{ color: "var(--tx-m)", marginLeft: "4px" }}>{tomorrowFmt}</span>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginTop: "10px" }}>
@@ -962,7 +962,7 @@ export default function FarmerMarketIntelligencePage() {
                 </div>
 
                 {arimaError && (
-                  <div style={{ background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.25)",
+                  <div style={{ background: "rgba(139,58,43,.08)", border: "1px solid rgba(139,58,43,.25)",
                     color: "var(--danger)", borderRadius: "10px", padding: "10px 14px", fontSize: "12px", marginBottom: "10px" }}>
                     ⚠️ {arimaError}
                   </div>
@@ -988,10 +988,10 @@ export default function FarmerMarketIntelligencePage() {
                         return (
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "8px", marginBottom: "12px" }}>
                             {[
-                              { label: "Avg Price",    val: `₹${Math.round(avg).toLocaleString("en-IN")}`,           color: "#7C3AED" },
-                              { label: "Trend",        val: `${delta >= 0 ? "▲" : "▼"} ₹${Math.abs(Math.round(delta)).toLocaleString("en-IN")}`, color: delta >= 0 ? "#16A34A" : "#DC2626" },
-                              { label: "Peak (Max)",   val: `₹${Math.round(peak).toLocaleString("en-IN")}`,          color: "#D97706" },
-                              { label: "Floor (Min)",  val: `₹${Math.round(trough).toLocaleString("en-IN")}`,        color: "#2563EB" },
+                              { label: "Avg Price",    val: `₹${Math.round(avg).toLocaleString("en-IN")}`,           color: "#5C3A5C" },
+                              { label: "Trend",        val: `${delta >= 0 ? "▲" : "▼"} ₹${Math.abs(Math.round(delta)).toLocaleString("en-IN")}`, color: delta >= 0 ? "#3F6B33" : "#8B3A2B" },
+                              { label: "Peak (Max)",   val: `₹${Math.round(peak).toLocaleString("en-IN")}`,          color: "#B4741E" },
+                              { label: "Floor (Min)",  val: `₹${Math.round(trough).toLocaleString("en-IN")}`,        color: "#2B4570" },
                             ].map(({ label, val, color }) => (
                               <div key={label} style={{ background: "var(--bg-l)", borderRadius: "10px",
                                 padding: "10px 12px", border: "1px solid var(--bd)", textAlign: "center" }}>
@@ -1012,20 +1012,20 @@ export default function FarmerMarketIntelligencePage() {
                           return (
                             <div key={i} style={{
                               minWidth: "88px", flexShrink: 0,
-                              background: change < 0 ? "rgba(220,38,38,.07)" : "var(--bg-l)",
-                              border: `1px solid ${change < 0 ? "rgba(220,38,38,.25)" : "var(--bd)"}`,
+                              background: change < 0 ? "rgba(139,58,43,.07)" : "var(--bg-l)",
+                              border: `1px solid ${change < 0 ? "rgba(139,58,43,.25)" : "var(--bd)"}`,
                               borderRadius: "10px", padding: "10px 8px", textAlign: "center",
-                              borderTop: `3px solid ${change >= 0 ? "#16A34A" : "#DC2626"}`,
+                              borderTop: `3px solid ${change >= 0 ? "#3F6B33" : "#8B3A2B"}`,
                             }}>
                               <div style={{ fontSize: "9px", fontWeight: 700, color: "var(--tx-s)",
                                 marginBottom: "4px", whiteSpace: "nowrap" }}>
                                 Day {i + 1} · {pt.date.slice(5)}
                               </div>
-                              <div style={{ fontWeight: 900, fontSize: "13px", color: "#7C3AED",
+                              <div style={{ fontWeight: 900, fontSize: "13px", color: "#5C3A5C",
                                 fontFamily: "var(--fd)", marginBottom: "3px" }}>
                                 ₹{pt.price.toLocaleString("en-IN")}
                               </div>
-                              <div style={{ fontSize: "9px", color: change >= 0 ? "#16A34A" : "#DC2626",
+                              <div style={{ fontSize: "9px", color: change >= 0 ? "#3F6B33" : "#8B3A2B",
                                 fontWeight: 700, marginBottom: "5px" }}>
                                 {change >= 0 ? "▲" : "▼"} ₹{Math.abs(Math.round(change)).toLocaleString("en-IN")}
                               </div>

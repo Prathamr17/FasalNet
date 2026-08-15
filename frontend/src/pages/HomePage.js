@@ -16,9 +16,9 @@ const STEPS = [
   { n:"04", emoji:"✅", title:"Book Instantly",       desc:"One-tap booking. Operator confirms in real time." },
 ];
 const ROLES = [
-  { emoji:"🌾", label:"Farmer",   color:"#16A34A", bg:"#DCFCE7", desc:"Upload produce, book cold storage, track risk in real time" },
-  { emoji:"🏭", label:"Operator", color:"#2563EB", bg:"#DBEAFE", desc:"Manage bookings, update capacity, approve orders" },
-  { emoji:"🛒", label:"Customer", color:"#F97316", bg:"#FFEDD5", desc:"Browse marketplace, buy fresh produce, track your orders" },
+  { emoji:"🌾", label:"Farmer",   color:"#3F6B33", bg:"#DCE8D2", desc:"Upload produce, book cold storage, track risk in real time" },
+  { emoji:"🏭", label:"Operator", color:"#2B4570", bg:"#DCE2EC", desc:"Manage bookings, update capacity, approve orders" },
+  { emoji:"🛒", label:"Customer", color:"#B4741E", bg:"#F1E1BF", desc:"Browse marketplace, buy fresh produce, track your orders" },
 ];
 
 export default function HomePage() {
@@ -34,7 +34,7 @@ export default function HomePage() {
           textTransform:"uppercase", letterSpacing:"3px",
           background:"var(--cp-pale)", color:"var(--cp)",
           padding:"5px 16px", borderRadius:"99px", marginBottom:"20px",
-          border:"1px solid rgba(22,163,74,.2)"
+          border:"1px solid rgba(63,107,51,.2)"
         }}>
           AgriTech · Built for India's Farmers
         </div>
@@ -150,7 +150,7 @@ export default function HomePage() {
         <div className="card" style={{
           padding:"40px 32px", textAlign:"center",
           background:"linear-gradient(135deg,var(--cp-pale),var(--bg-l))",
-          border:"1.5px solid rgba(22,163,74,.2)",
+          border:"1.5px solid rgba(63,107,51,.2)",
         }}>
           <div style={{ fontSize:"2.5rem", marginBottom:"12px" }}>🚀</div>
           <h2 style={{ fontFamily:"var(--fd)", fontWeight:800, fontSize:"1.6rem",

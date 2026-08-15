@@ -41,8 +41,8 @@ export default function LoginPage() {
   const [filled,  setFilled]        = useState(null);
 
   const DEMO_ACCOUNTS = [
-    { role: "farmer",   emoji: "🌾", label: t("auth.farmer"),   phone: "9000000001", pass: "farmer123",   color: "#7EC850", bg: "rgba(126,200,80,.1)",  border: "rgba(126,200,80,.3)",  desc: "Ramesh Jadhav · Kolhapur" },
-    { role: "operator", emoji: "🏭", label: t("auth.operator"), phone: "9000000002", pass: "operator123", color: "#22D3EE", bg: "rgba(34,211,238,.1)",  border: "rgba(34,211,238,.3)",  desc: "Sunita Patil · Manager"   },
+    { role: "farmer",   emoji: "🌾", label: t("auth.farmer"),   phone: "9000000001", pass: "farmer123",   color: "#3F6B33", bg: "rgba(126,200,80,.1)",  border: "rgba(126,200,80,.3)",  desc: "Ramesh Jadhav · Kolhapur" },
+    { role: "operator", emoji: "🏭", label: t("auth.operator"), phone: "9000000002", pass: "operator123", color: "#2B4570", bg: "rgba(43,69,112,.1)",  border: "rgba(43,69,112,.3)",  desc: "Sunita Patil · Manager"   },
   ];
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));

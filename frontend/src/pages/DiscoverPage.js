@@ -25,7 +25,7 @@ const DEMO_STORAGES = [
   { id:15, name:"Kolkata AgroCold",       address:"Dankuni",             district:"Howrah",    state:"West Bengal",   lat:22.680, lon:88.299, total_capacity_kg:100000, available_capacity_kg:72000, price_per_kg_per_day:1.80, temp_min_celsius:1, temp_max_celsius:7,  status:"available" },
 ];
 const INDIA_STATES=["Andhra Pradesh","Assam","Bihar","Chhattisgarh","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Odisha","Punjab","Rajasthan","Tamil Nadu","Telangana","Uttar Pradesh","Uttarakhand","West Bengal"];
-const RISK_CFG={CRITICAL:{color:"#DC2626",bg:"rgba(220,38,38,.08)",border:"rgba(220,38,38,.3)",icon:"🚨",label:"CRITICAL"},RISKY:{color:"#D97706",bg:"rgba(217,119,6,.08)",border:"rgba(217,119,6,.3)",icon:"⚠️",label:"RISKY"},SAFE:{color:"#16A34A",bg:"rgba(22,163,74,.08)",border:"rgba(22,163,74,.3)",icon:"✅",label:"SAFE"}};
+const RISK_CFG={CRITICAL:{color:"#8B3A2B",bg:"rgba(139,58,43,.08)",border:"rgba(139,58,43,.3)",icon:"🚨",label:"CRITICAL"},RISKY:{color:"#B4741E",bg:"rgba(180,116,30,.08)",border:"rgba(180,116,30,.3)",icon:"⚠️",label:"RISKY"},SAFE:{color:"#3F6B33",bg:"rgba(63,107,51,.08)",border:"rgba(63,107,51,.3)",icon:"✅",label:"SAFE"}};
 const CROPS=["tomato","leafy greens","onion","potato","mango","banana","grapes","cauliflower","rice","wheat","maize","spinach","beans","broccoli","carrot","cabbage","corn","chilli","sweetpotato","pumpkin","cucumber"];
 
 function haversineKm(lat1,lon1,lat2,lon2){const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180,a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
@@ -67,7 +67,7 @@ function SpoilageRiskPanel({onRiskResult,spoilageMeta}){
           <div><label style={lbl}>Ambient Temp (°C)</label><input type="number" style={inp} min="5" max="50" value={form.ambient_temp_c} onChange={e=>set("ambient_temp_c",e.target.value)}/></div>
           <div><label style={lbl}>Vehicle Type</label><select style={inp} value={form.vehicle_type} onChange={e=>set("vehicle_type",e.target.value)}>{vehicles.map(v=><option key={v} value={v}>{v.charAt(0).toUpperCase()+v.slice(1)}</option>)}</select></div>
         </div>
-        {error&&<div style={{padding:"7px 10px",background:"rgba(239,68,68,.08)",borderRadius:8,fontSize:12,color:"#DC2626"}}>{error}</div>}
+        {error&&<div style={{padding:"7px 10px",background:"rgba(139,58,43,.08)",borderRadius:8,fontSize:12,color:"#8B3A2B"}}>{error}</div>}
         <button type="submit" className="btn btn-primary" disabled={loading} style={{width:"100%",padding:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
           {loading?<><span className="aspin" style={{width:13,height:13,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff"}}/> Analysing…</>:"🔬 Run Risk Assessment & Find Optimal Storage"}
         </button>
@@ -136,7 +136,7 @@ export default function DiscoverPage(){
       </div>
 
       {optimalStorage&&riskData&&(
-        <div className="anim-fadeup" style={{marginBottom:16,padding:"12px 16px",background:riskData.risk_level==="SAFE"?"rgba(22,163,74,.07)":"rgba(220,38,38,.07)",border:`1px solid ${riskData.risk_level==="SAFE"?"rgba(22,163,74,.25)":"rgba(220,38,38,.25)"}`,borderRadius:12,display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+        <div className="anim-fadeup" style={{marginBottom:16,padding:"12px 16px",background:riskData.risk_level==="SAFE"?"rgba(63,107,51,.07)":"rgba(139,58,43,.07)",border:`1px solid ${riskData.risk_level==="SAFE"?"rgba(63,107,51,.25)":"rgba(139,58,43,.25)"}`,borderRadius:12,display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
           <span style={{fontSize:"1.5rem"}}>{riskData.risk_level==="SAFE"?"🏆":"🚗"}</span>
           <div style={{flex:1,minWidth:200}}>
             <div style={{fontWeight:800,fontSize:14,color:"var(--tx)"}}>{riskData.risk_level==="SAFE"?"Best Value":"Nearest"} — {optimalStorage.name}</div>

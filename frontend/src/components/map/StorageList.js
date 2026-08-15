@@ -28,7 +28,7 @@ export default function StorageList({ storages=[], selectedId, riskLevel, onSele
             onClick={() => onSelect?.(s)}
             style={{
               padding:"12px 14px", borderRadius:"10px", cursor:"pointer",
-              border:`1.5px solid ${isSelected ? "var(--cp)" : urgent ? "rgba(220,38,38,.3)" : "var(--bd)"}`,
+              border:`1.5px solid ${isSelected ? "var(--cp)" : urgent ? "rgba(139,58,43,.3)" : "var(--bd)"}`,
               background: isSelected ? "var(--cp-pale)" : urgent ? "#FEF2F2" : "var(--bg-l)",
               transition:"all .15s",
             }}
@@ -50,7 +50,7 @@ export default function StorageList({ storages=[], selectedId, riskLevel, onSele
                   )}
                   {isNew && (
                     <span style={{ fontSize:"9px", color:"var(--cp)",
-                      background:"rgba(56,189,248,.12)", padding:"1px 6px", borderRadius:"99px",
+                      background:"rgba(43,69,112,.12)", padding:"1px 6px", borderRadius:"99px",
                       fontWeight:700, flexShrink:0 }}>New</span>
                   )}
                 </div>

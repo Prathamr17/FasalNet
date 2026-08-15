@@ -55,9 +55,9 @@ export function Card({ children, className="" }) {
 export function Alert({ type="info", message }) {
   if (!message) return null;
   const styles = {
-    error: { bg:"var(--danger-bg)", color:"var(--danger)", border:"rgba(220,38,38,.2)" },
-    info:  { bg:"var(--info-bg)",   color:"var(--info)",   border:"rgba(37,99,235,.2)" },
-    success:{ bg:"var(--safe-bg)", color:"var(--safe)",    border:"rgba(22,163,74,.2)" },
+    error: { bg:"var(--danger-bg)", color:"var(--danger)", border:"rgba(139,58,43,.2)" },
+    info:  { bg:"var(--info-bg)",   color:"var(--info)",   border:"rgba(43,69,112,.2)" },
+    success:{ bg:"var(--safe-bg)", color:"var(--safe)",    border:"rgba(63,107,51,.2)" },
   };
   const s = styles[type] || styles.info;
   return (

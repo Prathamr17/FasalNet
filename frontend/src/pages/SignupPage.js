@@ -17,8 +17,8 @@ export default function SignupPage() {
   const navigate      = useNavigate();
 
   const ROLES = [
-    { id: "farmer",   emoji: "🌾", label: t("auth.farmer"),   desc: t("auth.upload_produce"), color: "#CCDA47", bg: "rgba(204,218,71,.1)", border: "rgba(204,218,71,.3)" },
-    { id: "operator", emoji: "🏭", label: t("auth.operator"), desc: t("auth.manage_facility"), color: "#38bdf8", bg: "rgba(56,189,248,.1)", border: "rgba(56,189,248,.3)" },
+    { id: "farmer",   emoji: "🌾", label: t("auth.farmer"),   desc: t("auth.upload_produce"), color: "#3F6B33", bg: "rgba(63,107,51,.1)", border: "rgba(63,107,51,.3)" },
+    { id: "operator", emoji: "🏭", label: t("auth.operator"), desc: t("auth.manage_facility"), color: "#2B4570", bg: "rgba(43,69,112,.1)", border: "rgba(43,69,112,.3)" },
   ];
 
   const [form, setForm] = useState({
@@ -249,7 +249,7 @@ export default function SignupPage() {
               </div>
 
               {error && (
-                <div style={{ background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.25)",
+                <div style={{ background: "rgba(139,58,43,.08)", border: "1px solid rgba(139,58,43,.25)",
                   color: "var(--danger)", borderRadius: "10px", padding: "10px 14px", fontSize: "13px" }}>
                   {error}
                 </div>
@@ -285,10 +285,10 @@ export default function SignupPage() {
             </button>
 
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px",
-              padding: "10px 14px", borderRadius: "12px", background: "rgba(56,189,248,.1)",
-              border: "1px solid rgba(56,189,248,.3)" }}>
+              padding: "10px 14px", borderRadius: "12px", background: "rgba(43,69,112,.1)",
+              border: "1px solid rgba(43,69,112,.3)" }}>
               <span style={{ fontSize: "1.5rem" }}>🏭</span>
-              <div style={{ fontFamily: "var(--fd)", fontWeight: 700, color: "#38bdf8" }}>
+              <div style={{ fontFamily: "var(--fd)", fontWeight: 700, color: "#2B4570" }}>
                 {t("auth.cold_storage_details")}
               </div>
             </div>
@@ -345,7 +345,7 @@ export default function SignupPage() {
               </div>
 
               {error && (
-                <div style={{ background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.25)",
+                <div style={{ background: "rgba(139,58,43,.08)", border: "1px solid rgba(139,58,43,.25)",
                   color: "var(--danger)", borderRadius: "10px", padding: "10px 14px", fontSize: "13px" }}>
                   {error}
                 </div>

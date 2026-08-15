@@ -18,7 +18,7 @@ function CapacityDonut({ total, available, label }) {
   const r      = 36;
   const circum = 2 * Math.PI * r;
   const dash   = circum * pct;
-  const color  = pct > .8 ? "#DC2626" : pct > .5 ? "#D97706" : "#16A34A";
+  const color  = pct > .8 ? "#8B3A2B" : pct > .5 ? "#B4741E" : "#3F6B33";
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"6px" }}>
       <div style={{ position:"relative" }}>
@@ -56,7 +56,7 @@ function UtilizationChart({ storages }) {
   const values = days.map((_, i) => Math.max(10, Math.round(base + (Math.sin(i*1.2)*12) + (Math.cos(i*0.8)*6))));
   const max    = Math.max(...values, 1);
   const todayIdx = (new Date().getDay() + 6) % 7;
-  const colorFor = v => v > 80 ? "#DC2626" : v > 60 ? "#D97706" : "#16A34A";
+  const colorFor = v => v > 80 ? "#8B3A2B" : v > 60 ? "#B4741E" : "#3F6B33";
   return (
     <div style={{ padding:"16px 20px" }}>
       <div style={{ fontSize:"11px", fontWeight:700, textTransform:"uppercase",
@@ -595,7 +595,7 @@ export default function OperatorPage() {
             <h1 style={{ fontSize:"22px", fontWeight:800, color:"var(--tx)", display:"flex", alignItems:"center", gap:"10px" }}>
               Operator Dashboard
               <span style={{ fontSize:"10px", fontWeight:700, color:"var(--cp)",
-                background:"rgba(56,189,248,.12)", border:"1px solid rgba(56,189,248,.3)",
+                background:"rgba(43,69,112,.12)", border:"1px solid rgba(43,69,112,.3)",
                 borderRadius:"99px", padding:"2px 10px", display:"flex", alignItems:"center", gap:"5px" }}>
                 <span style={{ width:"6px", height:"6px", borderRadius:"50%", background:"var(--cp)",
                   display:"inline-block", animation:"ping 1.5s ease-in-out infinite" }}/>
@@ -741,7 +741,7 @@ export default function OperatorPage() {
       {activeTab === "confirmed" && (
         <div>
           <div style={{ background:"rgba(59,130,246,.08)", border:"1px solid rgba(59,130,246,.2)",
-            borderRadius:"10px", padding:"10px 14px", fontSize:"12px", color:"#2563EB",
+            borderRadius:"10px", padding:"10px 14px", fontSize:"12px", color:"#2B4570",
             marginBottom:"16px" }}>
             ℹ️ These bookings are confirmed and awaiting payment from the farmer.
           </div>
@@ -777,7 +777,7 @@ export default function OperatorPage() {
       {/* ── PAID ── */}
       {activeTab === "paid" && (
         <div>
-          <div style={{ background:"rgba(22,163,74,.08)", border:"1px solid rgba(22,163,74,.2)",
+          <div style={{ background:"rgba(63,107,51,.08)", border:"1px solid rgba(63,107,51,.2)",
             borderRadius:"10px", padding:"10px 14px", fontSize:"12px", color:"var(--safe)",
             marginBottom:"16px", display:"flex", justifyContent:"space-between" }}>
             <span>✅ Payments received from farmers</span>

@@ -16,9 +16,9 @@ const EMOJI_MAP = {
 };
 
 const RISK_CFG = {
-  SAFE:     { color:"#16A34A", bg:"#DCFCE7", label:"Safe"     },
-  RISKY:    { color:"#D97706", bg:"#FEF3C7", label:"Risky"    },
-  CRITICAL: { color:"#DC2626", bg:"#FEE2E2", label:"Critical" },
+  SAFE:     { color:"#3F6B33", bg:"#DCE8D2", label:"Safe"     },
+  RISKY:    { color:"#B4741E", bg:"#F1E4C6", label:"Risky"    },
+  CRITICAL: { color:"#8B3A2B", bg:"#F0DCD4", label:"Critical" },
 };
 
 // ── Add/Edit Product Modal ───────────────────────────────────────────
@@ -234,7 +234,7 @@ function ProductCard({ product, onEdit, onDelete }) {
           style={{ flex:1, fontSize:"12px", padding:"6px" }}>✏️ Edit</button>
         <button onClick={() => onDelete(product.id)} className="btn btn-ghost"
           style={{ flex:1, fontSize:"12px", padding:"6px", color:"var(--danger)",
-            borderColor:"rgba(220,38,38,.3)" }}>🗑 Remove</button>
+            borderColor:"rgba(139,58,43,.3)" }}>🗑 Remove</button>
       </div>
     </div>
   );

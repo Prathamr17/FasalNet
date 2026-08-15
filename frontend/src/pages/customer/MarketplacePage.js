@@ -4,19 +4,19 @@ import { useTranslation } from "react-i18next";
 import { customerAPI } from "../../services/api";
 
 const CATEGORIES = [
-  { id:"all",        emoji:"🛍️",  label:"All",          color:"#F97316" },
-  { id:"vegetables", emoji:"🥦",  label:"Vegetables",   color:"#16A34A" },
-  { id:"fruits",     emoji:"🍎",  label:"Fruits",       color:"#EF4444" },
-  { id:"leafy",      emoji:"🥬",  label:"Leafy",        color:"#22C55E" },
-  { id:"nuts",       emoji:"🥜",  label:"Nuts",         color:"#D97706" },
-  { id:"grains",     emoji:"🌾",  label:"Grains",       color:"#92400E" },
-  { id:"spices",     emoji:"🌶️", label:"Spices",        color:"#DC2626" },
+  { id:"all",        emoji:"🛍️",  label:"All",          color:"#B4741E" },
+  { id:"vegetables", emoji:"🥦",  label:"Vegetables",   color:"#3F6B33" },
+  { id:"fruits",     emoji:"🍎",  label:"Fruits",       color:"#8B3A2B" },
+  { id:"leafy",      emoji:"🥬",  label:"Leafy",        color:"#3F6B33" },
+  { id:"nuts",       emoji:"🥜",  label:"Nuts",         color:"#B4741E" },
+  { id:"grains",     emoji:"🌾",  label:"Grains",       color:"#8E5B16" },
+  { id:"spices",     emoji:"🌶️", label:"Spices",        color:"#8B3A2B" },
 ];
 
 const RISK_CFG = {
-  SAFE:     { color:"#16A34A", bg:"#DCFCE7", label:"Fresh",    icon:"✓" },
-  RISKY:    { color:"#D97706", bg:"#FEF3C7", label:"Act Soon", icon:"⚡" },
-  CRITICAL: { color:"#DC2626", bg:"#FEE2E2", label:"Urgent",   icon:"⚠" },
+  SAFE:     { color:"#3F6B33", bg:"#DCE8D2", label:"Fresh",    icon:"✓" },
+  RISKY:    { color:"#B4741E", bg:"#F1E4C6", label:"Act Soon", icon:"⚡" },
+  CRITICAL: { color:"#8B3A2B", bg:"#F0DCD4", label:"Urgent",   icon:"⚠" },
 };
 
 // ── Order Modal ───────────────────────────────────────────────────────────

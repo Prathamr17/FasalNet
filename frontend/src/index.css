@@ -1,172 +1,187 @@
-/* FasalNet v6 — Minimal Clean Light Theme */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+/* FasalNet — "Mandi Ledger" Design System
+   Grounded in the APMC rate-board: ruled ledger lines, stamped status marks,
+   mono price digits, husk-paper surfaces. Built for outdoor, sunlit, low-end-
+   Android reading conditions — high contrast, minimal glow, legible at a glance.
+   All variable & class names are unchanged from v6, so this is a drop-in swap. */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 @import "leaflet/dist/leaflet.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════
-   MINIMAL LIGHT DESIGN SYSTEM — all three roles share base tokens
+   MANDI LEDGER DESIGN SYSTEM — all roles share base tokens
    Individual role accents override only --cp, --cp-dark, --cp-pale
 ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Base — shared across all roles */
-  --bg:       #F7F8FA;
-  --bg-l:     #FFFFFF;
-  --bg-m:     #F0F2F5;
-  --bg-d:     #E8EBF0;
-  --bg-card:  #FFFFFF;
+  /* Base — husk-paper ledger surface */
+  --bg:       #F1EEE1;
+  --bg-l:     #FBFAF4;
+  --bg-m:     #E9E4D2;
+  --bg-d:     #DDD6BE;
+  --bg-card:  #FBFAF4;
 
-  --tx:       #111827;
-  --tx-m:     #6B7280;
-  --tx-s:     #9CA3AF;
+  --tx:       #23281F;
+  --tx-m:     #5B6152;
+  --tx-s:     #8B9080;
 
-  --bd:       #E5E7EB;
-  --bd-h:     #D1D5DB;
+  --bd:       #D8D0B6;
+  --bd-h:     #C2B896;
 
-  --safe:     #16A34A;
-  --safe-bg:  #DCFCE7;
-  --warn:     #D97706;
-  --warn-bg:  #FEF3C7;
-  --danger:   #DC2626;
-  --danger-bg:#FEE2E2;
-  --info:     #2563EB;
-  --info-bg:  #DBEAFE;
+  --safe:     #3F7A34;
+  --safe-bg:  #DCE8D4;
+  --warn:     #A6742A;
+  --warn-bg:  #F1E4C6;
+  --danger:   #8B3A2B;
+  --danger-bg:#F0DCD4;
+  --info:     #2B4570;
+  --info-bg:  #DCE2EC;
 
-  --sh:  0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
-  --sh2: 0 1px 2px rgba(0,0,0,.05);
-  --sh3: 0 8px 32px rgba(0,0,0,.10);
+  --sh:  0 1px 0 var(--bd), 0 6px 20px rgba(35,40,31,.06);
+  --sh2: 0 1px 0 rgba(35,40,31,.05);
+  --sh3: 0 10px 34px rgba(35,40,31,.16);
 
-  --r:  10px;
-  --r2: 16px;
+  --r:  6px;
+  --r2: 8px;
 
-  --fd: 'Plus Jakarta Sans', sans-serif;
-  --fb: 'Plus Jakarta Sans', sans-serif;
-  --fm: 'DM Mono', monospace;
+  --fd: 'Fraunces', serif;
+  --fb: 'Work Sans', sans-serif;
+  --fm: 'IBM Plex Mono', monospace;
 
-  /* Default (farmer) accent */
-  --cp:      #16A34A;
-  --cp-dark: #15803D;
-  --cp-pale: #DCFCE7;
-  --cp-glow: rgba(22,163,74,.15);
+  /* Default (farmer) accent — field leaf */
+  --cp:      #3F6B33;
+  --cp-dark: #2E4F25;
+  --cp-pale: #DCE8D2;
+  --cp-glow: rgba(63,107,51,.18);
   --cp-text: #FFFFFF;
 }
 
-/* ── FARMER ACCENT ─────────────────────────────────────── */
+/* ── FARMER ACCENT — field leaf ────────────────────────── */
 [data-role="farmer"] {
-  --cp:      #16A34A;
-  --cp-dark: #15803D;
-  --cp-pale: #DCFCE7;
-  --cp-glow: rgba(22,163,74,.15);
+  --cp:      #3F6B33;
+  --cp-dark: #2E4F25;
+  --cp-pale: #DCE8D2;
+  --cp-glow: rgba(63,107,51,.18);
   --cp-text: #FFFFFF;
 }
 
-/* ── OPERATOR ACCENT ───────────────────────────────────── */
+/* ── OPERATOR ACCENT — godown ledger indigo ────────────── */
 [data-role="operator"] {
-  --cp:      #2563EB;
-  --cp-dark: #1D4ED8;
-  --cp-pale: #DBEAFE;
-  --cp-glow: rgba(37,99,235,.15);
+  --cp:      #2B4570;
+  --cp-dark: #1E2F52;
+  --cp-pale: #DCE2EC;
+  --cp-glow: rgba(43,69,112,.18);
   --cp-text: #FFFFFF;
 }
 
-/* ── CUSTOMER ACCENT ───────────────────────────────────── */
+/* ── CUSTOMER ACCENT — turmeric ─────────────────────────── */
 [data-role="customer"] {
-  --cp:      #F97316;
-  --cp-dark: #EA580C;
-  --cp-pale: #FFEDD5;
-  --cp-glow: rgba(249,115,22,.15);
+  --cp:      #B4741E;
+  --cp-dark: #8E5B16;
+  --cp-pale: #F1E1BF;
+  --cp-glow: rgba(180,116,30,.20);
   --cp-text: #FFFFFF;
 }
 
-/* ── DELIVERY BOY ACCENT ───────────────────────────────────── */
+/* ── DELIVERY BOY ACCENT — brinjal ──────────────────────── */
 [data-role="delivery_boy"] {
-  --cp:      #8B5CF6;
-  --cp-dark: #7C3AED;
-  --cp-pale: #EDE9FE;
-  --cp-glow: rgba(139,92,246,.15);
+  --cp:      #5C3A5C;
+  --cp-dark: #452A45;
+  --cp-pale: #E7DCE7;
+  --cp-glow: rgba(92,58,92,.20);
   --cp-text: #FFFFFF;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DARK THEME — Applied when data-theme="dark"
+   DARK THEME — "Monsoon Night" — Applied when data-theme="dark"
 ═══════════════════════════════════════════════════════════════ */
 
 [data-theme="dark"] {
-  --bg:       #0F1419;
-  --bg-l:     #1A1F2E;
-  --bg-m:     #141922;
-  --bg-d:     #0A0E14;
-  --bg-card:  #1A1F2E;
+  --bg:       #191C16;
+  --bg-l:     #22261D;
+  --bg-m:     #1E211A;
+  --bg-d:     #141610;
+  --bg-card:  #22261D;
 
-  --tx:       #E4E7EB;
-  --tx-m:     #9CA3AF;
-  --tx-s:     #6B7280;
+  --tx:       #EDE8D8;
+  --tx-m:     #A8A78F;
+  --tx-s:     #787866;
 
-  --bd:       #2D3748;
-  --bd-h:     #4A5568;
+  --bd:       #33362A;
+  --bd-h:     #484B3A;
 
-  --safe:     #22C55E;
-  --safe-bg:  rgba(22,163,74,.15);
-  --warn:     #F59E0B;
-  --warn-bg:  rgba(217,119,6,.15);
-  --danger:   #EF4444;
-  --danger-bg:rgba(220,38,38,.15);
-  --info:     #3B82F6;
-  --info-bg:  rgba(37,99,235,.15);
+  --safe:     #6FA85F;
+  --safe-bg:  rgba(63,107,51,.22);
+  --warn:     #D3A552;
+  --warn-bg:  rgba(166,116,42,.22);
+  --danger:   #C77A5F;
+  --danger-bg:rgba(139,58,43,.24);
+  --info:     #7B99CC;
+  --info-bg:  rgba(43,69,112,.24);
 
-  --sh:  0 1px 3px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2);
-  --sh2: 0 1px 2px rgba(0,0,0,.2);
-  --sh3: 0 8px 32px rgba(0,0,0,.3);
+  --sh:  0 1px 0 rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.3);
+  --sh2: 0 1px 0 rgba(0,0,0,.3);
+  --sh3: 0 10px 34px rgba(0,0,0,.45);
 }
 
 /* Dark theme role accents */
 [data-theme="dark"][data-role="farmer"] {
-  --cp:      #22C55E;
-  --cp-dark: #16A34A;
-  --cp-pale: rgba(34,197,94,.15);
-  --cp-glow: rgba(34,197,94,.2);
-  --cp-text: #FFFFFF;
+  --cp:      #6FA85F;
+  --cp-dark: #5B8F4C;
+  --cp-pale: rgba(111,168,95,.20);
+  --cp-glow: rgba(111,168,95,.25);
+  --cp-text: #12160F;
 }
 
 [data-theme="dark"][data-role="operator"] {
-  --cp:      #3B82F6;
-  --cp-dark: #2563EB;
-  --cp-pale: rgba(59,130,246,.15);
-  --cp-glow: rgba(59,130,246,.2);
-  --cp-text: #FFFFFF;
+  --cp:      #7B99CC;
+  --cp-dark: #6383B8;
+  --cp-pale: rgba(123,153,204,.20);
+  --cp-glow: rgba(123,153,204,.25);
+  --cp-text: #12160F;
 }
 
 [data-theme="dark"][data-role="customer"] {
-  --cp:      #FB923C;
-  --cp-dark: #F97316;
-  --cp-pale: rgba(249,115,22,.15);
-  --cp-glow: rgba(249,115,22,.2);
-  --cp-text: #FFFFFF;
+  --cp:      #D9A64E;
+  --cp-dark: #C08F3A;
+  --cp-pale: rgba(217,166,78,.20);
+  --cp-glow: rgba(217,166,78,.25);
+  --cp-text: #12160F;
 }
 
 [data-theme="dark"][data-role="delivery_boy"] {
-  --cp:      #A78BFA;
-  --cp-dark: #8B5CF6;
-  --cp-pale: rgba(139,92,246,.15);
-  --cp-glow: rgba(139,92,246,.2);
-  --cp-text: #FFFFFF;
+  --cp:      #A47AA4;
+  --cp-dark: #8C638C;
+  --cp-pale: rgba(164,122,164,.20);
+  --cp-glow: rgba(164,122,164,.25);
+  --cp-text: #12160F;
 }
 
 /* ═══ RESET & BASE ═════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: var(--fd);
+  font-family: var(--fb);
   background: var(--bg);
   color: var(--tx);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  background-image:
+    linear-gradient(var(--bd) 1px, transparent 1px);
+  background-size: 100% 32px;
+  background-attachment: local;
 }
 
 /* ═══ TYPOGRAPHY ═══════════════════════════════════════════ */
-h1,h2,h3,h4 { font-family: var(--fd); font-weight: 700; line-height: 1.2; }
+h1,h2,h3,h4 {
+  font-family: var(--fd);
+  font-weight: 600;
+  font-optical-sizing: auto;
+  line-height: 1.15;
+  letter-spacing: -.01em;
+}
 
 /* ═══ SCROLLBAR ════════════════════════════════════════════ */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -196,61 +211,69 @@ h1,h2,h3,h4 { font-family: var(--fd); font-weight: 700; line-height: 1.2; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
   gap: 6px; padding: 9px 18px; border-radius: var(--r);
-  font-family: var(--fd); font-weight: 600; font-size: 13px;
-  cursor: pointer; border: none; transition: all .15s;
+  font-family: var(--fb); font-weight: 600; font-size: 13px;
+  letter-spacing: .01em;
+  cursor: pointer; transition: all .15s;
   white-space: nowrap;
 }
 .btn:active { transform: scale(0.98); }
 .btn-primary {
   background: var(--cp); color: var(--cp-text);
-  box-shadow: 0 2px 8px var(--cp-glow);
+  border: 1.5px solid var(--cp-dark);
+  box-shadow: var(--sh2);
 }
 .btn-primary:hover { background: var(--cp-dark); }
 .btn-ghost {
-  background: var(--bg-m); color: var(--tx-m);
+  background: transparent; color: var(--tx-m);
   border: 1.5px solid var(--bd);
 }
-.btn-ghost:hover { border-color: var(--bd-h); color: var(--tx); }
+.btn-ghost:hover { border-color: var(--cp); color: var(--cp); }
 .btn-danger {
   background: var(--danger-bg); color: var(--danger);
-  border: 1.5px solid rgba(220,38,38,.2);
+  border: 1.5px solid var(--danger);
 }
-.btn-danger:hover { background: #FCA5A5; }
+.btn-danger:hover { background: var(--danger); color: #fff; }
 
 /* ═══ CARDS ════════════════════════════════════════════════ */
 .card {
-  background: var(--bg-l);
+  background: var(--bg-card);
   border: 1.5px solid var(--bd);
+  border-top: 2px solid var(--bd-h);
   border-radius: var(--r2);
   box-shadow: var(--sh2);
 }
 
-/* ═══ SECTION LABEL ════════════════════════════════════════ */
+/* ═══ SECTION LABEL — ledger heading rule ═════════════════ */
 .section-label {
-  font-size: 11px; font-weight: 700; letter-spacing: .8px;
+  font-family: var(--fm);
+  font-size: 11px; font-weight: 600; letter-spacing: .08em;
   text-transform: uppercase; color: var(--tx-s);
 }
+.section-label::before { content: "— "; color: var(--bd-h); }
 
 /* ═══ PROGRESS BAR ═════════════════════════════════════════ */
-.prog { height: 6px; background: var(--bg-m); border-radius: 99px; overflow: hidden; }
+.prog { height: 6px; background: var(--bg-m); border-radius: 3px; overflow: hidden; border: 1px solid var(--bd); }
 .prog-fill {
-  height: 100%; border-radius: 99px;
+  height: 100%;
   background: var(--cp);
   width: var(--w, 0%);
   transition: width 1s cubic-bezier(.4,0,.2,1);
 }
 
-/* ═══ BADGES ═══════════════════════════════════════════════ */
+/* ═══ BADGES — rate-board stamp marks ══════════════════════ */
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 10px; border-radius: 99px;
+  padding: 2px 9px; border-radius: 3px;
+  font-family: var(--fm);
   font-size: 11px; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase;
+  border: 1px solid transparent;
 }
-.badge-safe     { background: var(--safe-bg);   color: var(--safe);   }
-.badge-warn     { background: var(--warn-bg);    color: var(--warn);   }
-.badge-danger   { background: var(--danger-bg);  color: var(--danger); }
-.badge-info     { background: var(--info-bg);    color: var(--info);   }
-.badge-neutral  { background: var(--bg-m);       color: var(--tx-m);   }
+.badge-safe     { background: var(--safe-bg);   color: var(--safe);   border-color: var(--safe); }
+.badge-warn     { background: var(--warn-bg);   color: var(--warn);   border-color: var(--warn); }
+.badge-danger   { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+.badge-info     { background: var(--info-bg);   color: var(--info);   border-color: var(--info); }
+.badge-neutral  { background: var(--bg-m);      color: var(--tx-m);   border-color: var(--bd); }
 
 /* ═══ SKELETON ═════════════════════════════════════════════ */
 .skel {
@@ -285,7 +308,7 @@ h1,h2,h3,h4 { font-family: var(--fd); font-weight: 700; line-height: 1.2; }
 .toast {
   position: fixed; bottom: 24px; right: 24px; z-index: 9999;
   background: var(--tx); color: var(--bg-l);
-  padding: 12px 18px; border-radius: var(--r2);
+  padding: 12px 18px; border-radius: var(--r);
   font-size: 13px; font-weight: 600;
   box-shadow: var(--sh3);
   animation: toastIn .3s ease both;
@@ -299,7 +322,7 @@ h1,h2,h3,h4 { font-family: var(--fd); font-weight: 700; line-height: 1.2; }
   height: 36px;
 }
 .minichart-bar {
-  flex: 1; border-radius: 3px 3px 0 0;
+  flex: 1; border-radius: 2px 2px 0 0;
   background: var(--cp);
   opacity: .5;
   transition: opacity .2s;
@@ -313,7 +336,7 @@ h1,h2,h3,h4 { font-family: var(--fd); font-weight: 700; line-height: 1.2; }
   width: 380px; max-width: 100vw;
   background: var(--bg-l);
   border-left: 1.5px solid var(--bd);
-  box-shadow: -8px 0 32px rgba(0,0,0,.10);
+  box-shadow: -8px 0 32px rgba(35,40,31,.14);
   z-index: 9000;
   display: flex; flex-direction: column;
   animation: notifSlide .25s ease both;
@@ -338,7 +361,8 @@ h1,h2,h3,h4 { font-family: var(--fd); font-weight: 700; line-height: 1.2; }
   width: 32px; height: 32px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700;
+  font-family: var(--fm);
+  font-size: 12px; font-weight: 600;
   flex-shrink: 0;
   transition: all .3s;
 }
@@ -358,7 +382,7 @@ h1,h2,h3,h4 { font-family: var(--fd); font-weight: 700; line-height: 1.2; }
 /* ═══ LEAFLET OVERRIDES ════════════════════════════════════ */
 .leaflet-container { font-family: var(--fb) !important; }
 .leaflet-popup-content-wrapper {
-  border-radius: 12px !important;
+  border-radius: var(--r) !important;
   box-shadow: var(--sh3) !important;
   border: 1.5px solid var(--bd) !important;
 }
@@ -367,6 +391,31 @@ h1,h2,h3,h4 { font-family: var(--fd); font-weight: 700; line-height: 1.2; }
 
 /* ═══ CHART DONUT (SVG) ════════════════════════════════════ */
 .donut-ring { transform: rotate(-90deg); transform-origin: center; }
+
+/* ═══ SIGNATURE — MANDI RATE TICKER ════════════════════════
+   The single memorable device: a ruled sub-strip beneath the
+   navbar, styled after the chalk/paint rate boards outside a
+   real APMC mandi gate — mono digits, tick separators, a
+   role-colored pulse dot standing in for "live". ═══════════ */
+.fn-ticker {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 20px;
+  background: var(--bg-m);
+  border-bottom: 1.5px solid var(--bd);
+  font-family: var(--fm);
+  font-size: 10.5px; font-weight: 500;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--tx-m);
+  overflow: hidden; white-space: nowrap;
+}
+.fn-ticker-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cp); flex-shrink: 0;
+  box-shadow: 0 0 0 3px var(--cp-glow);
+  animation: tickerPulse 1.8s ease-in-out infinite;
+}
+@keyframes tickerPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.fn-ticker-sep { color: var(--bd-h); }
 
 /* ═══ UTILITY ══════════════════════════════════════════════ */
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

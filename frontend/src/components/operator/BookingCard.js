@@ -36,7 +36,7 @@ export default function BookingCard({ booking: b, onUpdate }) {
   // Success flash
   if (done) {
     return (
-      <div className="card" style={{ padding:"16px", border:`1.5px solid ${done==="approved"?"rgba(22,163,74,.4)":"rgba(220,38,38,.3)"}`,
+      <div className="card" style={{ padding:"16px", border:`1.5px solid ${done==="approved"?"rgba(63,107,51,.4)":"rgba(139,58,43,.3)"}`,
         background: done==="approved" ? "var(--safe-bg)" : "var(--danger-bg)" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
           <span style={{ fontSize:"22px" }}>{done==="approved" ? "✅" : "❌"}</span>
@@ -115,7 +115,7 @@ export default function BookingCard({ booking: b, onUpdate }) {
           </button>
           <button className="btn btn-ghost" onClick={() => act("approve")} disabled={loading}
             style={{ flex:1, fontSize:"12px", color:"var(--safe)",
-              borderColor:"rgba(22,163,74,.3)", background:"var(--safe-bg)" }}>
+              borderColor:"rgba(63,107,51,.3)", background:"var(--safe-bg)" }}>
             {loading ? "…" : "✓ Approve & Update Capacity"}
           </button>
           <button className="btn btn-danger" onClick={() => act("reject")} disabled={loading}

@@ -192,7 +192,7 @@ function PaymentModal({ booking, onClose, onSuccess }) {
         </div>
 
         {/* Amount */}
-        <div style={{ background:"var(--cp-pale)", border:"1px solid rgba(22,163,74,.2)",
+        <div style={{ background:"var(--cp-pale)", border:"1px solid rgba(63,107,51,.2)",
           borderRadius:"12px", padding:"16px", textAlign:"center", marginBottom:"20px" }}>
           <div style={{ fontSize:"11px", color:"var(--tx-m)", marginBottom:"4px" }}>Total Amount</div>
           <div style={{ fontFamily:"var(--fm)", fontWeight:800, fontSize:"28px", color:"var(--cp)" }}>
@@ -402,7 +402,7 @@ function BookingRow({ booking: b, onCancel, onModify, onPay }) {
 
       {/* Payment CTA for confirmed bookings */}
       {canPay && (
-        <div style={{ background:"rgba(22,163,74,.08)", border:"1px solid rgba(22,163,74,.2)",
+        <div style={{ background:"rgba(63,107,51,.08)", border:"1px solid rgba(63,107,51,.2)",
           borderRadius:"10px", padding:"12px 14px", marginBottom:"12px",
           display:"flex", justifyContent:"space-between", alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
           <div>
@@ -518,7 +518,7 @@ export default function BookingsPage() {
       </div>
 
       {error && (
-        <div style={{ background:"var(--danger-bg)", border:"1px solid rgba(220,38,38,.2)",
+        <div style={{ background:"var(--danger-bg)", border:"1px solid rgba(139,58,43,.2)",
           borderRadius:"10px", padding:"10px 14px", fontSize:"13px", color:"var(--danger)", marginBottom:"16px" }}>
           {error}
         </div>
