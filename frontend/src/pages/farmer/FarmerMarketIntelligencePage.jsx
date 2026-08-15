@@ -8,6 +8,7 @@
 //   6. Removed "Total Records", renamed "Latest DB Date" → "Latest Date", show cities list
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { marketAPI, mlAPI } from "../../services/api";
 
 const PALETTE = [
@@ -509,12 +510,12 @@ function Spin() {
   return <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />;
 }
 
-function StatCard({ label, value, sub, color = "var(--cp)" }) {
+function StatCard({ label, value, sub, color }) {
   return (
-    <div style={{ ...CARD, textAlign: "center" }}>
-      <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".7px", marginBottom: "6px" }}>{label}</div>
-      <div style={{ fontSize: "1.7rem", fontWeight: 900, color, fontFamily: "var(--fd)", lineHeight: 1.1 }}>{value}</div>
-      {sub && <div style={{ fontSize: "11px", color: "var(--tx-s)", marginTop: "4px" }}>{sub}</div>}
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm text-center">
+      <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">{label}</div>
+      <div className="text-2xl font-extrabold leading-tight text-green-600 dark:text-green-500">{value}</div>
+      {sub && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{sub}</div>}
     </div>
   );
 }
@@ -638,6 +639,7 @@ const TABS = [
 ];
 
 export default function FarmerMarketIntelligencePage() {
+  const { t } = useTranslation();
   const [cities,          setCities]          = useState([]);
   const [commodities,     setCommodities]     = useState([]);
   const [syncStatus,      setSyncStatus]      = useState(null);
@@ -762,74 +764,49 @@ export default function FarmerMarketIntelligencePage() {
   const tomorrowFmt = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); })();
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 16px" }}>
+    <div className="max-w-7xl mx-auto px-4 py-6">
 
       {toast && (
-        <div style={{ position: "fixed", bottom: "20px", right: "20px", zIndex: 9999,
-          background: "var(--bg-m)", border: "1px solid var(--bd)", borderRadius: "10px",
-          padding: "10px 16px", fontSize: "13px", color: "var(--tx)", boxShadow: "0 4px 20px rgba(0,0,0,.15)" }}>{toast}</div>
+        <div className="fixed bottom-5 right-5 z-[9999] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-900 dark:text-white shadow-xl">
+          {toast}
+        </div>
       )}
 
       {/* Header */}
-      <div className="anim-fadeup" style={{ marginBottom: "20px" }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+      <div className="animate-[fadeup_0.4s_ease-out] mb-6">
+        <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <h1 style={{ fontSize: "22px", fontWeight: 900, color: "var(--tx)", display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-              📊 Market Intelligence
+            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
+              📊 {t('mi.title', 'Market Intelligence')}
             </h1>
-            <p style={{ fontSize: "13px", color: "var(--tx-m)" }}>
-              Live APMC price data · Maharashtra · Auto-updated daily
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {t('mi.subtitle', 'Live APMC price data · Maharashtra · Auto-updated daily')}
             </p>
           </div>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            {/* Change #6: show "Latest Date" (not "Latest DB Date"), no total rows pill */}
+          <div className="flex gap-2 items-center">
             {syncStatus?.newest && (
-              <div style={{ fontSize: "11px", color: "var(--tx-s)", background: "var(--bg-m)",
-                padding: "5px 10px", borderRadius: "20px", border: "1px solid var(--bd)" }}>
-                Latest: {syncStatus.newest}
+              <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
+                {t('mi.latest_date', 'Latest:')} {syncStatus.newest}
               </div>
             )}
             <button onClick={handleSync} disabled={syncing}
-              style={{ ...SECONDARY_BTN, display: "flex", alignItems: "center", gap: "6px" }}>
-              {syncing ? <><Spin /> Syncing…</> : "🔄 Sync Now"}
+              className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 font-bold text-sm cursor-pointer flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+              {syncing ? <><Spin /> Syncing…</> : `🔄 ${t('mi.sync_now', 'Sync Now')}`}
             </button>
           </div>
         </div>
       </div>
 
-      {/* KPI row — Change #6: removed Total Records, renamed Latest DB Date → Latest Date, show Cities inline */}
+      {/* Market Overview & Crop Cards */}
       {syncStatus && (
-        <div style={{ marginBottom: "20px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: "10px", marginBottom: "10px" }}>
-            <StatCard label="Latest Date" value={syncStatus.newest || "—"}
-              sub={syncStatus.oldest ? `from ${syncStatus.oldest}` : ""} color="#2B4570" />
-            <StatCard label="Cities Tracked" value={cities.length || "—"} color="#B4741E" />
-            <StatCard label="Commodities"    value={commodities.length || "—"} color="#5C3A5C" />
+        <div className="mb-6">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">{t('mi.market_overview', 'Market Overview')}</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <StatCard label={t('mi.latest_date', 'Latest Date')} value={syncStatus.newest || "—"} sub={syncStatus.oldest ? `from ${syncStatus.oldest}` : ""} color="#16a34a" />
+            <StatCard label={t('mi.cities_tracked', 'Cities Tracked')} value={cities.length || "—"} color="#16a34a" />
+            <StatCard label={t('mi.commodities', 'Commodities')} value={commodities.length || "—"} color="#16a34a" />
+            <StatCard label="Live APMC Data" value="Active" color="#16a34a" />
           </div>
-          {/* Cities list reveal */}
-          {syncStatus.cities?.length > 0 && (
-            <div style={{ ...CARD, padding: "12px 16px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showCitiesPanel ? "10px" : 0 }}>
-                <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-m)", textTransform: "uppercase", letterSpacing: ".6px" }}>
-                  🏙 Cities in Database ({syncStatus.cities.length})
-                </span>
-                <button onClick={() => setShowCitiesPanel(p => !p)}
-                  style={{ ...SECONDARY_BTN, padding: "3px 10px", fontSize: "10px" }}>
-                  {showCitiesPanel ? "Hide ▲" : "Show ▼"}
-                </button>
-              </div>
-              {showCitiesPanel && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
-                  {syncStatus.cities.map(c => (
-                    <span key={c} style={{ fontSize: "11px", background: "var(--bg-l)", border: "1px solid var(--bd)",
-                      borderRadius: "20px", padding: "2px 10px", color: "var(--tx-m)" }}>
-                      {c}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
@@ -924,127 +901,185 @@ export default function FarmerMarketIntelligencePage() {
               </div>
 
               {/* ── ARIMA controls + side panel ── */}
-              <div style={CARD}>
+              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-6 shadow-sm">
                 {/* Section header */}
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-                  <span style={{ fontSize: "1.2rem" }}>📐</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 800, fontSize: "14px", color: "var(--tx)" }}>Forecast</div>
-                    <div style={{ fontSize: "11px", color: "var(--tx-m)" }}>Forecast overlays directly onto the chart above · choose city, crop &amp; horizon</div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600 dark:text-green-400">
+                    <span className="text-xl">📈</span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
+                      {t('mi.forecast_title', 'AI Price Forecast')}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {t('mi.forecast_desc', 'Forecast overlays directly onto the chart above. Select city, crop & horizon.')}
+                    </p>
                   </div>
                 </div>
 
-                {/* Controls row — uses sidebar market/commodity selection */}
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px", flexWrap: "wrap" }}>
-                  <div style={{ fontSize: "12px", color: "var(--tx-m)", flex: 1 }}>
-                    Using: <strong style={{ color: "var(--tx)" }}>{selectedCities[0] || "—"}</strong> · <strong style={{ color: "var(--tx)" }}>{commodity || "—"}</strong>
-                    <span style={{ fontSize: "10px", color: "var(--tx-s)", marginLeft: "6px" }}>(set from sidebar)</span>
+                {/* Controls row */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 mb-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800">
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    {t('mi.using', 'Configured:')}{' '}
+                    <span className="font-semibold text-gray-800 dark:text-white">{selectedCities[0] || '—'}</span>
+                    {' · '}
+                    <span className="font-semibold text-gray-800 dark:text-white">{commodity || '—'}</span>
+                    <span className="text-[10px] text-gray-400 block sm:inline sm:ml-2">({t('mi.from_sidebar', 'from sidebar')})</span>
                   </div>
-                  <div>
-                    <label style={{ ...LBL, marginBottom: "4px" }}>Horizon</label>
-                    <div style={{ display: "flex", gap: "4px" }}>
-                      {[7, 30].map(d => (
-                        <button key={d} onClick={() => setArimaDays(d)} style={{
-                          ...SECONDARY_BTN, padding: "8px 14px", fontSize: "12px",
-                          background: arimaDays === d ? "var(--cp)" : "var(--bg-l)",
-                          color: arimaDays === d ? "white" : "var(--tx-m)",
-                          border: arimaDays === d ? "1px solid var(--cp)" : "1px solid var(--bd)",
-                        }}>{d}d</button>
-                      ))}
+                  
+                  <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('mi.horizon', 'Horizon')}</span>
+                      <div className="flex bg-white dark:bg-gray-800 p-0.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                        {[7, 30].map(d => (
+                          <button
+                            key={d}
+                            onClick={() => setArimaDays(d)}
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                              arimaDays === d
+                                ? 'bg-green-600 text-white shadow-sm'
+                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                            }`}
+                          >
+                            {d}d
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ marginTop: "14px" }}>
-                    <button onClick={handleArimaForecast} disabled={arimaLoading}
-                      style={{ ...BTN, display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
-                      {arimaLoading ? <><Spin /> Forecasting…</> : "🔮 Forecast"}
+                    
+                    <button
+                      onClick={handleArimaForecast}
+                      disabled={arimaLoading}
+                      className="w-full sm:w-auto px-5 py-2 flex items-center justify-center gap-2 text-xs font-bold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-sans"
+                    >
+                      {arimaLoading ? (
+                        <>
+                          <Spin /> {t('mi.forecasting', 'Forecasting...')}
+                        </>
+                      ) : (
+                        <>🔮 {t('mi.run_forecast', 'Run Forecast')}</>
+                      )}
                     </button>
                   </div>
                 </div>
 
                 {arimaError && (
-                  <div style={{ background: "rgba(139,58,43,.08)", border: "1px solid rgba(139,58,43,.25)",
-                    color: "var(--danger)", borderRadius: "10px", padding: "10px 14px", fontSize: "12px", marginBottom: "10px" }}>
+                  <div className="mb-6 p-4 rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/50 text-red-700 dark:text-red-400 text-sm flex items-center gap-2">
                     ⚠️ {arimaError}
                   </div>
                 )}
 
                 {/* ── Side panel: per-day values (shown after forecast runs) ── */}
                 {arimaData ? (
-                  <>
-                    {/* Per-day panel: horizontal scrollable row of day cards */}
-                    <div>
-                      <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-m)",
-                        textTransform: "uppercase", letterSpacing: ".6px", marginBottom: "8px" }}>
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 border-b border-gray-100 dark:border-gray-700/50 pb-2">
+                      <span className="text-xs font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         📅 {arimaDays}-Day Daily Forecast — {arimaData.city} · {arimaData.commodity}
-                      </div>
+                      </span>
+                    </div>
 
-                      {/* Summary stats row */}
-                      {(() => {
-                        const prices  = arimaData.forecast.map(p => p.price);
-                        const avg     = prices.reduce((a, b) => a + b, 0) / prices.length;
-                        const delta   = prices[prices.length - 1] - prices[0];
-                        const peak    = Math.max(...arimaData.forecast.map(p => p.max_price));
-                        const trough  = Math.min(...arimaData.forecast.map(p => p.min_price));
+                    {/* Summary stats grid */}
+                    {(() => {
+                      const prices = arimaData.forecast.map(p => p.price);
+                      const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+                      const delta = prices[prices.length - 1] - prices[0];
+                      const peak = Math.max(...arimaData.forecast.map(p => p.max_price));
+                      const trough = Math.min(...arimaData.forecast.map(p => p.min_price));
+                      
+                      return (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {[
+                            {
+                              label: t('mi.avg_price', 'Avg Price'),
+                              val: `₹${Math.round(avg).toLocaleString('en-IN')}`,
+                              colorClass: 'text-purple-600 dark:text-purple-400',
+                              bgClass: 'bg-purple-50/50 dark:bg-purple-950/10 border-purple-100 dark:border-purple-900/30'
+                            },
+                            {
+                              label: t('mi.forecast_trend', 'Forecasted Trend'),
+                              val: `${delta >= 0 ? '▲' : '▼'} ₹${Math.abs(Math.round(delta)).toLocaleString('en-IN')}`,
+                              colorClass: delta >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400',
+                              bgClass: delta >= 0 
+                                ? 'bg-green-50/50 dark:bg-green-950/10 border-green-100 dark:border-green-900/30' 
+                                : 'bg-red-50/50 dark:bg-red-950/10 border-red-100 dark:border-red-900/30'
+                            },
+                            {
+                              label: t('mi.peak_max', 'Peak (Max)'),
+                              val: `₹${Math.round(peak).toLocaleString('en-IN')}`,
+                              colorClass: 'text-amber-600 dark:text-amber-400',
+                              bgClass: 'bg-amber-50/50 dark:bg-amber-950/10 border-amber-100 dark:border-amber-900/30'
+                            },
+                            {
+                              label: t('mi.floor_min', 'Floor (Min)'),
+                              val: `₹${Math.round(trough).toLocaleString('en-IN')}`,
+                              colorClass: 'text-blue-600 dark:text-blue-400',
+                              bgClass: 'bg-blue-50/50 dark:bg-blue-950/10 border-blue-100 dark:border-blue-900/30'
+                            }
+                          ].map(({ label, val, colorClass, bgClass }) => (
+                            <div key={label} className={`p-4 rounded-xl border text-center transition-all ${bgClass}`}>
+                              <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{label}</div>
+                              <div className={`text-xl font-black ${colorClass} tracking-tight`}>{val}</div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Daily horizontal cards */}
+                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
+                      {arimaData.forecast.map((pt, i) => {
+                        const prevPrice = i === 0 ? arimaData.last_actual_price : arimaData.forecast[i - 1].price;
+                        const change = pt.price - prevPrice;
+                        const isUp = change >= 0;
                         return (
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "8px", marginBottom: "12px" }}>
-                            {[
-                              { label: "Avg Price",    val: `₹${Math.round(avg).toLocaleString("en-IN")}`,           color: "#5C3A5C" },
-                              { label: "Trend",        val: `${delta >= 0 ? "▲" : "▼"} ₹${Math.abs(Math.round(delta)).toLocaleString("en-IN")}`, color: delta >= 0 ? "#3F6B33" : "#8B3A2B" },
-                              { label: "Peak (Max)",   val: `₹${Math.round(peak).toLocaleString("en-IN")}`,          color: "#B4741E" },
-                              { label: "Floor (Min)",  val: `₹${Math.round(trough).toLocaleString("en-IN")}`,        color: "#2B4570" },
-                            ].map(({ label, val, color }) => (
-                              <div key={label} style={{ background: "var(--bg-l)", borderRadius: "10px",
-                                padding: "10px 12px", border: "1px solid var(--bd)", textAlign: "center" }}>
-                                <div style={{ fontSize: "9px", color: "var(--tx-s)", textTransform: "uppercase",
-                                  letterSpacing: ".5px", marginBottom: "4px" }}>{label}</div>
-                                <div style={{ fontWeight: 900, fontSize: "14px", color, fontFamily: "var(--fd)" }}>{val}</div>
+                          <div
+                            key={i}
+                            className={`min-w-[110px] flex-shrink-0 bg-white dark:bg-gray-800 border rounded-xl p-3 text-center transition-all hover:scale-105 duration-200 ${
+                              isUp 
+                                ? 'border-t-4 border-t-green-500 border-gray-200 dark:border-gray-700' 
+                                : 'border-t-4 border-t-red-500 border-red-100 dark:border-red-900/50 bg-red-50/10 dark:bg-red-950/5'
+                            }`}
+                          >
+                            <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+                              Day {i + 1}
+                              <span className="block text-[8px] font-normal text-gray-400 dark:text-gray-500 mt-0.5">{pt.date.slice(5)}</span>
+                            </div>
+                            
+                            <div className="font-extrabold text-sm text-gray-950 dark:text-white mb-1">
+                              ₹{pt.price.toLocaleString('en-IN')}
+                            </div>
+                            
+                            <div className={`text-[10px] font-bold mb-3 flex items-center justify-center gap-0.5 ${
+                              isUp ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {isUp ? '▲' : '▼'} ₹{Math.abs(Math.round(change)).toLocaleString('en-IN')}
+                            </div>
+                            
+                            <div className="text-[9px] text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/50 pt-2 space-y-0.5">
+                              <div className="flex justify-between gap-1">
+                                <span className="text-[8px] text-gray-400">H:</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">₹{Math.round(pt.max_price).toLocaleString('en-IN')}</span>
                               </div>
-                            ))}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Day-by-day horizontal cards — scrollable */}
-                      <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "6px" }}>
-                        {arimaData.forecast.map((pt, i) => {
-                          const prevPrice = i === 0 ? arimaData.last_actual_price : arimaData.forecast[i - 1].price;
-                          const change    = pt.price - prevPrice;
-                          return (
-                            <div key={i} style={{
-                              minWidth: "88px", flexShrink: 0,
-                              background: change < 0 ? "rgba(139,58,43,.07)" : "var(--bg-l)",
-                              border: `1px solid ${change < 0 ? "rgba(139,58,43,.25)" : "var(--bd)"}`,
-                              borderRadius: "10px", padding: "10px 8px", textAlign: "center",
-                              borderTop: `3px solid ${change >= 0 ? "#3F6B33" : "#8B3A2B"}`,
-                            }}>
-                              <div style={{ fontSize: "9px", fontWeight: 700, color: "var(--tx-s)",
-                                marginBottom: "4px", whiteSpace: "nowrap" }}>
-                                Day {i + 1} · {pt.date.slice(5)}
-                              </div>
-                              <div style={{ fontWeight: 900, fontSize: "13px", color: "#5C3A5C",
-                                fontFamily: "var(--fd)", marginBottom: "3px" }}>
-                                ₹{pt.price.toLocaleString("en-IN")}
-                              </div>
-                              <div style={{ fontSize: "9px", color: change >= 0 ? "#3F6B33" : "#8B3A2B",
-                                fontWeight: 700, marginBottom: "5px" }}>
-                                {change >= 0 ? "▲" : "▼"} ₹{Math.abs(Math.round(change)).toLocaleString("en-IN")}
-                              </div>
-                              <div style={{ fontSize: "8px", color: "var(--tx-s)", lineHeight: 1.5 }}>
-                                H: ₹{pt.max_price.toLocaleString("en-IN")}<br />
-                                L: ₹{pt.min_price.toLocaleString("en-IN")}
+                              <div className="flex justify-between gap-1">
+                                <span className="text-[8px] text-gray-400">L:</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">₹{Math.round(pt.min_price).toLocaleString('en-IN')}</span>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </>
+                  </div>
                 ) : (
                   !arimaLoading && (
-                    <div style={{ padding: "24px", textAlign: "center", color: "var(--tx-s)", fontSize: "13px",
-                      background: "var(--bg-l)", borderRadius: "10px", border: "1px dashed var(--bd)" }}>
-                      Select a city &amp; commodity above, pick 7 or 30 day horizon, then click <strong>Run ARIMA</strong>.<br />
-                      <span style={{ fontSize: "11px", marginTop: "4px", display: "block" }}>The forecast will overlay directly on the trend chart above.</span>
+                    <div className="p-8 text-center bg-gray-50 dark:bg-gray-900/20 border border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
+                      <span className="text-2xl mb-2 block">🔮</span>
+                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                        {t('mi.no_forecast', 'No forecast runs active')}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {t('mi.no_forecast_sub', 'Select a city & commodity, choose horizon, and click Run Forecast to overlay predictions.')}
+                      </p>
                     </div>
                   )
                 )}
