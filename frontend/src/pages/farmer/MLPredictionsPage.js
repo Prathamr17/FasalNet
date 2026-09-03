@@ -1,9 +1,7 @@
-// pages/farmer/MLPredictionsPage.js — v10
-// Spoilage Risk removed → moved to DiscoverPage (with map integration)
-// Remaining: Price Prediction + Market Recommendation
-// These are the two "regular prediction" models as per v10 spec
-
+// pages/farmer/MLPredictionsPage.js — v11: Fully localized & farmer-friendly ML Advisor
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { mlAPI } from "../../services/api";
 
 const INP = {
@@ -46,6 +44,7 @@ function Spin() {
 
 // ── TOOL 1: Price Prediction ──────────────────────────────────────────────
 function PricePrediction({ meta }) {
+  const { t } = useTranslation();
   const [form, setForm]     = useState({ state:"Maharashtra", district:"Pune",
     market:"Pune", commodity:"Onion", variety:"Local", grade:"FAQ",
     month:String(new Date().getMonth() + 1) });
@@ -72,10 +71,10 @@ function PricePrediction({ meta }) {
         <span style={{ fontSize:"2rem" }}>💰</span>
         <div>
           <h3 style={{ fontSize:"16px", fontWeight:800, color:"var(--tx)", marginBottom:"2px" }}>
-            Crop Price Prediction
+            {t("ml.price_title")}
           </h3>
           <p style={{ fontSize:"12px", color:"var(--tx-m)" }}>
-            Predict expected modal market price (₹/Quintal) using XGBoost / Random Forest
+            {t("ml.price_sub")}
           </p>
         </div>
       </div>
@@ -83,14 +82,14 @@ function PricePrediction({ meta }) {
       <form onSubmit={handleSubmit}>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"14px" }}>
           <div>
-            <label style={LBL}>State</label>
+            <label style={LBL}>{t("ml.state")}</label>
             <select style={INP} value={form.state}
               onChange={e => { set("state",e.target.value); set("district",""); set("market",""); }}>
               {(meta?.states || ["Maharashtra"]).map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div>
-            <label style={LBL}>District</label>
+            <label style={LBL}>{t("ml.district")}</label>
             <select style={INP} value={form.district}
               onChange={e => { set("district",e.target.value); set("market",e.target.value); }}>
               {(districts.length ? districts : ["Pune","Mumbai","Nashik"]).map(d =>
@@ -98,27 +97,27 @@ function PricePrediction({ meta }) {
             </select>
           </div>
           <div>
-            <label style={LBL}>Commodity / Crop</label>
+            <label style={LBL}>{t("ml.commodity")}</label>
             <select style={INP} value={form.commodity} onChange={e => set("commodity",e.target.value)}>
               {(meta?.commodities || ["Onion","Tomato","Potato"]).map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label style={LBL}>Variety</label>
+            <label style={LBL}>{t("ml.variety")}</label>
             <select style={INP} value={form.variety} onChange={e => set("variety",e.target.value)}>
               {(meta?.varieties || ["Local","Hybrid","FAQ"]).map(v => <option key={v}>{v}</option>)}
             </select>
           </div>
           <div>
-            <label style={LBL}>Grade</label>
+            <label style={LBL}>{t("ml.grade")}</label>
             <select style={INP} value={form.grade} onChange={e => set("grade",e.target.value)}>
               {(meta?.grades || ["FAQ","Grade A","Grade B"]).map(g => <option key={g}>{g}</option>)}
             </select>
           </div>
           <div>
-            <label style={LBL}>Month</label>
+            <label style={LBL}>{t("ml.month")}</label>
             <select style={INP} value={form.month} onChange={e => set("month",e.target.value)}>
-              {(meta?.month_names || []).map((m,i) =>
+              {(meta?.month_names || ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]).map((m,i) =>
                 <option key={m} value={i+1}>{m}</option>)}
             </select>
           </div>
@@ -127,7 +126,7 @@ function PricePrediction({ meta }) {
         {error && <div style={ERR_BOX}>{error}</div>}
         <button type="submit" disabled={loading}
           style={{ ...BTN_PRIMARY, display:"flex", alignItems:"center", gap:"8px" }}>
-          {loading ? <><Spin/> Predicting…</> : "🔮 Predict Price"}
+          {loading ? <><Spin/> {t("ml.predicting")}</> : t("ml.predict_price_btn")}
         </button>
       </form>
 
@@ -135,11 +134,11 @@ function PricePrediction({ meta }) {
         <div className="anim-fadeup" style={{ marginTop:"20px", ...CARD }}>
           <div style={{ textAlign:"center", marginBottom:"12px" }}>
             <div style={{ fontSize:"11px", color:"var(--tx-m)", textTransform:"uppercase",
-              letterSpacing:"1px", marginBottom:"6px" }}>Predicted Modal Price</div>
+              letterSpacing:"1px", marginBottom:"6px" }}>{t("ml.expected_price")}</div>
             <div style={{ fontSize:"3rem", fontWeight:900, color:"var(--cp)", fontFamily:"var(--fd)" }}>
               ₹{result.prediction?.toLocaleString("en-IN")}
             </div>
-            <div style={{ fontSize:"13px", color:"var(--tx-m)" }}>per Quintal (100 kg)</div>
+            <div style={{ fontSize:"13px", color:"var(--tx-m)" }}>{t("ml.per_quintal")} (100 kg)</div>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"8px" }}>
             {[
@@ -155,14 +154,12 @@ function PricePrediction({ meta }) {
               </div>
             ))}
           </div>
-          {/* Quick link to Market Intelligence for ARIMA context */}
           <div style={{ marginTop:"14px", padding:"10px 14px",
             background:"rgba(43,69,112,.06)", border:"1px solid rgba(43,69,112,.15)",
             borderRadius:"10px", fontSize:"12px", color:"var(--tx-m)" }}>
-            💡 Compare with live APMC data →{" "}
-            <a href="/market" style={{ color:"var(--cp)", fontWeight:700, textDecoration:"none" }}>
-              Market Intelligence
-            </a>
+            💡 <Link to="/market" style={{ color:"var(--cp)", fontWeight:700, textDecoration:"none" }}>
+              {t("nav.market")} → {t("market.title")}
+            </Link>
           </div>
         </div>
       )}
@@ -172,6 +169,7 @@ function PricePrediction({ meta }) {
 
 // ── TOOL 2: Market Recommendation ────────────────────────────────────────
 function MarketRecommendation({ meta }) {
+  const { t } = useTranslation();
   const [form, setForm]     = useState({ commodity:"Onion", variety:"Local",
     grade:"FAQ", state:"Maharashtra", month:String(new Date().getMonth() + 1) });
   const [loading, setLoad]  = useState(false);
@@ -196,10 +194,10 @@ function MarketRecommendation({ meta }) {
         <span style={{ fontSize:"2rem" }}>🗺️</span>
         <div>
           <h3 style={{ fontSize:"16px", fontWeight:800, color:"var(--tx)", marginBottom:"2px" }}>
-            Best Market Finder
+            {t("ml.market_title")}
           </h3>
           <p style={{ fontSize:"12px", color:"var(--tx-m)" }}>
-            Find which market offers the highest predicted price for your crop
+            {t("ml.market_sub")}
           </p>
         </div>
       </div>
@@ -207,27 +205,27 @@ function MarketRecommendation({ meta }) {
       <form onSubmit={handleSubmit}>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"14px" }}>
           <div>
-            <label style={LBL}>Commodity</label>
+            <label style={LBL}>{t("ml.commodity")}</label>
             <select style={INP} value={form.commodity} onChange={e => set("commodity",e.target.value)}>
               {(meta?.commodities || []).map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label style={LBL}>State</label>
+            <label style={LBL}>{t("ml.state")}</label>
             <select style={INP} value={form.state} onChange={e => set("state",e.target.value)}>
               {(meta?.states || ["Maharashtra"]).map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div>
-            <label style={LBL}>Variety</label>
+            <label style={LBL}>{t("ml.variety")}</label>
             <select style={INP} value={form.variety} onChange={e => set("variety",e.target.value)}>
               {(meta?.varieties || ["Local","Hybrid"]).map(v => <option key={v}>{v}</option>)}
             </select>
           </div>
           <div>
-            <label style={LBL}>Month</label>
+            <label style={LBL}>{t("ml.month")}</label>
             <select style={INP} value={form.month} onChange={e => set("month",e.target.value)}>
-              {(meta?.month_names || []).map((m,i) =>
+              {(meta?.month_names || ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]).map((m,i) =>
                 <option key={m} value={i+1}>{m}</option>)}
             </select>
           </div>
@@ -236,7 +234,7 @@ function MarketRecommendation({ meta }) {
         {error && <div style={ERR_BOX}>{error}</div>}
         <button type="submit" disabled={loading}
           style={{ ...BTN_PRIMARY, display:"flex", alignItems:"center", gap:"8px" }}>
-          {loading ? <><Spin/> Finding Markets…</> : "🔍 Find Best Markets"}
+          {loading ? <><Spin/> {t("ml.predicting")}</> : t("ml.find_best_market_btn")}
         </button>
       </form>
 
@@ -245,7 +243,7 @@ function MarketRecommendation({ meta }) {
           {result.best_market && (
             <div style={{ background:"linear-gradient(135deg,var(--cp),var(--cp-dark))",
               borderRadius:"14px", padding:"20px", textAlign:"center", marginBottom:"14px" }}>
-              <div style={{ fontSize:"1.2rem", marginBottom:"4px" }}>🏆 Best Market</div>
+              <div style={{ fontSize:"1.2rem", marginBottom:"4px" }}>🏆 {t("ml.highest_price_market")}</div>
               <div style={{ fontSize:"1.5rem", fontWeight:900, color:"white",
                 fontFamily:"var(--fd)", marginBottom:"2px" }}>{result.best_market.market}</div>
               <div style={{ fontSize:"13px", color:"rgba(255,255,255,.8)", marginBottom:"10px" }}>
@@ -254,7 +252,7 @@ function MarketRecommendation({ meta }) {
               <div style={{ fontSize:"2.5rem", fontWeight:900, color:"white", fontFamily:"var(--fd)" }}>
                 ₹{result.best_market.predicted_price?.toLocaleString("en-IN")}
               </div>
-              <div style={{ fontSize:"12px", color:"rgba(255,255,255,.7)" }}>per Quintal</div>
+              <div style={{ fontSize:"12px", color:"rgba(255,255,255,.7)" }}>{t("ml.per_quintal")}</div>
             </div>
           )}
           <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
@@ -285,15 +283,16 @@ function MarketRecommendation({ meta }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────
-const TABS = [
-  { icon:"💰", label:"Price Prediction" },
-  { icon:"🗺️", label:"Best Market"     },
-];
-
 export default function MLPredictionsPage() {
+  const { t } = useTranslation();
   const [meta,      setMeta]   = useState(null);
   const [metaErr,   setMetaErr]= useState(false);
   const [activeTab, setActive] = useState(0);
+
+  const TABS = [
+    { icon:"💰", label: t("ml.tab_price")  },
+    { icon:"🗺️", label: t("ml.tab_market") },
+  ];
 
   useEffect(() => {
     mlAPI.metadata()
@@ -306,25 +305,24 @@ export default function MLPredictionsPage() {
       <div className="anim-fadeup" style={{ marginBottom:"24px" }}>
         <h1 style={{ fontSize:"22px", fontWeight:800, color:"var(--tx)", marginBottom:"4px",
           display:"flex", alignItems:"center", gap:"8px" }}>
-          🤖 ML Predictions
+          🤖 {t("ml.title")}
         </h1>
         <p style={{ fontSize:"13px", color:"var(--tx-m)" }}>
-          Predict crop prices and find the best-paying market for your produce.
+          {t("ml.subtitle")}
         </p>
-        {/* Guide banner pointing to related pages */}
         <div style={{ display:"flex", gap:"8px", marginTop:"10px", flexWrap:"wrap" }}>
-          <a href="/market" style={{ display:"inline-flex", alignItems:"center", gap:"5px",
+          <Link to="/market" style={{ display:"inline-flex", alignItems:"center", gap:"5px",
             fontSize:"11px", fontWeight:700, color:"var(--cp)", textDecoration:"none",
             background:"var(--cp-pale)", padding:"4px 10px", borderRadius:"20px",
             border:"1px solid var(--cp)" }}>
-            📊 Live APMC Data + ARIMA → Market Intelligence
-          </a>
-          <a href="/discover" style={{ display:"inline-flex", alignItems:"center", gap:"5px",
+            📊 {t("nav.market")} → {t("market.title")}
+          </Link>
+          <Link to="/discover" style={{ display:"inline-flex", alignItems:"center", gap:"5px",
             fontSize:"11px", fontWeight:700, color:"#B4741E", textDecoration:"none",
             background:"rgba(180,116,30,.08)", padding:"4px 10px", borderRadius:"20px",
             border:"1px solid rgba(180,116,30,.3)" }}>
-            🌿 Crop Spoilage Risk → Discover Storage
-          </a>
+            🌿 {t("nav.discover")} → {t("farmer.title")}
+          </Link>
         </div>
       </div>
 
@@ -333,12 +331,11 @@ export default function MLPredictionsPage() {
           background:"rgba(139,58,43,.06)", border:"1px solid rgba(139,58,43,.2)" }}>
           <span style={{ color:"var(--danger)", fontSize:"13px" }}>
             ⚠️ Could not load ML metadata. Showing default options.
-            Check that the backend is running and models are configured.
           </span>
         </div>
       )}
 
-      {/* Tabs — underline style, not a pill/nav-bar style */}
+      {/* Tabs */}
       <div style={{ display:"flex", gap:"0", marginBottom:"20px",
         borderBottom:"2px solid var(--bd)" }}>
         {TABS.map((tab, i) => (
@@ -363,17 +360,6 @@ export default function MLPredictionsPage() {
       <div key={activeTab}>
         {activeTab === 0 && <PricePrediction      meta={meta} />}
         {activeTab === 1 && <MarketRecommendation meta={meta} />}
-      </div>
-
-      <div className="card anim-fadeup d3" style={{ marginTop:"20px", padding:"16px",
-        display:"flex", gap:"10px", alignItems:"flex-start" }}>
-        <span style={{ fontSize:"1.2rem", flexShrink:0 }}>ℹ️</span>
-        <div style={{ fontSize:"12px", color:"var(--tx-m)", lineHeight:1.6 }}>
-          <strong style={{ color:"var(--tx)" }}>About these models:</strong> Price models
-          use historical APMC mandi data (XGBoost / Random Forest). Use as{" "}
-          <strong>reference estimates</strong> — cross-reference with live APMC trends
-          on the <a href="/market" style={{ color:"var(--cp)" }}>Market Intelligence</a> page.
-        </div>
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

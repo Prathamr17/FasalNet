@@ -1,175 +1,179 @@
-// pages/HomePage.js — v7: premium smart-agriculture redesign
+// pages/HomePage.js — Fully localized farmer-first landing page
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
-import Reveal from "../components/common/Reveal";
 
 export default function HomePage() {
-  const { user } = useAuth();
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   const STATS = [
-    { num: "₹17B", label: t("home.stat_loss_label"),    sub: t("home.stat_loss_sub"),    emoji: "💰" },
-    { num: "25+",  label: t("home.stat_storage_label"),  sub: t("home.stat_storage_sub"), emoji: "🏭" },
-    { num: "<60s", label: t("home.stat_speed_label"),    sub: t("home.stat_speed_sub"),   emoji: "⚡" },
-    { num: "3",    label: t("home.stat_lang_label"),     sub: t("home.stat_lang_sub"),    emoji: "🌐" },
-  ];
-  const STEPS = [
-    { n: "01", emoji: "🌾", title: t("home.step1_title"), desc: t("home.step1_desc") },
-    { n: "02", emoji: "🤖", title: t("home.step2_title"), desc: t("home.step2_desc") },
-    { n: "03", emoji: "🗺",  title: t("home.step3_title"), desc: t("home.step3_desc") },
-    { n: "04", emoji: "✅", title: t("home.step4_title"), desc: t("home.step4_desc") },
-  ];
-  const ROLES = [
-    { emoji: "🌾", label: t("nav.role_farmer"),   color: "#3F6B33", bg: "#DCE8D2", desc: t("home.role_farmer_desc") },
-    { emoji: "🏭", label: t("nav.role_operator"), color: "#2B4570", bg: "#DCE2EC", desc: t("home.role_operator_desc") },
-    { emoji: "🛒", label: t("nav.role_customer"), color: "#B4741E", bg: "#F1E1BF", desc: t("home.role_customer_desc") },
+    { num: t("home.stat_1_num"), label: t("home.stat_1_lbl"), sub: t("home.stat_1_sub"), emoji: "💰" },
+    { num: t("home.stat_2_num"), label: t("home.stat_2_lbl"), sub: t("home.stat_2_sub"), emoji: "🏭" },
+    { num: t("home.stat_3_num"), label: t("home.stat_3_lbl"), sub: t("home.stat_3_sub"), emoji: "⚡" },
+    { num: t("home.stat_4_num"), label: t("home.stat_4_lbl"), sub: t("home.stat_4_sub"), emoji: "🌐" },
   ];
 
-  const goToPath = user?.role === "farmer" ? "/discover"
-    : user?.role === "operator" ? "/operator"
-    : user?.role === "customer" ? "/marketplace"
-    : user?.role === "delivery_boy" ? "/delivery" : "/";
-  const goToLabel = user?.role === "farmer" ? t("nav.discover")
-    : user?.role === "operator" ? t("nav.dashboard")
-    : user?.role === "customer" ? t("nav.marketplace")
-    : user?.role === "delivery_boy" ? t("nav.deliveries") : "";
+  const STEPS = [
+    { n: "01", emoji: "🌾", title: t("home.step_1_title"), desc: t("home.step_1_desc") },
+    { n: "02", emoji: "🤖", title: t("home.step_2_title"), desc: t("home.step_2_desc") },
+    { n: "03", emoji: "🗺",  title: t("home.step_3_title"), desc: t("home.step_3_desc") },
+    { n: "04", emoji: "✅", title: t("home.step_4_title"), desc: t("home.step_4_desc") },
+  ];
+
+  const ROLES = [
+    { emoji: "🌾", label: t("auth.farmer"),   color: "#3F6B33", bg: "#DCE8D2", desc: t("home.role_farmer_desc") },
+    { emoji: "🏭", label: t("auth.operator"), color: "#2B4570", bg: "#DCE2EC", desc: t("home.role_operator_desc") },
+    { emoji: "🛒", label: t("auth.customer"), color: "#B4741E", bg: "#F1E1BF", desc: t("home.role_customer_desc") },
+  ];
+
+  const FEATURES = [
+    t("home.feature_1"),
+    t("home.feature_2"),
+    t("home.feature_3"),
+    t("home.feature_4"),
+  ];
 
   return (
-    <div>
-      {/* ── Hero — field texture backdrop, organic blob accent ────── */}
-      <section className="field-texture" style={{ position: "relative", overflow: "hidden", padding: "72px 20px 56px" }}>
-        <div className="leaf-blob" style={{ top: "-140px", right: "-120px" }} />
-        <div className="fn-container" style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 720 }}>
-          <Reveal className="chip">{t("home.eyebrow")}</Reveal>
+    <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "40px 20px" }}>
 
-          <Reveal delay={80} as="h1" style={{
-            fontFamily: "var(--fd)", fontWeight: 600,
-            fontSize: "clamp(2.1rem,5.2vw,3.4rem)", lineHeight: 1.15,
-            margin: "20px 0 16px", color: "var(--tx)",
-          }}>
-            {t("home.hero_line1")}<br />
-            <span style={{ color: "var(--cp)" }}>{t("home.hero_highlight")}</span>{" "}
-            <span style={{ color: "var(--tx-m)", fontWeight: 500 }}>{t("home.hero_line2")}</span>
-          </Reveal>
+      {/* Hero */}
+      <section style={{ textAlign: "center", marginBottom: "64px" }} className="anim-fadeup">
+        <div style={{
+          display: "inline-block", fontSize: "11px", fontWeight: 700,
+          textTransform: "uppercase", letterSpacing: "3px",
+          background: "var(--cp-pale)", color: "var(--cp)",
+          padding: "5px 16px", borderRadius: "99px", marginBottom: "20px",
+          border: "1px solid rgba(63,107,51,.2)"
+        }}>
+          {t("home.badge")}
+        </div>
 
-          <Reveal delay={140} as="p" style={{
-            color: "var(--tx-m)", fontSize: "1rem", maxWidth: 500,
-            margin: "0 auto 28px", lineHeight: 1.7,
-          }}>
-            {t("home.hero_sub")}
-          </Reveal>
+        <h1 style={{
+          fontFamily: "var(--fd)", fontWeight: 800,
+          fontSize: "clamp(2rem,5vw,3.2rem)", lineHeight: 1.15,
+          marginBottom: "16px", color: "var(--tx)",
+        }}>
+          {t("home.hero_title_1")}<br/>
+          <span style={{ color: "var(--cp)" }}>{t("home.hero_title_2")}</span>{" "}
+          <span style={{ color: "var(--tx-m)", fontWeight: 600 }}>{t("home.hero_title_3")}</span>
+        </h1>
 
-          <Reveal delay={200} style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 10 }}>
-            {user ? (
-              <Link to={goToPath} className="btn btn-primary hover-lift" style={{ fontSize: 15, padding: "12px 28px" }}>
-                {t("home.go_to")} {goToLabel} →
+        <p style={{ color: "var(--tx-m)", fontSize: "1rem", maxWidth: "520px",
+          margin: "0 auto 28px", lineHeight: 1.7 }}>
+          {t("home.hero_sub")}
+        </p>
+
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "10px" }}>
+          {user ? (
+            <Link to={user.role === "farmer" ? "/discover" : user.role === "operator" ? "/operator" : "/marketplace"}
+              className="btn btn-primary" style={{ fontSize: "15px", padding: "12px 28px" }}>
+              {user.role === "farmer" ? t("home.go_to_discover") : user.role === "operator" ? t("home.go_to_dashboard") : t("home.go_to_marketplace")}
+            </Link>
+          ) : (
+            <>
+              <Link to="/signup" className="btn btn-primary" style={{ fontSize: "15px", padding: "12px 28px" }}>
+                {t("home.get_started_free")}
               </Link>
-            ) : (
-              <>
-                <Link to="/signup" className="btn btn-primary hover-lift" style={{ fontSize: 15, padding: "12px 28px" }}>
-                  {t("home.get_started")}
-                </Link>
-                <Link to="/login" className="btn btn-ghost hover-lift" style={{ fontSize: 15, padding: "12px 24px" }}>
-                  {t("home.sign_in")}
-                </Link>
-              </>
-            )}
-          </Reveal>
+              <Link to="/login" className="btn btn-ghost" style={{ fontSize: "15px", padding: "12px 24px" }}>
+                {t("auth.sign_in")}
+              </Link>
+            </>
+          )}
+        </div>
 
-          <Reveal delay={260} style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 18, flexWrap: "wrap" }}>
-            {[t("home.feat_no_fees"), t("home.feat_2g"), t("home.feat_languages"), t("home.feat_ml")].map((f, i) => (
-              <span key={i} style={{ fontSize: 12, color: "var(--tx-m)" }}>✓ {f}</span>
-            ))}
-          </Reveal>
+        <div style={{ display: "flex", justifyContent: "center", gap: "20px",
+          marginTop: "16px", flexWrap: "wrap" }}>
+          {FEATURES.map((f, i) => (
+            <span key={i} style={{ fontSize: "12px", color: "var(--tx-m)", fontWeight: 500 }}>{f}</span>
+          ))}
         </div>
       </section>
 
-      <div className="fn-container">
-        {/* ── Stats ────────────────────────────────────────────────── */}
-        <section className="fn-section" style={{ paddingTop: 8 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 14 }}>
-            {STATS.map((s, i) => (
-              <Reveal key={i} delay={i * 70} className="card hover-lift" style={{ padding: "22px 16px", textAlign: "center" }}>
-                <div style={{ fontSize: "2rem", marginBottom: 8 }}>{s.emoji}</div>
-                <div style={{ fontFamily: "var(--fm)", fontWeight: 700, fontSize: "1.8rem", color: "var(--cp)", lineHeight: 1 }}>
-                  {s.num}
-                </div>
-                <div style={{ fontWeight: 700, fontSize: 13, color: "var(--tx)", marginTop: 6 }}>{s.label}</div>
-                <div style={{ fontSize: 11, color: "var(--tx-m)", marginTop: 3 }}>{s.sub}</div>
-              </Reveal>
-            ))}
-          </div>
-        </section>
+      {/* Stats */}
+      <section style={{ marginBottom: "56px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: "14px" }}>
+          {STATS.map((s, i) => (
+            <div key={i} className="card anim-fadeup" style={{ padding: "20px 16px",
+              textAlign: "center", animationDelay: `${i * 0.08}s` }}>
+              <div style={{ fontSize: "2rem", marginBottom: "8px" }}>{s.emoji}</div>
+              <div style={{ fontFamily: "var(--fm)", fontWeight: 800, fontSize: "1.9rem",
+                color: "var(--cp)", lineHeight: 1 }}>{s.num}</div>
+              <div style={{ fontWeight: 700, fontSize: "13px", color: "var(--tx)",
+                marginTop: "5px" }}>{s.label}</div>
+              <div style={{ fontSize: "11px", color: "var(--tx-m)", marginTop: "3px" }}>{s.sub}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-        {/* ── Roles ────────────────────────────────────────────────── */}
-        <section className="fn-section" style={{ paddingTop: 0 }}>
-          <Reveal as="h2" style={{
-            fontFamily: "var(--fd)", fontWeight: 600, fontSize: "1.7rem",
-            textAlign: "center", marginBottom: 28, color: "var(--tx)",
-          }}>
-            {t("home.roles_title")}
-          </Reveal>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
-            {ROLES.map((r, i) => (
-              <Reveal key={i} delay={i * 90} className="card hover-lift"
-                style={{ padding: 22, borderTop: `3px solid ${r.color}` }}>
-                <div className="icon-tile" style={{ background: r.bg, marginBottom: 14 }}>{r.emoji}</div>
-                <div style={{ fontWeight: 700, fontSize: 15.5, color: r.color, marginBottom: 8 }}>{r.label}</div>
-                <div style={{ fontSize: 13, color: "var(--tx-m)", lineHeight: 1.6 }}>{r.desc}</div>
-              </Reveal>
-            ))}
-          </div>
-        </section>
+      {/* Roles */}
+      <section style={{ marginBottom: "56px" }}>
+        <h2 style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.6rem",
+          textAlign: "center", marginBottom: "24px", color: "var(--tx)" }}>
+          {t("home.roles_title")}
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: "14px" }}>
+          {ROLES.map((r, i) => (
+            <div key={i} className="card anim-fadeup" style={{ padding: "20px",
+              borderTop: `3px solid ${r.color}`, animationDelay: `${i * 0.1}s` }}>
+              <div style={{ width: "44px", height: "44px", borderRadius: "12px",
+                background: r.bg, display: "flex", alignItems: "center",
+                justifyContent: "center", fontSize: "22px", marginBottom: "12px" }}>
+                {r.emoji}
+              </div>
+              <div style={{ fontWeight: 700, fontSize: "15px", color: r.color, marginBottom: "7px" }}>
+                {r.label}
+              </div>
+              <div style={{ fontSize: "13px", color: "var(--tx-m)", lineHeight: 1.6 }}>{r.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-        {/* ── How it works ─────────────────────────────────────────── */}
-        <section className="fn-section" style={{ paddingTop: 0 }}>
-          <Reveal as="h2" style={{
-            fontFamily: "var(--fd)", fontWeight: 600, fontSize: "1.7rem",
-            textAlign: "center", marginBottom: 28, color: "var(--tx)",
-          }}>
-            {t("home.how_title")}
-          </Reveal>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
-            {STEPS.map((s, i) => (
-              <Reveal key={i} delay={i * 80} className="card hover-lift"
-                style={{ padding: 20, position: "relative", overflow: "hidden" }}>
-                <div style={{
-                  position: "absolute", top: -10, right: 6,
-                  fontFamily: "var(--fm)", fontWeight: 700, fontSize: "3.4rem",
-                  color: "var(--bg-d)", lineHeight: 1, userSelect: "none",
-                }}>{s.n}</div>
-                <span style={{ fontSize: "1.8rem", display: "block", marginBottom: 12 }}>{s.emoji}</span>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--tx)", marginBottom: 6 }}>{s.title}</div>
-                <div style={{ fontSize: 12, color: "var(--tx-m)", lineHeight: 1.6 }}>{s.desc}</div>
-              </Reveal>
-            ))}
-          </div>
-        </section>
+      {/* How it works */}
+      <section style={{ marginBottom: "56px" }}>
+        <h2 style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.6rem",
+          textAlign: "center", marginBottom: "24px", color: "var(--tx)" }}>
+          {t("home.how_title")}
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: "14px" }}>
+          {STEPS.map((s, i) => (
+            <div key={i} className="card anim-fadeup" style={{
+              padding: "18px", position: "relative", overflow: "hidden",
+              animationDelay: `${i * 0.09}s` }}>
+              <div style={{ position: "absolute", top: "-8px", right: "4px",
+                fontFamily: "var(--fm)", fontWeight: 900, fontSize: "3.5rem",
+                color: "var(--bg-d)", lineHeight: 1, userSelect: "none" }}>{s.n}</div>
+              <span style={{ fontSize: "1.8rem", display: "block", marginBottom: "10px" }}>{s.emoji}</span>
+              <div style={{ fontWeight: 700, fontSize: "13px", color: "var(--tx)",
+                marginBottom: "5px" }}>{s.title}</div>
+              <div style={{ fontSize: "12px", color: "var(--tx-m)", lineHeight: 1.6 }}>{s.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-        {/* ── CTA ──────────────────────────────────────────────────── */}
-        <section className="fn-section" style={{ paddingTop: 0 }}>
-          <Reveal className="card-premium hover-lift" style={{
-            padding: "44px 32px", textAlign: "center",
-            background: "linear-gradient(135deg,var(--cp-pale),var(--bg-l))",
-          }}>
-            <div style={{ fontSize: "2.4rem", marginBottom: 12, position: "relative" }}>🚀</div>
-            <h2 style={{
-              fontFamily: "var(--fd)", fontWeight: 600, fontSize: "1.6rem",
-              marginBottom: 8, color: "var(--tx)", position: "relative",
-            }}>
-              {t("home.cta_title")}
-            </h2>
-            <p style={{ color: "var(--tx-m)", fontSize: 13, marginBottom: 22, position: "relative" }}>
-              {t("home.cta_sub")}
-            </p>
-            <Link to="/signup" className="btn btn-primary hover-lift"
-              style={{ fontSize: 14, padding: "12px 28px", position: "relative" }}>
-              {t("home.cta_btn")} →
-            </Link>
-          </Reveal>
-        </section>
-      </div>
+      {/* CTA */}
+      <section>
+        <div className="card" style={{
+          padding: "40px 32px", textAlign: "center",
+          background: "linear-gradient(135deg,var(--cp-pale),var(--bg-l))",
+          border: "1.5px solid rgba(63,107,51,.2)",
+        }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🚀</div>
+          <h2 style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.6rem",
+            marginBottom: "8px", color: "var(--tx)" }}>
+            {t("home.cta_title")}
+          </h2>
+          <p style={{ color: "var(--tx-m)", fontSize: "13px", marginBottom: "20px" }}>
+            {t("home.cta_sub")}
+          </p>
+          <Link to="/signup" className="btn btn-primary" style={{ fontSize: "14px", padding: "12px 28px" }}>
+            {t("home.cta_btn")}
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

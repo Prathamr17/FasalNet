@@ -1,10 +1,14 @@
-// components/map/StorageList.js — v9: live capacity, operator storage support
+// components/map/StorageList.js — v11: Fully localized & clean UI
+import { useTranslation } from "react-i18next";
+
 export default function StorageList({ storages=[], selectedId, riskLevel, onSelect, onBook }) {
+  const { t } = useTranslation();
+
   if (storages.length === 0) {
     return (
       <div style={{ textAlign:"center", padding:"32px 16px", color:"var(--tx-m)" }}>
         <div style={{ fontSize:"2rem", marginBottom:"8px" }}>🏭</div>
-        <div style={{ fontSize:"13px" }}>No storages match the filter.</div>
+        <div style={{ fontSize:"13px" }}>{t("farmer.no_storages_match")}</div>
       </div>
     );
   }
@@ -18,9 +22,7 @@ export default function StorageList({ storages=[], selectedId, riskLevel, onSele
         const isSelected = s.id === selectedId;
         const urgent = riskLevel === "CRITICAL" && idx === 0;
         const isFull = pct >= 95;
-        // flag storages created/updated within last 24h as "new"
-        const isNew = s.created_at &&
-          (Date.now() - new Date(s.created_at).getTime()) < 86400000;
+        const isNew = s.created_at && (Date.now() - new Date(s.created_at).getTime()) < 86400000;
 
         return (
           <div
@@ -44,14 +46,14 @@ export default function StorageList({ storages=[], selectedId, riskLevel, onSele
                     {s.name}
                   </span>
                   {s.verified && (
-                    <span title="Verified operator" style={{ fontSize:"9px", color:"var(--safe)",
+                    <span style={{ fontSize:"9px", color:"var(--safe)",
                       background:"var(--safe-bg)", padding:"1px 6px", borderRadius:"99px",
-                      fontWeight:700, flexShrink:0 }}>✓ Verified</span>
+                      fontWeight:700, flexShrink:0 }}>✓ {t("storage.verified")}</span>
                   )}
                   {isNew && (
                     <span style={{ fontSize:"9px", color:"var(--cp)",
                       background:"rgba(43,69,112,.12)", padding:"1px 6px", borderRadius:"99px",
-                      fontWeight:700, flexShrink:0 }}>New</span>
+                      fontWeight:700, flexShrink:0 }}>{t("storage.new")}</span>
                   )}
                 </div>
                 <div style={{ fontSize:"11px", color:"var(--tx-m)", marginTop:"2px" }}>
@@ -59,14 +61,14 @@ export default function StorageList({ storages=[], selectedId, riskLevel, onSele
                 </div>
                 {s.distance_km && (
                   <div style={{ fontSize:"10px", color:"var(--cp)", fontWeight:600, marginTop:"2px" }}>
-                    📍 {s.distance_km} km away
+                    📍 {s.distance_km} {t("storage.distance")}
                   </div>
                 )}
               </div>
               <div style={{ textAlign:"right", flexShrink:0 }}>
                 <div style={{ fontFamily:"var(--fm)", fontWeight:700, fontSize:"13px",
                   color:"var(--cp)" }}>₹{parseFloat(s.price_per_kg_per_day).toFixed(2)}</div>
-                <div style={{ fontSize:"10px", color:"var(--tx-s)" }}>per kg/day</div>
+                <div style={{ fontSize:"10px", color:"var(--tx-s)" }}>{t("storage.price_per_kg_day")}</div>
               </div>
             </div>
 
@@ -74,9 +76,9 @@ export default function StorageList({ storages=[], selectedId, riskLevel, onSele
             <div style={{ marginBottom:"8px" }}>
               <div style={{ display:"flex", justifyContent:"space-between",
                 fontSize:"10px", color:"var(--tx-s)", marginBottom:"4px" }}>
-                <span>{avMT} MT free</span>
+                <span>{avMT} MT {t("storage.free")}</span>
                 <span style={{ color: pct>80?"var(--danger)":pct>50?"var(--warn)":"var(--tx-s)", fontWeight: pct>80?700:400 }}>
-                  {pct}% occupied {pct>80 && pct<95 ? "⚠️ Almost full" : ""}{pct>=95 ? "🔴 Full" : ""}
+                  {pct}% {t("storage.occupied")} {pct>=95 ? `(${t("storage.full")})` : ""}
                 </span>
               </div>
               <div className="prog">
@@ -101,7 +103,7 @@ export default function StorageList({ storages=[], selectedId, riskLevel, onSele
                   fontSize:"11px", fontWeight:700,
                   cursor: isFull ? "not-allowed" : "pointer", flexShrink:0
                 }}>
-                {isFull ? "Full" : s.has_operator ? "Book →" : "⚡ Instant Book"}
+                {isFull ? t("storage.full") : t("farmer.book_now")}
               </button>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { ThemeProvider }         from "./context/ThemeContext";
 import "./i18n";
 
 import Navbar                        from "./components/common/Navbar";
+import Footer                        from "./components/common/Footer";
 import HomePage                      from "./pages/HomePage";
 import LoginPage                     from "./pages/LoginPage";
 import SignupPage                    from "./pages/SignupPage";
@@ -20,11 +21,6 @@ import SettingsPage                  from "./pages/settings/SettingsPage";
 import FarmerOrders                  from "./pages/farmer/FarmerOrders";
 import MLPredictionsPage             from "./pages/farmer/MLPredictionsPage";       // Price + Market Rec
 import FarmerMarketIntelligencePage  from "./pages/farmer/FarmerMarketIntelligencePage"; // ARIMA + live DB
-import MarketplacePage                from "./pages/customer/MarketplacePage";
-import CustomerOrders                 from "./pages/customer/CustomerOrders";
-import CustomerMapPage                from "./pages/customer/CustomerMapPage";
-import DeliveryBoyPage                from "./pages/delivery/DeliveryBoyPage";
-import Footer                         from "./components/common/Footer";
 
 function PrivateRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -89,28 +85,6 @@ function AppInner() {
           <Route path="/operator"
             element={<PrivateRoute roles={["operator","admin"]}>
               <OperatorPage />
-            </PrivateRoute>} />
-
-          {/* Customer */}
-          <Route path="/marketplace"
-            element={<PrivateRoute roles={["customer","admin"]}>
-              <MarketplacePage />
-            </PrivateRoute>} />
-
-          <Route path="/customer-orders"
-            element={<PrivateRoute roles={["customer","admin"]}>
-              <CustomerOrders />
-            </PrivateRoute>} />
-
-          <Route path="/customer-map"
-            element={<PrivateRoute roles={["customer","admin"]}>
-              <CustomerMapPage />
-            </PrivateRoute>} />
-
-          {/* Delivery */}
-          <Route path="/delivery"
-            element={<PrivateRoute roles={["delivery_boy","admin"]}>
-              <DeliveryBoyPage />
             </PrivateRoute>} />
 
           {/* Shared */}

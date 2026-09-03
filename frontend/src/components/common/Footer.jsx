@@ -1,74 +1,48 @@
-// components/common/Footer.jsx
+// components/common/Footer.jsx — v2: "AgriTech Glass" (ported from Stitch reference)
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import Logo from "./Logo";
 
 export default function Footer() {
   const { t } = useTranslation();
   const year = new Date().getFullYear();
 
+  const linkCls = "text-on-tertiary/70 hover:text-on-tertiary font-body-md text-body-md hover:underline decoration-secondary-fixed transition-all no-underline";
+
   return (
-    <footer className="fn-footer">
-      <div className="fn-container" style={{ padding: "40px 20px 24px" }}>
-        <div style={{
-          display: "grid", gap: 28,
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-        }}>
-          <div>
-            <Logo size={28} wordmarkSize={16} />
-            <p style={{ fontSize: 12.5, color: "var(--tx-m)", marginTop: 12, lineHeight: 1.7, maxWidth: 240 }}>
-              {t("footer.tagline")}
-            </p>
-          </div>
-
-          <div>
-            <div className="section-label" style={{ marginBottom: 12 }}>{t("footer.platform")}</div>
-            <FooterLink to="/discover">{t("nav.discover")}</FooterLink>
-            <FooterLink to="/market">{t("nav.market")}</FooterLink>
-            <FooterLink to="/marketplace">{t("footer.marketplace")}</FooterLink>
-          </div>
-
-          <div>
-            <div className="section-label" style={{ marginBottom: 12 }}>{t("footer.company")}</div>
-            <FooterLink to="/">{t("footer.about")}</FooterLink>
-            <FooterLink to="/signup">{t("auth.sign_up")}</FooterLink>
-            <FooterLink to="/login">{t("auth.sign_in")}</FooterLink>
-          </div>
-
-          <div>
-            <div className="section-label" style={{ marginBottom: 12 }}>{t("footer.contact")}</div>
-            <p style={{ fontSize: 12.5, color: "var(--tx-m)", lineHeight: 2 }}>
-              D.K.T.E. Society's TEI<br />Ichalkaranji, Maharashtra
-            </p>
-          </div>
+    <footer className="bg-tertiary w-full mt-auto">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-mobile md:px-margin-desktop py-12 max-w-container-max mx-auto">
+        <div className="col-span-1 md:col-span-4 mb-8">
+          <span className="font-headline-md text-headline-md text-on-tertiary">{t("app_name")}</span>
+          <p className="text-on-tertiary/60 font-body-md text-sm mt-2 max-w-sm">{t("footer.tagline")}</p>
         </div>
 
-        <div style={{
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          flexWrap: "wrap", gap: 10,
-          marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--bd)",
-        }}>
-          <span style={{ fontSize: 11.5, color: "var(--tx-s)" }}>
-            © {year} FasalNet · {t("footer.rights")}
+        <div className="flex flex-col gap-4">
+          <span className="text-on-tertiary/40 text-label-sm font-label-sm uppercase tracking-wide mb-1">{t("footer.platform")}</span>
+          <Link to="/discover" className={linkCls}>{t("nav.cold_storage")}</Link>
+          <Link to="/market" className={linkCls}>{t("nav.market")}</Link>
+          <Link to="/marketplace" className={linkCls}>{t("footer.marketplace")}</Link>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <span className="text-on-tertiary/40 text-label-sm font-label-sm uppercase tracking-wide mb-1">{t("footer.company")}</span>
+          <Link to="/signup" className={linkCls}>{t("auth.sign_up")}</Link>
+          <Link to="/login" className={linkCls}>{t("auth.sign_in")}</Link>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <span className="text-on-tertiary/40 text-label-sm font-label-sm uppercase tracking-wide mb-1">{t("footer.contact")}</span>
+          <span className="text-on-tertiary/70 font-body-md text-body-md">
+            D.K.T.E. Society's TEI, Ichalkaranji
           </span>
-          <span style={{ fontSize: 11.5, color: "var(--tx-s)" }}>
-            {t("footer.made_for")}
-          </span>
+        </div>
+
+        <div className="col-span-1 md:col-span-4 mt-8 pt-8 border-t border-on-tertiary/20 flex flex-wrap justify-between gap-2">
+          <p className="text-on-tertiary/50 font-body-md text-body-md">
+            © {year} {t("app_name")} · {t("footer.rights")}
+          </p>
+          <p className="text-on-tertiary/50 font-body-md text-body-md">{t("footer.made_for")}</p>
         </div>
       </div>
     </footer>
-  );
-}
-
-function FooterLink({ to, children }) {
-  return (
-    <Link to={to} style={{
-      display: "block", fontSize: 13, color: "var(--tx-m)",
-      textDecoration: "none", marginBottom: 10, transition: "color .15s",
-    }}
-      onMouseEnter={e => e.currentTarget.style.color = "var(--cp)"}
-      onMouseLeave={e => e.currentTarget.style.color = "var(--tx-m)"}>
-      {children}
-    </Link>
   );
 }

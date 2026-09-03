@@ -1,4 +1,4 @@
-// i18n/index.js – Initialise react-i18next (English + Hindi + Marathi)
+// i18n/index.js – application-wide language setup
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import en from "./en.json";
@@ -15,5 +15,7 @@ i18n.use(initReactI18next).init({
   fallbackLng: "en",
   interpolation: { escapeValue: false },
 });
+
+i18n.on("languageChanged", (language) => localStorage.setItem("fasalnet_lang", language));
 
 export default i18n;

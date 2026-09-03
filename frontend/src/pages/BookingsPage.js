@@ -476,9 +476,9 @@ export default function BookingsPage() {
   return (
     <div style={{ maxWidth:"960px", margin:"0 auto", padding:"24px 20px" }}>
       <div style={{ marginBottom:"24px" }}>
-        <h1 style={{ fontSize:"22px", fontWeight:800, color:"var(--tx)" }}>My Bookings</h1>
+        <h1 style={{ fontSize:"22px", fontWeight:800, color:"var(--tx)" }}>{t("booking.my_bookings")}</h1>
         <p style={{ fontSize:"13px", color:"var(--tx-m)", marginTop:"3px" }}>
-          Track your cold storage booking requests and complete payments.
+          {t("booking.subtitle")}
         </p>
       </div>
 
@@ -494,10 +494,10 @@ export default function BookingsPage() {
       {/* Summary stats */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"10px", marginBottom:"20px" }}>
         {[
-          { label:"Total",     val:bookings.length,                                  color:"var(--tx)" },
-          { label:"Pending",   val:bookings.filter(b=>b.status==="pending").length,  color:"var(--warn)" },
-          { label:"Confirmed", val:bookings.filter(b=>b.status==="confirmed").length,color:"var(--info)" },
-          { label:"Paid ✅",   val:bookings.filter(b=>b.status==="paid").length,     color:"var(--safe)" },
+          { label: t("booking.total_price") || "Total",     val:bookings.length,                                  color:"var(--tx)" },
+          { label: t("booking.pending"),                    val:bookings.filter(b=>b.status==="pending").length,  color:"var(--warn)" },
+          { label: t("booking.confirmed"),                  val:bookings.filter(b=>b.status==="confirmed").length,color:"var(--info)" },
+          { label: t("booking.completed"),                  val:bookings.filter(b=>b.status==="paid"||b.status==="completed").length,     color:"var(--safe)" },
         ].map(item => (
           <div key={item.label} className="card" style={{ padding:"12px 14px", textAlign:"center" }}>
             <div style={{ fontFamily:"var(--fm)", fontWeight:800, fontSize:"20px", color:item.color }}>{item.val}</div>
@@ -512,7 +512,7 @@ export default function BookingsPage() {
           <button key={f} onClick={() => setFilter(f)}
             className={`btn ${filter===f ? "btn-primary" : "btn-ghost"}`}
             style={{ fontSize:"11px", padding:"5px 14px", textTransform:"capitalize" }}>
-            {f}{f!=="all" && counts[f] ? ` · ${counts[f]}` : ""}
+            {t(`booking.${f}`, f)}{f!=="all" && counts[f] ? ` · ${counts[f]}` : ""}
           </button>
         ))}
       </div>

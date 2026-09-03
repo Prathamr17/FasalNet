@@ -1,15 +1,15 @@
-// components/booking/BookingModal.js — v10: harvest_age fix + demo guard
+// components/booking/BookingModal.js — v11: Fully localized & demo guard
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { bookingAPI } from "../../services/api";
 
-// IDs used by DEMO_STORAGES (fallback data) — these don't exist in the real DB.
-// If we detect a demo storage, block booking and show a clear message.
 const DEMO_IDS = new Set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]);
 const isDemo = (storage) =>
   storage?._isDemo === true ||
   (DEMO_IDS.has(storage?.id) && !storage?.has_operator);
 
 export default function BookingModal({ storage, riskData, onClose, onSuccess }) {
+  const { t } = useTranslation();
   const today = new Date().toISOString().split("T")[0];
   const [form, setForm] = useState({
     crop_name:     riskData?.crop_type || "",
@@ -39,16 +39,13 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.crop_name.trim()) { setError("Please enter a crop name."); return; }
-    // Block booking on demo/fallback storages (they don't exist in the real DB)
+    if (!form.crop_name.trim()) { setError(t("booking.crop_name")); return; }
     if (isDemo(storage)) {
       setError("This is a demo storage — connect the backend to book real storage.");
       return;
     }
     setError(""); setLoading(true);
     try {
-      // riskData.harvest_age_hrs comes from SpoilageRiskPanel
-      // backend expects harvest_age_days (integer)
       const harvestHrs = riskData?.harvest_age_hrs ?? (riskData?.harvest_age_days ? riskData.harvest_age_days * 24 : 0);
       const harvestAge = Math.round(harvestHrs / 24);
       await bookingAPI.create({
@@ -63,7 +60,7 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
       setStep(3);
       setTimeout(() => onSuccess?.(), 1800);
     } catch (err) {
-      setError(err.response?.data?.error || "Booking failed. Please try again.");
+      setError(err.response?.data?.error || t("booking.subtitle"));
     } finally {
       setLoading(false);
     }
@@ -75,10 +72,12 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
   };
 
   return (
-    <div onClick={e=>e.target===e.currentTarget&&onClose()}
-      style={{ position:"fixed", inset:0, zIndex:9998,
+    <div onClick={e => e.target === e.currentTarget && onClose()}
+      style={{
+        position:"fixed", inset:0, zIndex:9998,
         background:"rgba(0,0,0,.4)", backdropFilter:"blur(4px)",
-        display:"flex", alignItems:"center", justifyContent:"center", padding:"16px" }}>
+        display:"flex", alignItems:"center", justifyContent:"center", padding:"16px"
+      }}>
 
       {step === 3 && (
         <div className="card anim-pop" style={{ padding:"40px 32px", textAlign:"center",
@@ -88,12 +87,10 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
           </div>
           <div style={{ fontSize:"18px", fontWeight:800,
             color: storage.has_operator ? "var(--warn)" : "var(--safe)", marginBottom:"8px" }}>
-            {storage.has_operator ? "Request Sent!" : "Booking Confirmed!"}
+            {storage.has_operator ? t("booking.pending") : t("booking.confirmed")}
           </div>
           <div style={{ fontSize:"13px", color:"var(--tx-m)" }}>
-            {storage.has_operator
-              ? "Operator will confirm within 2 hours. You'll be notified."
-              : "Your slot is reserved! Go to My Bookings to complete payment."}
+            {t("booking.booking_sent")}
           </div>
         </div>
       )}
@@ -105,7 +102,7 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
           <div style={{ display:"flex", justifyContent:"space-between",
             alignItems:"flex-start", marginBottom:"20px" }}>
             <div>
-              <h3 style={{ fontSize:"17px", fontWeight:700, color:"var(--tx)" }}>Book Cold Storage</h3>
+              <h3 style={{ fontSize:"17px", fontWeight:700, color:"var(--tx)" }}>{t("booking.title")}</h3>
               <p style={{ fontSize:"12px", color:"var(--tx-m)", marginTop:"2px" }}>{storage.name}</p>
             </div>
             <button onClick={onClose}
@@ -117,11 +114,9 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
 
           <div style={{ display:"flex", flexWrap:"wrap", gap:"6px", marginBottom:"18px" }}>
             {[
-              { label:"Rate",      val:`₹${rate}/kg/day` },
-              { label:"Temp",      val:`${storage.temp_min_celsius}–${storage.temp_max_celsius}°C` },
-              { label:"Available", val:`${(parseFloat(storage.available_capacity_kg)/1000).toFixed(1)} MT` },
-              riskData?.risk_level && { label:"Risk", val:riskData.risk_level,
-                color: riskData.risk_level==="CRITICAL"?"var(--danger)":riskData.risk_level==="RISKY"?"var(--warn)":"var(--safe)" },
+              { label: t("booking.storage_rate"), val: `₹${rate} ${t("storage.price_per_kg_day")}` },
+              { label: t("storage.temp_range"),  val: `${storage.temp_min_celsius}–${storage.temp_max_celsius}°C` },
+              { label: t("storage.available"),   val: `${(parseFloat(storage.available_capacity_kg)/1000).toFixed(1)} MT` },
             ].filter(Boolean).map((chip, i) => (
               <div key={i} style={{ background:"var(--bg-m)", borderRadius:"7px",
                 padding:"5px 10px", fontSize:"11px" }}>
@@ -133,7 +128,7 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
 
           <form onSubmit={handleSubmit} style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
             <div>
-              <label style={labelStyle}>🌾 Crop Name *</label>
+              <label style={labelStyle}>🌾 {t("booking.crop_name")} *</label>
               <input
                 className="inp"
                 type="text"
@@ -146,13 +141,13 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
 
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
               <div>
-                <label style={labelStyle}>Quantity (kg)</label>
+                <label style={labelStyle}>{t("booking.crop_quantity")}</label>
                 <input className="inp" type="number" min={1}
                   value={form.quantity_kg}
                   onChange={e => set("quantity_kg", e.target.value)} />
               </div>
               <div>
-                <label style={labelStyle}>Duration (days)</label>
+                <label style={labelStyle}>{t("booking.duration")}</label>
                 <input className="inp" type="number" min={1} max={90}
                   value={form.duration_days}
                   onChange={e => set("duration_days", e.target.value)} />
@@ -160,7 +155,7 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
             </div>
 
             <div>
-              <label style={labelStyle}>Pickup Date</label>
+              <label style={labelStyle}>{t("booking.pickup_date")}</label>
               <input className="inp" type="date" min={today}
                 value={form.pickup_date}
                 onChange={e => set("pickup_date", e.target.value)} />
@@ -173,27 +168,26 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
                 ₹{parseFloat(total).toLocaleString("en-IN")}
               </div>
               <div style={{ fontSize:"11px", color:"var(--tx-m)", marginTop:"4px" }}>
-                {qty} kg × ₹{rate} × {dur} days
+                {qty} kg × ₹{rate} × {dur} {t("booking.duration_days")}
               </div>
             </div>
 
             {error && (
-              <div style={{ background:"var(--danger-bg)", borderRadius:"8px",
-                padding:"10px 12px", fontSize:"12px", color:"var(--danger)" }}>
-                {error}
+              <div style={{ background:"rgba(139,58,43,.08)", border:"1px solid rgba(139,58,43,.25)",
+                color:"var(--danger)", borderRadius:"8px", padding:"8px 12px", fontSize:"12px" }}>
+                ⚠️ {error}
               </div>
             )}
 
-            <div style={{ display:"flex", gap:"10px", marginTop:"4px" }}>
-              <button type="button" onClick={onClose} className="btn btn-ghost" style={{ flex:1 }}>
-                Cancel
+            <div style={{ display:"flex", gap:"8px", marginTop:"4px" }}>
+              <button type="button" onClick={onClose} className="btn btn-ghost"
+                style={{ flex:1, padding:"10px" }}>
+                {t("booking.cancel")}
               </button>
-              <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex:2 }}>
-                {loading
-                  ? <><span className="aspin" style={{ width:14, height:14,
-                      border:"2px solid rgba(255,255,255,.3)", borderTopColor:"#fff" }}/> Booking…</>
-                  : storage.has_operator ? "Confirm Booking →" : "⚡ Instant Book →"
-                }
+              <button type="submit" className="btn btn-primary" disabled={loading}
+                style={{ flex:2, padding:"10px", display:"flex", alignItems:"center",
+                  justifyContent:"center", gap:"6px" }}>
+                {loading ? t("farmer.analysing") : t("booking.send_request")}
               </button>
             </div>
           </form>

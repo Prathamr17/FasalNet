@@ -1,5 +1,6 @@
 // pages/OperatorPage.js — v8: payment visibility, delivery assignment
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { operatorAPI, apiError } from "../services/api";
 import BookingCard       from "../components/operator/BookingCard";
 import StorageUpdateForm from "../components/operator/StorageUpdateForm";
@@ -511,6 +512,7 @@ function ConnectedFarmers() {
 
 // ── Main Page ─────────────────────────────────────────────────────────────
 export default function OperatorPage() {
+  const { t } = useTranslation();
   const [data,        setData]       = useState(null);
   const [loading,     setLoad]       = useState(true);
   const [toasts,      setToasts]     = useState([]);
@@ -593,27 +595,25 @@ export default function OperatorPage() {
           flexWrap:"wrap", gap:"12px" }}>
           <div>
             <h1 style={{ fontSize:"22px", fontWeight:800, color:"var(--tx)", display:"flex", alignItems:"center", gap:"10px" }}>
-              Operator Dashboard
+              {t("operator.dashboard")}
               <span style={{ fontSize:"10px", fontWeight:700, color:"var(--cp)",
                 background:"rgba(43,69,112,.12)", border:"1px solid rgba(43,69,112,.3)",
                 borderRadius:"99px", padding:"2px 10px", display:"flex", alignItems:"center", gap:"5px" }}>
                 <span style={{ width:"6px", height:"6px", borderRadius:"50%", background:"var(--cp)",
                   display:"inline-block", animation:"ping 1.5s ease-in-out infinite" }}/>
-                Live
+                {t("farmer.live")}
               </span>
             </h1>
             <p style={{ fontSize:"13px", color:"var(--tx-m)", marginTop:"3px" }}>
-              Manage bookings, payments, and deliveries.
+              {t("home.role_operator_desc")}
             </p>
           </div>
           <div style={{ display:"flex", gap:"4px", background:"var(--bg-m)", borderRadius:"10px", padding:"4px", flexWrap:"wrap" }}>
-            {TAB("dashboard", "📊 Dashboard", 0)}
-            {TAB("pending",   "⏳ Pending",    pending.length)}
-            {TAB("confirmed", "✅ Confirmed",   confirmed.length)}
-            {TAB("paid",      "💰 Paid",        paid.length)}
-            {TAB("orders",    "🛒 Orders",      orders.length)}
-            {TAB("booked",    "🌾 Booked Farmers", pending.length + confirmed.length + paid.length)}
-            {TAB("farmers",   "👨‍🌾 All Farmers",    0)}
+            {TAB("dashboard", `📊 ${t("nav.dashboard")}`, 0)}
+            {TAB("pending",   `⏳ ${t("booking.pending")}`, pending.length)}
+            {TAB("confirmed", `✅ ${t("booking.confirmed")}`, confirmed.length)}
+            {TAB("paid",      `💰 ${t("booking.completed")}`, paid.length)}
+            {TAB("orders",    `🛒 ${t("nav.orders")}`, orders.length)}
           </div>
         </div>
       </div>

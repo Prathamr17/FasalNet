@@ -1,22 +1,15 @@
-// components/common/Navbar.js — v10 final
-// Fixes:
-//   - "ML Predictions" → "Crop Advisor" (clearer label)
-//   - "Market" added for farmer role
-//   - Mobile drawer z-index isolated to prevent rendering on desktop
-//   - No icon prefixes on nav labels (clean, no visual clutter)
-
+// components/common/Navbar.js — v11: Full localization & responsive design
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth }  from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import i18n from "../../i18n";
-import Logo from "./Logo";
 
 const LANGUAGES = [
-  { code: "en", label: "EN"   },
-  { code: "hi", label: "हिं"  },
-  { code: "mr", label: "मरा"  },
+  { code: "en", label: "EN" },
+  { code: "hi", label: "हिं" },
+  { code: "mr", label: "मरा" },
 ];
 
 export default function Navbar() {
@@ -33,26 +26,26 @@ export default function Navbar() {
   // ── Nav link definitions per role ──────────────────────────────
   const NAV_LINKS = {
     farmer: [
-      { to: "/discover",   label: t("nav.discover")     },   // cold storage + spoilage risk
-      { to: "/market",     label: t("nav.market")       },   // live APMC data + ARIMA
-      { to: "/ml-predict", label: t("nav.crop_advisor") },   // price predict + best market
+      { to: "/discover",   label: t("nav.discover")     },
+      { to: "/market",     label: t("nav.market")       },
+      { to: "/ml-predict", label: t("nav.crop_advisor") },
       { to: "/bookings",   label: t("nav.bookings")     },
     ],
     operator: [
-      { to: "/operator",   label: t("nav.dashboard") },
+      { to: "/operator",   label: t("nav.dashboard")    },
     ],
     admin: [
-      { to: "/discover",   label: t("nav.discover")  },
-      { to: "/market",     label: t("nav.market")    },
-      { to: "/operator",   label: t("nav.dashboard") },
+      { to: "/discover",   label: t("nav.discover")     },
+      { to: "/market",     label: t("nav.market")       },
+      { to: "/operator",   label: t("nav.dashboard")    },
     ],
     customer: [
-      { to: "/marketplace",      label: t("nav.marketplace") },
-      { to: "/customer-orders",  label: t("nav.orders")      },
-      { to: "/customer-map",     label: t("nav.map")         },
+      { to: "/marketplace", label: t("nav.marketplace") },
+      { to: "/customer/map", label: t("nav.map")        },
+      { to: "/my-orders",   label: t("nav.orders")      },
     ],
     delivery_boy: [
-      { to: "/delivery",   label: t("nav.deliveries") },
+      { to: "/delivery",    label: t("nav.dashboard")   },
     ],
   };
 
@@ -77,12 +70,18 @@ export default function Navbar() {
   // Close mobile drawer on route change
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
-  const handleLang   = code => { i18n.changeLanguage(code); localStorage.setItem("fasalnet_lang", code); };
+  const handleLang   = code => {
+    i18n.changeLanguage(code);
+    localStorage.setItem("fasalnet_lang", code);
+  };
   const handleLogout = () => { logout(); navigate("/login"); setMobileOpen(false); setUserMenuOpen(false); };
 
   const links    = NAV_LINKS[user?.role] || [];
   const isActive = path => location.pathname === path || location.pathname.startsWith(path + "/");
   const roleClr  = ROLE_COLORS[user?.role] || {};
+
+  const dateLocale = i18n.language === "hi" ? "hi-IN" : i18n.language === "mr" ? "mr-IN" : "en-IN";
+  const dateFormatted = new Date().toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
 
   return (
     <>
@@ -99,9 +98,13 @@ export default function Navbar() {
         }}>
 
           {/* Logo */}
-          <Link to="/" style={{ display: "flex", alignItems: "center",
+          <Link to="/" style={{ display: "flex", alignItems: "center", gap: "8px",
             textDecoration: "none", flexShrink: 0 }}>
-            <Logo size={30} wordmarkSize={18} />
+            <img src="/logo.png" alt="FasalNet" style={{ width: 34, height: 34, objectFit: "contain", borderRadius: 6 }} />
+            <span style={{ fontFamily: "var(--fd)", fontWeight: 700, fontSize: 18,
+              color: "var(--tx)", letterSpacing: "-.2px" }}>
+              {t("app_name")}
+            </span>
           </Link>
 
           {/* Divider — desktop only */}
@@ -112,7 +115,7 @@ export default function Navbar() {
           <div className="fnav-desktop-only"
             style={{ display: "flex", gap: 2, alignItems: "center", flex: 1 }}>
             {links.map(({ to, label }) => (
-              <Link key={to} to={to} className={`nav-link ${isActive(to) ? "active" : ""}`} style={{
+              <Link key={to} to={to} style={{
                 padding: "6px 12px", borderRadius: 8, textDecoration: "none",
                 fontSize: 13, fontWeight: isActive(to) ? 700 : 500,
                 color:      isActive(to) ? "var(--cp)"      : "var(--tx-m)",
@@ -143,10 +146,11 @@ export default function Navbar() {
             <div className="fnav-desktop-only" style={{ display: "flex", gap: 2 }}>
               {LANGUAGES.map(({ code, label }) => (
                 <button key={code} onClick={() => handleLang(code)} style={{
-                  background: i18n.language === code ? "var(--bg-m)" : "transparent",
-                  border: "none", borderRadius: 6, padding: "4px 7px",
-                  fontSize: 11, fontWeight: 600, cursor: "pointer",
-                  color: i18n.language === code ? "var(--tx)" : "var(--tx-s)",
+                  background: i18n.language === code ? "var(--cp-pale)" : "transparent",
+                  border: i18n.language === code ? "1px solid var(--cp)" : "none",
+                  borderRadius: 6, padding: "4px 8px",
+                  fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  color: i18n.language === code ? "var(--cp)" : "var(--tx-s)",
                 }}>
                   {label}
                 </button>
@@ -174,8 +178,8 @@ export default function Navbar() {
                     <span style={{ fontSize: 12, fontWeight: 700, color: "var(--tx)", lineHeight: 1.2 }}>
                       {user.name?.split(" ")[0]}
                     </span>
-                    <span style={{ fontSize: 10, color: "var(--tx-m)", textTransform: "capitalize" }}>
-                      {user.role}
+                    <span style={{ fontSize: 10, color: "var(--tx-m)" }}>
+                      {t(`auth.${user.role}`, user.role)}
                     </span>
                   </div>
                   <span style={{ color: "var(--tx-s)", fontSize: 9 }}>▼</span>
@@ -228,22 +232,21 @@ export default function Navbar() {
       {user && (
         <div className="fn-ticker">
           <span className="fn-ticker-dot" />
-          <span>{t(`nav.role_${user.role}`, user.role)?.toString().toUpperCase()}</span>
+          <span>{t(`auth.${user.role}`, user.role)?.toString().toUpperCase()}</span>
           <span className="fn-ticker-sep">·</span>
-          <span>{t("app_name")?.toString().toUpperCase()} COORDINATION BOARD</span>
+          <span>{t("app_name")?.toString().toUpperCase()} {t("nav.coordination_board")}</span>
           <span className="fn-ticker-sep">·</span>
-          <span>{new Date().toLocaleDateString(i18n.language === "mr" ? "mr-IN" : "en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
+          <span>{dateFormatted}</span>
         </div>
       )}
 
       {/* ── Mobile drawer (only mounts when open) ──────────────── */}
       {mobileOpen && (
-        <div className="card anim-fade" style={{
+        <div className="card" style={{
           position: "fixed", top: 57, left: 0, right: 0, zIndex: 199,
           borderTop: 0, borderRadius: 0, borderLeft: "none", borderRight: "none",
           padding: "8px 16px 16px",
           boxShadow: "0 8px 24px rgba(0,0,0,.08)",
-          maxHeight: "calc(100vh - 57px)", overflowY: "auto",
         }}>
           {links.map(({ to, label }) => (
             <Link key={to} to={to} style={{
