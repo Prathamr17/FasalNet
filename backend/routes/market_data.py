@@ -5,6 +5,7 @@ ARIMA forecast endpoint added; min/max prices in trend; cities in sync-status.
 
 import logging
 import os
+import re
 import threading
 import warnings
 from datetime import date, timedelta, datetime
@@ -178,46 +179,87 @@ def arima_forecast():
     Returns ARIMA price forecast for `days` (7 or 30) into the future.
     Also returns last 14 actual data points for chart continuity.
     """
-    city      = request.args.get("city", "")
-    commodity = request.args.get("commodity", "")
-    days      = int(request.args.get("days", 7))
+    city      = request.args.get("city", "").strip()
+    commodity = request.args.get("commodity", "").strip()
+    days_raw  = request.args.get("days", 7)
+    try:
+        days = int(days_raw)
+    except (ValueError, TypeError):
+        days = 7
     if not city or not commodity:
         return jsonify({"error": "city and commodity params required"}), 400
     days = 30 if days == 30 else 7
 
-    # Use 180 days of history for ARIMA training
-    train_start = (date.today() - timedelta(days=180)).isoformat()
-    train_end   = date.today().isoformat()
+    # Extract root town for multi-tier matching (e.g. 'Sangli' from 'Sangli(Phale...) APMC')
+    clean = re.sub(r'\(.*?\)', ' ', city)
+    clean = re.sub(r'\b(apmc|market|committee|produce|agriculture|phale|bhajipura|bhajipala)\b', ' ', clean, flags=re.IGNORECASE)
+    root_tokens = [t.strip() for t in re.findall(r'[a-zA-Z]+', clean) if len(t) > 2]
+    root_town = root_tokens[0] if root_tokens else city
 
-    q = text(f"""
-        SELECT arrival_date::date AS date,
-               ROUND(AVG(modal_price)::numeric,2) AS avg_modal,
-               ROUND(AVG(min_price)::numeric,2)   AS avg_min,
-               ROUND(AVG(max_price)::numeric,2)   AS avg_max
-        FROM {TABLE}
-        WHERE LOWER(market) = LOWER(:city)
-          AND LOWER(commodity) = LOWER(:commodity)
-          AND arrival_date BETWEEN :start AND :end
-        GROUP BY date ORDER BY date ASC
-    """)
+    engine = get_engine()
+    rows = []
 
     try:
-        with get_engine().connect() as conn:
-            rows = rows_to_list(conn.execute(q, {
-                "city": city, "commodity": commodity,
-                "start": train_start, "end": train_end,
-            }))
+        with engine.connect() as conn:
+            # 1. Exact match on market and commodity
+            q_exact = text(f"""
+                SELECT arrival_date::date AS date,
+                       ROUND(AVG(modal_price)::numeric,2) AS avg_modal,
+                       ROUND(AVG(min_price)::numeric,2)   AS avg_min,
+                       ROUND(AVG(max_price)::numeric,2)   AS avg_max
+                FROM {TABLE}
+                WHERE LOWER(TRIM(market)) = LOWER(TRIM(:city))
+                  AND LOWER(TRIM(commodity)) = LOWER(TRIM(:commodity))
+                GROUP BY date ORDER BY date ASC
+            """)
+            exact_rows = rows_to_list(conn.execute(q_exact, {"city": city, "commodity": commodity}))
+
+            # 2. If exact match has fewer than 10 points, try root town variant match
+            if len(exact_rows) >= 10:
+                rows = exact_rows
+            else:
+                q_root = text(f"""
+                    SELECT arrival_date::date AS date,
+                           ROUND(AVG(modal_price)::numeric,2) AS avg_modal,
+                           ROUND(AVG(min_price)::numeric,2)   AS avg_min,
+                           ROUND(AVG(max_price)::numeric,2)   AS avg_max
+                    FROM {TABLE}
+                    WHERE (LOWER(market) = LOWER(:city) OR LOWER(market) LIKE LOWER(:root_like))
+                      AND LOWER(TRIM(commodity)) = LOWER(TRIM(:commodity))
+                    GROUP BY date ORDER BY date ASC
+                """)
+                root_rows = rows_to_list(conn.execute(q_root, {"city": city, "root_like": f"%{root_town}%", "commodity": commodity}))
+                rows = root_rows if len(root_rows) > len(exact_rows) else exact_rows
+
+                # 3. If still fewer than 5 points, check district-level data for this market
+                if len(rows) < 5:
+                    dist_row = conn.execute(text(f"SELECT DISTINCT district FROM {TABLE} WHERE LOWER(market) LIKE :root_like LIMIT 1"), {"root_like": f"%{root_town}%"}).fetchone()
+                    if dist_row and dist_row[0]:
+                        q_dist = text(f"""
+                            SELECT arrival_date::date AS date,
+                                   ROUND(AVG(modal_price)::numeric,2) AS avg_modal,
+                                   ROUND(AVG(min_price)::numeric,2)   AS avg_min,
+                                   ROUND(AVG(max_price)::numeric,2)   AS avg_max
+                            FROM {TABLE}
+                            WHERE LOWER(district) = LOWER(:district)
+                              AND LOWER(TRIM(commodity)) = LOWER(TRIM(:commodity))
+                            GROUP BY date ORDER BY date ASC
+                        """)
+                        dist_rows = rows_to_list(conn.execute(q_dist, {"district": dist_row[0], "commodity": commodity}))
+                        if len(dist_rows) > len(rows):
+                            rows = dist_rows
+
     except Exception as exc:
         log.error("arima-forecast DB error: %s", exc)
         return jsonify({"error": str(exc)}), 500
 
-    if len(rows) < 10:
+    if len(rows) < 5:
         return jsonify({
-            "error": f"Insufficient data for ARIMA. Found {len(rows)} points, need at least 10.",
+            "error": f"Insufficient historical price data for {commodity} in {city}. Please select another crop or market.",
             "rows_found": len(rows),
         }), 422
 
-    # Build daily series, interpolate gaps
+    # Build daily series, take up to 180 days ending at the maximum available date
     df = pd.DataFrame(rows)
     df["date"]      = pd.to_datetime(df["date"])
     df["avg_modal"] = pd.to_numeric(df["avg_modal"], errors="coerce")
@@ -225,10 +267,14 @@ def arima_forecast():
     df["avg_max"]   = pd.to_numeric(df["avg_max"],   errors="coerce")
     df = df.set_index("date").sort_index()
 
+    max_d = df.index.max()
+    min_d = max(df.index.min(), max_d - timedelta(days=180))
+    df = df.loc[min_d:max_d]
+
     full_idx = pd.date_range(df.index.min(), df.index.max(), freq="D")
     df = df.reindex(full_idx)
     for col in ["avg_modal", "avg_min", "avg_max"]:
-        df[col] = df[col].interpolate(method="linear", limit=7).ffill().bfill()
+        df[col] = df[col].interpolate(method="linear", limit=14).ffill().bfill()
 
     last_date = df.index[-1]
 

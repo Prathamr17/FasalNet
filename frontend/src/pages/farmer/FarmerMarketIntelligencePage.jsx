@@ -29,7 +29,7 @@ function useDims(ref) {
   return dims;
 }
 
-// ─── GEOGRAPHIC COORDINATES DATABASE & 50-70KM RADIUS FINDER ──────────────────
+// ─── GEOGRAPHIC COORDINATES DATABASE & 30-40KM RADIUS FINDER ──────────────────
 const DISTRICT_COORDINATES = {
   "ahmednagar": { lat: 19.0948, lon: 74.7480 },
   "ahilyanagar": { lat: 19.0948, lon: 74.7480 },
@@ -341,7 +341,7 @@ function getMarketCoordinate(marketName) {
   return null;
 }
 
-function findNearbyMarkets(userLat, userLon, allCities, maxRadiusKm = 70) {
+function findNearbyMarkets(userLat, userLon, allCities, maxRadiusKm = 40) {
   if (!userLat || !userLon || !Array.isArray(allCities) || !allCities.length) {
     return [];
   }
@@ -1052,7 +1052,7 @@ export default function FarmerMarketIntelligencePage() {
           placeName = addr.city || addr.town || addr.county || addr.state_district || addr.state || "";
         } catch {}
 
-        const nearby = findNearbyMarkets(lat, lon, pool, 70);
+        const nearby = findNearbyMarkets(lat, lon, pool, 40);
         if (nearby && nearby.length > 0) {
           const resolved = nearby.map(n => n.market);
           setSelectedCities(resolved);
@@ -1064,7 +1064,7 @@ export default function FarmerMarketIntelligencePage() {
           showToast(`📍 ${t("mi.location_detected", { location: label })}: ${resolved.map(r => r.replace(/ APMC$/i, '')).join(', ')}`);
         } else {
           setLocationStatus("manual");
-          setLocationError(t("mi.no_nearby_markets", "No APMC markets found within 70 km of your location. Please select a market manually."));
+          setLocationError(t("mi.no_nearby_markets", "No APMC markets found within 30–40 km of your location. Please select a market manually."));
           setSelectedCities([]);
         }
         setLocating(false);
