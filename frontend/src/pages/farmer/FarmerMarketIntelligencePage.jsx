@@ -368,7 +368,7 @@ function findNearbyMarkets(userLat, userLon, allCities, maxRadiusKm = 40) {
 }
 
 // ─── SEARCHABLE CITY MULTI-SELECT ─────────────────────────────────────────────
-function CitySearchSelect({ cities, selectedCities, onToggle }) {
+function CitySearchSelect({ cities, selectedCities, onToggle, onClearAll }) {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -393,12 +393,23 @@ function CitySearchSelect({ cities, selectedCities, onToggle }) {
         boxSizing: "border-box", userSelect: "none",
       }}>
         <span style={{ color: selectedCities.length ? "var(--tx)" : "var(--tx-s)" }}>
-          {selectedCities.length === 0 ? t("farmer.filter_city", "Search & select markets…")
+          {selectedCities.length === 0 ? t("mi.no_markets_selected", "No markets selected")
             : selectedCities.length === 1 ? selectedCities[0]
             : `${selectedCities.length} ${t("market.markets_available", "markets selected")}`}
         </span>
         <span style={{ fontSize: "10px", color: "var(--tx-s)" }}>{open ? "▲" : "▼"}</span>
       </div>
+
+      {selectedCities.length === 0 && (
+        <div style={{
+          marginTop: "6px", padding: "8px 10px", background: "var(--bg-l)",
+          border: "1px dashed var(--bd)", borderRadius: "8px",
+          fontSize: "11px", color: "var(--tx-s)", textAlign: "center"
+        }}>
+          {t("mi.no_markets_selected", "No markets selected")}
+        </div>
+      )}
+
       {selectedCities.length > 0 && (
         <div style={{
           display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "6px",
@@ -435,8 +446,8 @@ function CitySearchSelect({ cities, selectedCities, onToggle }) {
             <button onClick={() => filtered.forEach(c => { if (!selectedCities.includes(c)) onToggle(c); })}
               style={{ fontSize: "10px", color: "var(--cp)", background: "none", border: "none", cursor: "pointer", fontWeight: 700, padding: 0 }}>{t("common.select_all", "Select All")}</button>
             <span style={{ color: "var(--tx-s)", fontSize: "10px" }}>·</span>
-            <button onClick={() => [...selectedCities].forEach(c => onToggle(c))}
-              style={{ fontSize: "10px", color: "var(--tx-s)", background: "none", border: "none", cursor: "pointer", fontWeight: 600, padding: 0 }}>{t("farmer.clear_filter", "Clear")}</button>
+            <button onClick={onClearAll || (() => [...selectedCities].forEach(c => onToggle(c)))}
+              style={{ fontSize: "10px", color: "var(--danger)", background: "none", border: "none", cursor: "pointer", fontWeight: 700, padding: 0 }}>{t("common.clear_all", "Clear All")}</button>
             <span style={{ fontSize: "10px", color: "var(--tx-s)", marginLeft: "auto" }}>{filtered.length} / {cities.length}</span>
           </div>
           <div style={{ maxHeight: "200px", overflowY: "auto", scrollbarGutter: "stable" }}>
@@ -1247,25 +1258,43 @@ export default function FarmerMarketIntelligencePage() {
                 {t("market.markets_cities")}
                 {selectedCities.length > 0 && <span style={{ color: "var(--cp)", marginLeft: "6px", fontWeight: 700, fontSize: "10px" }}>({selectedCities.length})</span>}
               </div>
-              <button
-                type="button"
-                onClick={() => detectUserLocation(citiesRef.current, true)}
-                disabled={locating}
-                title={t("mi.detect_location", "Detect nearest markets by GPS")}
-                style={{
-                  background: "var(--bg-m)", border: "1px solid var(--bd)", borderRadius: "6px",
-                  padding: "2px 8px", fontSize: "10px", color: "var(--cp)", fontWeight: 700,
-                  cursor: "pointer", display: "flex", alignItems: "center", gap: "4px",
-                  transition: "all .15s"
-                }}
-              >
-                <span>📍</span>
-                {locating
-                  ? t("mi.detecting_location", "Detecting…")
-                  : detectedPlace
-                    ? detectedPlace
-                    : t("mi.detect_location", "Detect")}
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                {selectedCities.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCities([])}
+                    title={t("common.clear_all", "Clear All")}
+                    style={{
+                      background: "var(--bg-m)", border: "1px solid var(--bd)", borderRadius: "6px",
+                      padding: "2px 7px", fontSize: "10px", color: "var(--danger)", fontWeight: 700,
+                      cursor: "pointer", display: "flex", alignItems: "center", gap: "3px",
+                      transition: "all .15s"
+                    }}
+                  >
+                    <span>✕</span>
+                    {t("common.clear_all", "Clear All")}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => detectUserLocation(citiesRef.current, true)}
+                  disabled={locating}
+                  title={t("mi.detect_location", "Detect nearest markets by GPS")}
+                  style={{
+                    background: "var(--bg-m)", border: "1px solid var(--bd)", borderRadius: "6px",
+                    padding: "2px 8px", fontSize: "10px", color: "var(--cp)", fontWeight: 700,
+                    cursor: "pointer", display: "flex", alignItems: "center", gap: "4px",
+                    transition: "all .15s"
+                  }}
+                >
+                  <span>📍</span>
+                  {locating
+                    ? t("mi.detecting_location", "Detecting…")
+                    : detectedPlace
+                      ? detectedPlace
+                      : t("mi.detect_location", "Detect")}
+                </button>
+              </div>
             </div>
 
             {locationError && (
@@ -1278,7 +1307,12 @@ export default function FarmerMarketIntelligencePage() {
               </div>
             )}
 
-            <CitySearchSelect cities={cities} selectedCities={selectedCities} onToggle={toggleCity} />
+            <CitySearchSelect
+              cities={cities}
+              selectedCities={selectedCities}
+              onToggle={toggleCity}
+              onClearAll={() => setSelectedCities([])}
+            />
 
             {/* Quick-pick popular Mandis when no city is selected */}
             {selectedCities.length === 0 && (
@@ -1443,7 +1477,7 @@ export default function FarmerMarketIntelligencePage() {
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".6px" }}>{t('mi.horizon', 'Horizon')}</span>
                       <div style={{ display: "flex", background: "var(--bg-m)", padding: "2px", borderRadius: "8px", border: "1px solid var(--bd)" }}>
-                        {[7, 30].map(d => (
+                        {[7, 14].map(d => (
                           <button
                             key={d}
                             onClick={() => setArimaDays(d)}

@@ -188,7 +188,7 @@ def arima_forecast():
         days = 7
     if not city or not commodity:
         return jsonify({"error": "city and commodity params required"}), 400
-    days = 30 if days == 30 else 7
+    days = 14 if days == 14 else 7
 
     # Extract root town for multi-tier matching (e.g. 'Sangli' from 'Sangli(Phale...) APMC')
     clean = re.sub(r'\(.*?\)', ' ', city)
@@ -255,7 +255,7 @@ def arima_forecast():
 
     if len(rows) < 5:
         return jsonify({
-            "error": f"Insufficient historical price data for {commodity} in {city}. Please select another crop or market.",
+            "error": f"Insufficient historical data for reliable ARIMA forecast for {commodity} in {city}. Please select another crop or market.",
             "rows_found": len(rows),
         }), 422
 
@@ -278,7 +278,7 @@ def arima_forecast():
 
     last_date = df.index[-1]
 
-    # ARIMA forecast
+    # ARIMA forecast using AIC model selection
     fc_modal = _arima_predict(df["avg_modal"].values, days)
     fc_min   = _arima_predict(df["avg_min"].values,   days)
     fc_max   = _arima_predict(df["avg_max"].values,   days)
@@ -315,21 +315,40 @@ def arima_forecast():
 
 
 def _arima_predict(series: np.ndarray, steps: int) -> np.ndarray:
-    """Fit ARIMA, fallback to EWM drift if statsmodels unavailable."""
+    """Fit optimal ARIMA model using AIC selection, fallback to EWM trend drift."""
+    clean_series = series[~np.isnan(series)]
+    if len(clean_series) < 3:
+        base = float(clean_series[-1]) if len(clean_series) else 1000.0
+        return np.full(steps, base, dtype=float)
+
+    # Use the most relevant recent 60 points for high-speed, accurate fitting
+    fit_data = clean_series[-60:]
+    best_model_fit = None
+    best_aic = float("inf")
+
     try:
         from statsmodels.tsa.arima.model import ARIMA  # type: ignore
-        for order in [(2, 1, 2), (1, 1, 1), (1, 1, 0)]:
+        for order in [(1, 1, 1), (1, 1, 0), (0, 1, 1), (2, 1, 1)]:
             try:
-                fit = ARIMA(series, order=order).fit()
-                return np.clip(fit.forecast(steps=steps), 0, None)
+                model = ARIMA(fit_data, order=order, enforce_stationarity=False, enforce_invertibility=False)
+                fit = model.fit(method_kwargs={"maxiter": 30, "disp": False})
+                if fit.aic < best_aic:
+                    best_aic = fit.aic
+                    best_model_fit = fit
             except Exception:
                 continue
+
+        if best_model_fit is not None:
+            fc = best_model_fit.forecast(steps=steps)
+            return np.clip(np.array(fc, dtype=float), 0, None)
     except (ImportError, Exception):
         pass
-    # EWM drift fallback
-    trend = float(np.diff(series[-min(14, len(series)):]).mean()) if len(series) > 1 else 0.0
-    base  = float(series[-1])
-    return np.array([max(0.0, base + trend * (i + 1)) for i in range(steps)])
+
+    # Robust exponential-smoothing / linear trend drift fallback
+    recent = fit_data[-min(14, len(fit_data)):]
+    trend = float(np.diff(recent).mean()) if len(recent) > 1 else 0.0
+    base = float(clean_series[-1])
+    return np.array([max(0.0, base + trend * (i + 1)) for i in range(steps)], dtype=float)
 
 
 @market_bp.get("/heatmap")
