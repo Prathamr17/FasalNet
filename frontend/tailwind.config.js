@@ -101,5 +101,5 @@ module.exports = {
       backdropBlur: { xs: "4px" },
     },
   },
-  plugins: [require("@tailwindcss/forms")],
+  plugins: [],
 };
