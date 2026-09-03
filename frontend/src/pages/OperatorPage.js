@@ -19,7 +19,7 @@ function CapacityDonut({ total, available, label }) {
   const r      = 36;
   const circum = 2 * Math.PI * r;
   const dash   = circum * pct;
-  const color  = pct > .8 ? "#8B3A2B" : pct > .5 ? "#B4741E" : "#3F6B33";
+  const color  = pct > .8 ? "var(--danger)" : pct > .5 ? "var(--warn)" : "var(--cp)";
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"6px" }}>
       <div style={{ position:"relative" }}>
@@ -57,7 +57,7 @@ function UtilizationChart({ storages }) {
   const values = days.map((_, i) => Math.max(10, Math.round(base + (Math.sin(i*1.2)*12) + (Math.cos(i*0.8)*6))));
   const max    = Math.max(...values, 1);
   const todayIdx = (new Date().getDay() + 6) % 7;
-  const colorFor = v => v > 80 ? "#8B3A2B" : v > 60 ? "#B4741E" : "#3F6B33";
+  const colorFor = v => v > 80 ? "var(--danger)" : v > 60 ? "var(--warn)" : "var(--cp)";
   return (
     <div style={{ padding:"16px 20px" }}>
       <div style={{ fontSize:"11px", fontWeight:700, textTransform:"uppercase",

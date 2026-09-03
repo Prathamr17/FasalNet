@@ -373,7 +373,15 @@
     "no_forecast": "No forecast runs active",
     "no_forecast_sub": "Select a city & commodity, choose horizon, and click Run Forecast to overlay predictions.",
     "no_data": "No data for this selection",
-    "no_markets_match": "No markets match"
+    "no_markets_match": "No markets match",
+    "detect_location": "Detect Location",
+    "detecting_location": "Detecting location…",
+    "location_detected": "Nearest to {{location}}",
+    "location_unavailable": "Location unavailable. Please select your market manually.",
+    "location_permission_needed": "Allow location access to auto-detect nearest APMC markets.",
+    "select_markets_prompt": "Select one or more markets to view live price trends & forecasts.",
+    "no_nearby_markets": "No APMC markets found within 70 km of your location. Please select a market manually.",
+    "quick_markets": "Popular Mandis:"
   },
   "common": {
     "english": "English",

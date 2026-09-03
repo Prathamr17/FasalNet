@@ -173,7 +173,7 @@ export default function BookingModal({ storage, riskData, onClose, onSuccess }) 
             </div>
 
             {error && (
-              <div style={{ background:"rgba(139,58,43,.08)", border:"1px solid rgba(139,58,43,.25)",
+              <div style={{ background:"var(--danger-bg)", border:"1px solid var(--danger)",
                 color:"var(--danger)", borderRadius:"8px", padding:"8px 12px", fontSize:"12px" }}>
                 ⚠️ {error}
               </div>

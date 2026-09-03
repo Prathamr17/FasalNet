@@ -29,6 +29,344 @@ function useDims(ref) {
   return dims;
 }
 
+// ─── GEOGRAPHIC COORDINATES DATABASE & 50-70KM RADIUS FINDER ──────────────────
+const DISTRICT_COORDINATES = {
+  "ahmednagar": { lat: 19.0948, lon: 74.7480 },
+  "ahilyanagar": { lat: 19.0948, lon: 74.7480 },
+  "akola": { lat: 20.7002, lon: 77.0082 },
+  "amravati": { lat: 20.9374, lon: 77.7796 },
+  "amarawati": { lat: 20.9374, lon: 77.7796 },
+  "beed": { lat: 18.9891, lon: 75.7601 },
+  "bhandara": { lat: 21.1714, lon: 79.6548 },
+  "buldhana": { lat: 20.5310, lon: 76.1847 },
+  "chandrapur": { lat: 19.9615, lon: 79.2961 },
+  "chattrapati sambhajinagar": { lat: 19.8762, lon: 75.3433 },
+  "aurangabad": { lat: 19.8762, lon: 75.3433 },
+  "dharashiv": { lat: 18.1853, lon: 76.0419 },
+  "osmanabad": { lat: 18.1853, lon: 76.0419 },
+  "dhule": { lat: 20.9042, lon: 74.7749 },
+  "gadchiroli": { lat: 20.1849, lon: 79.9948 },
+  "gondia": { lat: 21.4554, lon: 80.1961 },
+  "hingoli": { lat: 19.7196, lon: 77.1477 },
+  "jalgaon": { lat: 21.0077, lon: 75.5626 },
+  "jalna": { lat: 19.8410, lon: 75.8864 },
+  "jalana": { lat: 19.8410, lon: 75.8864 },
+  "kolhapur": { lat: 16.7050, lon: 74.2433 },
+  "latur": { lat: 18.4088, lon: 76.5604 },
+  "mumbai": { lat: 19.0760, lon: 72.8777 },
+  "nagpur": { lat: 21.1458, lon: 79.0882 },
+  "nanded": { lat: 19.1383, lon: 77.3210 },
+  "nandurbar": { lat: 21.3686, lon: 74.2415 },
+  "nashik": { lat: 19.9975, lon: 73.7898 },
+  "nasik": { lat: 19.9975, lon: 73.7898 },
+  "palghar": { lat: 19.6967, lon: 72.7699 },
+  "parbhani": { lat: 19.2686, lon: 76.7708 },
+  "pune": { lat: 18.5204, lon: 73.8567 },
+  "raigad": { lat: 18.5158, lon: 73.1822 },
+  "ratnagiri": { lat: 16.9902, lon: 73.3120 },
+  "sangli": { lat: 16.8524, lon: 74.5815 },
+  "satara": { lat: 17.6805, lon: 74.0183 },
+  "sindhudurg": { lat: 16.1118, lon: 73.6980 },
+  "solapur": { lat: 17.6599, lon: 75.9064 },
+  "sholapur": { lat: 17.6599, lon: 75.9064 },
+  "thane": { lat: 19.2183, lon: 72.9781 },
+  "wardha": { lat: 20.7453, lon: 78.6022 },
+  "washim": { lat: 20.1110, lon: 77.1350 },
+  "vashim": { lat: 20.1110, lon: 77.1350 },
+  "yavatmal": { lat: 20.3888, lon: 78.1204 }
+};
+
+const TOWN_COORDINATES = {
+  // Kolhapur District
+  "kolhapur": { lat: 16.7050, lon: 74.2433 },
+  "vadgaonpeth": { lat: 16.8242, lon: 74.2965 },
+  "vadgaon": { lat: 16.8242, lon: 74.2965 },
+  "ichalkaranji": { lat: 16.6975, lon: 74.4649 },
+  "gadhinglaj": { lat: 16.2285, lon: 74.3541 },
+  "jaysingpur": { lat: 16.7800, lon: 74.5500 },
+  "gargoti": { lat: 16.3100, lon: 74.1500 },
+  "kagal": { lat: 16.5800, lon: 74.3100 },
+
+  // Sangli District
+  "sangli": { lat: 16.8524, lon: 74.5815 },
+  "miraj": { lat: 16.8286, lon: 74.6469 },
+  "islampur": { lat: 17.0478, lon: 74.2642 },
+  "urunkoli": { lat: 17.0478, lon: 74.2642 },
+  "tasgaon": { lat: 17.0344, lon: 74.6033 },
+  "palus": { lat: 17.0988, lon: 74.4533 },
+  "vita": { lat: 17.2750, lon: 74.5372 },
+  "atpadi": { lat: 17.4200, lon: 74.9500 },
+  "jat": { lat: 17.0400, lon: 75.3300 },
+  "shirala": { lat: 16.9800, lon: 74.1300 },
+  "kadegaon": { lat: 17.3000, lon: 74.3300 },
+
+  // Satara District
+  "satara": { lat: 17.6805, lon: 74.0183 },
+  "karad": { lat: 17.2889, lon: 74.1844 },
+  "phaltan": { lat: 17.9867, lon: 74.4317 },
+  "koregaon": { lat: 17.7014, lon: 74.1708 },
+  "lonand": { lat: 18.0417, lon: 74.1917 },
+  "patan": { lat: 17.3700, lon: 73.9000 },
+  "vaduj": { lat: 17.6000, lon: 74.4500 },
+  "vai": { lat: 17.9500, lon: 73.9000 },
+  "wai": { lat: 17.9500, lon: 73.9000 },
+  "khandala": { lat: 18.0600, lon: 74.0300 },
+
+  // Pune District
+  "pune": { lat: 18.5204, lon: 73.8567 },
+  "baramati": { lat: 18.1517, lon: 74.5772 },
+  "dound": { lat: 18.4650, lon: 74.5786 },
+  "indapur": { lat: 18.1158, lon: 75.0292 },
+  "bhigwan": { lat: 18.2917, lon: 74.7708 },
+  "nimgaon": { lat: 18.1700, lon: 74.9000 },
+  "junnar": { lat: 19.2089, lon: 73.8767 },
+  "narayangaon": { lat: 19.1200, lon: 73.9700 },
+  "alephata": { lat: 19.1900, lon: 74.1200 },
+  "otur": { lat: 19.2600, lon: 73.9200 },
+  "khed": { lat: 18.8475, lon: 73.9022 },
+  "chakan": { lat: 18.7564, lon: 73.8572 },
+  "shel": { lat: 18.8100, lon: 73.8800 },
+  "manchar": { lat: 19.0000, lon: 73.9400 },
+  "shirur": { lat: 18.8250, lon: 74.3750 },
+  "khadiki": { lat: 18.5600, lon: 73.8300 },
+  "manjri": { lat: 18.5000, lon: 73.9800 },
+  "moshi": { lat: 18.6700, lon: 73.8400 },
+  "pimpri": { lat: 18.6275, lon: 73.8009 },
+  "saswad": { lat: 18.3444, lon: 74.0306 },
+  "nira": { lat: 18.1000, lon: 74.2200 },
+
+  // Solapur District
+  "solapur": { lat: 17.6599, lon: 75.9064 },
+  "sholapur": { lat: 17.6599, lon: 75.9064 },
+  "pandharpur": { lat: 17.6778, lon: 75.3267 },
+  "barshi": { lat: 18.2333, lon: 75.6833 },
+  "akkalkot": { lat: 17.5244, lon: 76.2056 },
+  "karmala": { lat: 18.4100, lon: 75.2000 },
+  "kurduwadi": { lat: 18.0900, lon: 75.4300 },
+  "mangolwedha": { lat: 17.5100, lon: 75.4500 },
+  "mohol": { lat: 17.8100, lon: 75.6500 },
+  "sangole": { lat: 17.4300, lon: 75.2000 },
+  "malshiras": { lat: 17.8500, lon: 74.9000 },
+
+  // Nashik District
+  "nashik": { lat: 19.9975, lon: 73.7898 },
+  "nasik": { lat: 19.9975, lon: 73.7898 },
+  "malegaon": { lat: 20.5539, lon: 74.5289 },
+  "lasalgaon": { lat: 20.1444, lon: 74.2289 },
+  "niphad": { lat: 20.0800, lon: 74.1100 },
+  "yeola": { lat: 20.0417, lon: 74.4833 },
+  "chandwad": { lat: 20.3278, lon: 74.2417 },
+  "sinnar": { lat: 19.8456, lon: 73.9986 },
+  "dindori": { lat: 20.2000, lon: 73.8300 },
+  "kalwan": { lat: 20.4900, lon: 73.9400 },
+  "satana": { lat: 20.5900, lon: 74.2000 },
+  "deola": { lat: 20.4400, lon: 74.1800 },
+  "pimpalgaon": { lat: 20.1700, lon: 73.9800 },
+  "ghoti": { lat: 19.7200, lon: 73.6600 },
+  "igatpuri": { lat: 19.7000, lon: 73.5600 },
+
+  // Ahmednagar District
+  "ahmednagar": { lat: 19.0948, lon: 74.7480 },
+  "ahilyanagar": { lat: 19.0948, lon: 74.7480 },
+  "shrirampur": { lat: 19.6167, lon: 74.6500 },
+  "kopargaon": { lat: 19.8800, lon: 74.4800 },
+  "rahata": { lat: 19.7100, lon: 74.4800 },
+  "shirdi": { lat: 19.7667, lon: 74.4767 },
+  "sangamner": { lat: 19.5700, lon: 74.2100 },
+  "rahuri": { lat: 19.3900, lon: 74.6500 },
+  "shevgaon": { lat: 19.3400, lon: 75.2200 },
+  "pathardi": { lat: 19.1700, lon: 75.1800 },
+  "parner": { lat: 19.0000, lon: 74.4400 },
+  "shrigonda": { lat: 18.6167, lon: 74.6967 },
+  "karjat": { lat: 18.9100, lon: 75.0000 },
+  "jamkhed": { lat: 18.7300, lon: 75.3200 },
+  "akole": { lat: 19.5400, lon: 73.9300 },
+  "nevasa": { lat: 19.5500, lon: 74.9200 },
+
+  // Chhatrapati Sambhajinagar
+  "chhatrapati sambhajinagar": { lat: 19.8762, lon: 75.3433 },
+  "aurangabad": { lat: 19.8762, lon: 75.3433 },
+  "paithan": { lat: 19.4800, lon: 75.3800 },
+  "vaijapur": { lat: 19.9200, lon: 74.7300 },
+  "gangapur": { lat: 19.7000, lon: 75.0100 },
+  "kannad": { lat: 20.2600, lon: 75.1300 },
+  "sillod": { lat: 20.3000, lon: 75.6500 },
+  "lasur": { lat: 19.8400, lon: 75.0500 },
+
+  // Jalgaon District
+  "jalgaon": { lat: 21.0077, lon: 75.5626 },
+  "bhusawal": { lat: 21.0458, lon: 75.7972 },
+  "chalisgaon": { lat: 20.4633, lon: 74.9967 },
+  "chopada": { lat: 21.2500, lon: 75.3000 },
+  "amalner": { lat: 21.0433, lon: 75.0567 },
+  "pachora": { lat: 20.6667, lon: 75.3500 },
+  "jamner": { lat: 20.8100, lon: 75.7800 },
+  "raver": { lat: 21.2400, lon: 75.9700 },
+  "yawal": { lat: 21.1700, lon: 75.7000 },
+
+  // Nagpur District
+  "nagpur": { lat: 21.1458, lon: 79.0882 },
+  "katol": { lat: 21.2700, lon: 78.5800 },
+  "saoner": { lat: 21.3900, lon: 78.9100 },
+  "ramtek": { lat: 21.4000, lon: 79.3300 },
+  "umred": { lat: 20.8500, lon: 79.3300 },
+  "kalmeshwar": { lat: 21.2300, lon: 78.9200 },
+  "hingna": { lat: 21.0600, lon: 78.9600 },
+  "narkhed": { lat: 21.3500, lon: 78.5300 },
+  "kamthi": { lat: 21.2300, lon: 79.1900 },
+
+  // Mumbai & Thane & Raigad
+  "mumbai": { lat: 19.0760, lon: 72.8777 },
+  "vashi": { lat: 19.0771, lon: 72.9986 },
+  "kalyan": { lat: 19.2437, lon: 73.1355 },
+  "thane": { lat: 19.2183, lon: 72.9781 },
+  "ulhasnagar": { lat: 19.2215, lon: 73.1644 },
+  "bhiwandi": { lat: 19.2967, lon: 73.0631 },
+  "palghar": { lat: 19.6967, lon: 72.7699 },
+  "vasai": { lat: 19.3919, lon: 72.8397 },
+  "panvel": { lat: 18.9894, lon: 73.1175 },
+  "alibag": { lat: 18.6414, lon: 72.8722 },
+  "pen": { lat: 18.7300, lon: 73.0900 },
+  "mahad": { lat: 18.0800, lon: 73.4200 },
+
+  // Amravati, Akola, Buldhana, Washim
+  "amravati": { lat: 20.9374, lon: 77.7796 },
+  "amarawati": { lat: 20.9374, lon: 77.7796 },
+  "achlapur": { lat: 21.2600, lon: 77.5100 },
+  "morshi": { lat: 21.3200, lon: 78.0100 },
+  "warud": { lat: 21.4600, lon: 78.2600 },
+  "daryapur": { lat: 20.9300, lon: 77.3300 },
+  "akola": { lat: 20.7002, lon: 77.0082 },
+  "akot": { lat: 21.1000, lon: 77.0600 },
+  "khamgaon": { lat: 20.6900, lon: 76.5700 },
+  "malkapur": { lat: 20.8800, lon: 76.2000 },
+  "chikhli": { lat: 20.3500, lon: 76.2500 },
+  "mehkar": { lat: 20.1500, lon: 76.5700 },
+  "shegaon": { lat: 20.7900, lon: 76.6900 },
+  "washim": { lat: 20.1110, lon: 77.1350 },
+  "vashim": { lat: 20.1110, lon: 77.1350 },
+  "risod": { lat: 19.9700, lon: 76.7800 },
+  "karanja": { lat: 20.4800, lon: 77.4900 },
+
+  // Nanded, Latur, Parbhani, Hingoli, Beed, Jalna, Dharashiv
+  "nanded": { lat: 19.1383, lon: 77.3210 },
+  "latur": { lat: 18.4088, lon: 76.5604 },
+  "udgir": { lat: 18.3900, lon: 77.1200 },
+  "ahmedpur": { lat: 18.7000, lon: 76.9300 },
+  "nilanga": { lat: 18.1300, lon: 76.7500 },
+  "parbhani": { lat: 19.2686, lon: 76.7708 },
+  "gangakhed": { lat: 18.9500, lon: 76.7500 },
+  "jintur": { lat: 19.6100, lon: 76.6900 },
+  "hingoli": { lat: 19.7196, lon: 77.1477 },
+  "beed": { lat: 18.9891, lon: 75.7601 },
+  "georai": { lat: 19.2600, lon: 75.7500 },
+  "majilgaon": { lat: 19.1500, lon: 76.0700 },
+  "ambajogai": { lat: 18.7300, lon: 76.3800 },
+  "parli": { lat: 18.8500, lon: 76.5300 },
+  "jalna": { lat: 19.8410, lon: 75.8864 },
+  "ambad": { lat: 19.6100, lon: 75.8000 },
+  "partur": { lat: 19.6000, lon: 76.2100 },
+  "dharashiv": { lat: 18.1853, lon: 76.0419 },
+  "tuljapur": { lat: 18.0100, lon: 76.0800 },
+  "omerga": { lat: 17.8400, lon: 76.6200 },
+
+  // Wardha, Chandrapur, Yavatmal, Bhandara, Gondia, Gadchiroli
+  "wardha": { lat: 20.7453, lon: 78.6022 },
+  "hinganghat": { lat: 20.5500, lon: 78.8400 },
+  "arvi": { lat: 20.9800, lon: 78.2300 },
+  "chandrapur": { lat: 19.9615, lon: 79.2961 },
+  "warora": { lat: 20.2300, lon: 79.0000 },
+  "bhadravati": { lat: 20.1000, lon: 79.1200 },
+  "yavatmal": { lat: 20.3888, lon: 78.1204 },
+  "pusad": { lat: 19.9100, lon: 77.5800 },
+  "wani": { lat: 20.0600, lon: 78.9500 },
+  "digras": { lat: 20.1100, lon: 77.7200 },
+  "darwha": { lat: 20.3100, lon: 77.7700 },
+  "umarkhed": { lat: 19.6000, lon: 77.7000 },
+  "bhandara": { lat: 21.1714, lon: 79.6548 },
+  "tumsar": { lat: 21.3800, lon: 79.7400 },
+  "sakoli": { lat: 21.0800, lon: 79.9800 },
+  "gondia": { lat: 21.4554, lon: 80.1961 },
+  "tirora": { lat: 21.4100, lon: 79.9300 },
+  "gadchiroli": { lat: 20.1849, lon: 79.9948 },
+  "dhule": { lat: 20.9042, lon: 74.7749 },
+  "shirpur": { lat: 21.3500, lon: 74.8800 },
+  "dondaicha": { lat: 21.3300, lon: 74.5700 },
+  "nandurbar": { lat: 21.3686, lon: 74.2415 },
+  "shahada": { lat: 21.5400, lon: 74.4700 },
+  "taloda": { lat: 21.5600, lon: 74.2100 },
+  "ratnagiri": { lat: 16.9902, lon: 73.3120 },
+  "chiplun": { lat: 17.5300, lon: 73.5100 },
+  "sindhudurg": { lat: 16.1118, lon: 73.6980 },
+  "kankavli": { lat: 16.2700, lon: 73.7100 },
+  "kudal": { lat: 16.0000, lon: 73.6900 },
+  "sawantwadi": { lat: 15.9000, lon: 73.8200 }
+};
+
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth radius in KM
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getMarketCoordinate(marketName) {
+  if (!marketName) return null;
+  const lower = marketName.toLowerCase();
+
+  // 1. Check parenthesized token first
+  const parenMatch = lower.match(/\((.*?)\)/);
+  if (parenMatch && parenMatch[1]) {
+    const insideTokens = parenMatch[1].match(/[a-zA-Z]+/g) || [];
+    for (const tk of insideTokens) {
+      if (TOWN_COORDINATES[tk]) return TOWN_COORDINATES[tk];
+    }
+  }
+
+  // 2. Check main town words
+  const clean = lower
+    .replace(/\(.*?\)/g, " ")
+    .replace(/\b(apmc|market|committee|produce|agriculture|phale|bhajipura|bhajipala)\b/g, " ");
+  const tokens = clean.match(/[a-zA-Z]+/g) || [];
+
+  for (const tk of tokens) {
+    if (TOWN_COORDINATES[tk]) return TOWN_COORDINATES[tk];
+    if (DISTRICT_COORDINATES[tk]) return DISTRICT_COORDINATES[tk];
+  }
+
+  return null;
+}
+
+function findNearbyMarkets(userLat, userLon, allCities, maxRadiusKm = 70) {
+  if (!userLat || !userLon || !Array.isArray(allCities) || !allCities.length) {
+    return [];
+  }
+
+  const matched = [];
+
+  for (const city of allCities) {
+    const coords = getMarketCoordinate(city);
+    if (!coords) continue;
+
+    const distKm = haversineDistance(userLat, userLon, coords.lat, coords.lon);
+    if (distKm <= maxRadiusKm) {
+      matched.push({
+        market: city,
+        distanceKm: Math.round(distKm * 10) / 10
+      });
+    }
+  }
+
+  // Sort strictly by distance from the user's current location (closest first)
+  matched.sort((a, b) => a.distanceKm - b.distanceKm);
+
+  return matched;
+}
+
 // ─── SEARCHABLE CITY MULTI-SELECT ─────────────────────────────────────────────
 function CitySearchSelect({ cities, selectedCities, onToggle }) {
   const { t } = useTranslation();
@@ -62,15 +400,18 @@ function CitySearchSelect({ cities, selectedCities, onToggle }) {
         <span style={{ fontSize: "10px", color: "var(--tx-s)" }}>{open ? "▲" : "▼"}</span>
       </div>
       {selectedCities.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "6px" }}>
-          {selectedCities.map(city => (
-            <div key={city} style={{
+        <div style={{
+          display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "6px",
+          maxHeight: "150px", overflowY: "auto", scrollbarWidth: "thin", paddingRight: "2px"
+        }}>
+          {selectedCities.map((city, idx) => (
+            <div key={`${city}-${idx}`} style={{
               display: "flex", alignItems: "center", gap: "4px",
               background: "var(--cp-pale)", border: "1px solid rgba(63,107,51,.3)",
               borderRadius: "20px", padding: "2px 8px 2px 10px",
               fontSize: "10px", color: "var(--cp)", fontWeight: 600,
             }}>
-              {city.replace(/ APMC$/, "")}
+              {city}
               <span onClick={(e) => { e.stopPropagation(); onToggle(city); }}
                 style={{ cursor: "pointer", fontSize: "13px", lineHeight: 1, color: "var(--cp)", fontWeight: 900, marginLeft: "2px" }}>×</span>
             </div>
@@ -98,20 +439,24 @@ function CitySearchSelect({ cities, selectedCities, onToggle }) {
               style={{ fontSize: "10px", color: "var(--tx-s)", background: "none", border: "none", cursor: "pointer", fontWeight: 600, padding: 0 }}>{t("farmer.clear_filter", "Clear")}</button>
             <span style={{ fontSize: "10px", color: "var(--tx-s)", marginLeft: "auto" }}>{filtered.length} / {cities.length}</span>
           </div>
-          <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+          <div style={{ maxHeight: "200px", overflowY: "auto", scrollbarGutter: "stable" }}>
             {filtered.length === 0 ? (
               <div style={{ padding: "16px", textAlign: "center", fontSize: "12px", color: "var(--tx-s)" }}>{t("mi.no_markets_match")} "{search}"</div>
-            ) : filtered.map(city => (
-              <label key={city} style={{
-                display: "flex", alignItems: "center", gap: "8px",
-                padding: "7px 12px", cursor: "pointer",
-                background: selectedCities.includes(city) ? "var(--cp-pale)" : "transparent",
-              }}>
-                <input type="checkbox" checked={selectedCities.includes(city)} onChange={() => onToggle(city)}
-                  style={{ accentColor: "var(--cp)", width: 13, height: 13 }} />
-                <span style={{ fontSize: "12px", color: "var(--tx)", fontWeight: selectedCities.includes(city) ? 600 : 400 }}>{city}</span>
-              </label>
-            ))}
+            ) : filtered.map(city => {
+              const isSel = selectedCities.includes(city);
+              return (
+                <label key={city} style={{
+                  display: "flex", alignItems: "center", gap: "8px",
+                  padding: "7px 12px", cursor: "pointer",
+                  background: isSel ? "var(--cp-pale)" : "transparent",
+                  transition: "background .12s",
+                }}>
+                  <input type="checkbox" checked={isSel} onChange={() => onToggle(city)}
+                    style={{ accentColor: "var(--cp)", width: 14, height: 14, cursor: "pointer" }} />
+                  <span style={{ fontSize: "12px", color: isSel ? "var(--cp)" : "var(--tx)", fontWeight: isSel ? 700 : 400 }}>{city}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
       )}
@@ -513,12 +858,12 @@ function Spin() {
   return <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />;
 }
 
-function StatCard({ label, value, sub, color }) {
+function StatCard({ label, value, sub }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm text-center">
-      <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">{label}</div>
-      <div className="text-2xl font-extrabold leading-tight text-green-600 dark:text-green-500">{value}</div>
-      {sub && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{sub}</div>}
+    <div style={CARD} className="text-center shadow-sm">
+      <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".7px", marginBottom: "6px" }}>{label}</div>
+      <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "var(--cp)", fontFamily: "var(--fd)", lineHeight: 1.1 }}>{value}</div>
+      {sub && <div style={{ fontSize: "11px", color: "var(--tx-s)", marginTop: "4px" }}>{sub}</div>}
     </div>
   );
 }
@@ -661,6 +1006,16 @@ export default function FarmerMarketIntelligencePage() {
   const [syncing,     setSyncing]     = useState(false);
   const [toast,       setToast]       = useState("");
 
+  // Location detection state & run-once refs
+  const hasAutoLocatedRef = useRef(false);
+  const citiesRef         = useRef([]);
+  citiesRef.current       = cities;
+
+  const [locating,        setLocating]        = useState(false);
+  const [locationStatus,  setLocationStatus]  = useState("idle"); // idle | locating | detected | denied | unavailable
+  const [detectedPlace,   setDetectedPlace]   = useState("");
+  const [locationError,   setLocationError]   = useState("");
+
   // ARIMA state
   const [arimaLoading,  setArimaLoading]  = useState(false);
   const [arimaData,     setArimaData]     = useState(null);  // { city, commodity, forecast, actual_context }
@@ -672,20 +1027,86 @@ export default function FarmerMarketIntelligencePage() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
 
+  const detectUserLocation = useCallback((availableCities, isManual = false) => {
+    if (!isManual && hasAutoLocatedRef.current) return;
+    hasAutoLocatedRef.current = true;
+    const pool = (availableCities && availableCities.length) ? availableCities : citiesRef.current;
+    if (!pool || !pool.length) return;
+    if (!navigator.geolocation) {
+      setLocationStatus("unavailable");
+      return;
+    }
+    setLocating(true);
+    setLocationStatus("locating");
+    setLocationError("");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lon } = pos.coords;
+        let placeName = "";
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, {
+            signal: AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined
+          });
+          const d = await res.json();
+          const addr = d.address || {};
+          placeName = addr.city || addr.town || addr.county || addr.state_district || addr.state || "";
+        } catch {}
+
+        const nearby = findNearbyMarkets(lat, lon, pool, 70);
+        if (nearby && nearby.length > 0) {
+          const resolved = nearby.map(n => n.market);
+          setSelectedCities(resolved);
+          setHeatCity(resolved[0]);
+          setArimaCity(resolved[0]);
+          const label = placeName || resolved[0].replace(/ APMC$/i, "");
+          setDetectedPlace(label);
+          setLocationStatus("detected");
+          showToast(`📍 ${t("mi.location_detected", { location: label })}: ${resolved.map(r => r.replace(/ APMC$/i, '')).join(', ')}`);
+        } else {
+          setLocationStatus("manual");
+          setLocationError(t("mi.no_nearby_markets", "No APMC markets found within 70 km of your location. Please select a market manually."));
+          setSelectedCities([]);
+        }
+        setLocating(false);
+      },
+      (err) => {
+        setLocating(false);
+        setLocationStatus(err.code === 1 ? "denied" : "unavailable");
+        if (err.code === 1) {
+          setLocationError(t("mi.location_unavailable", "Location permission denied. Please select your market manually."));
+        }
+      },
+      { timeout: 10000, enableHighAccuracy: false }
+    );
+  }, [t]);
+
   useEffect(() => {
-    marketAPI.cities().then(({ data }) => {
-      setCities(data);
-      const defaults = data.slice(0, 3);
-      setSelectedCities(defaults);
-      if (defaults.length) { setHeatCity(defaults[0]); setArimaCity(defaults[0]); }
-    }).catch(() => {});
-    marketAPI.commodities().then(({ data }) => {
-      setCommodities(data);
-      if (data[0]) { setCommodity(data[0]); setArimaCommodity(data[0]); }
-    }).catch(() => {});
-    marketAPI.syncStatus().then(({ data }) => setSyncStatus(data)).catch(() => {});
-    mlAPI.metadata().then(({ data }) => setMlMeta(data)).catch(() => {});
-  }, []);
+    Promise.all([
+      marketAPI.cities(),
+      marketAPI.commodities(),
+      marketAPI.syncStatus(),
+      mlAPI.metadata(),
+    ]).then(([citiesRes, commsRes, syncRes, mlRes]) => {
+      const cityList = citiesRes.data || [];
+      setCities(cityList);
+      citiesRef.current = cityList;
+
+      const commList = commsRes.data || [];
+      setCommodities(commList);
+      if (commList.length > 0) {
+        setCommodity(commList[0]);
+        setArimaCommodity(commList[0]);
+      }
+
+      if (syncRes.data) setSyncStatus(syncRes.data);
+      if (mlRes.data) setMlMeta(mlRes.data);
+
+      // Auto-detect location once with freshly loaded cities
+      detectUserLocation(cityList, false);
+    }).catch((err) => {
+      console.error("Failed to load initial market data:", err);
+    });
+  }, [detectUserLocation]);
 
   const fetchTrend = useCallback(() => {
     if (!selectedCities.length || !commodity) return;
@@ -779,23 +1200,22 @@ export default function FarmerMarketIntelligencePage() {
 
       {/* Header */}
       <div className="animate-[fadeup_0.4s_ease-out] mb-6">
-        <div className="flex items-start justify-between flex-wrap gap-3">
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
           <div>
-            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
+            <h1 style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--tx)", display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
               📊 {t('mi.title', 'Market Intelligence')}
             </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p style={{ fontSize: "13px", color: "var(--tx-m)" }}>
               {t('mi.subtitle', 'Live APMC price data · Maharashtra · Auto-updated daily')}
             </p>
           </div>
-          <div className="flex gap-2 items-center">
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             {syncStatus?.newest && (
-              <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
+              <div style={{ fontSize: "11px", color: "var(--tx-s)", background: "var(--bg-l)", padding: "6px 14px", borderRadius: "20px", border: "1px solid var(--bd)" }}>
                 {t('mi.latest_date', 'Latest:')} {syncStatus.newest}
               </div>
             )}
-            <button onClick={handleSync} disabled={syncing}
-              className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 font-bold text-sm cursor-pointer flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+            <button onClick={handleSync} disabled={syncing} style={SECONDARY_BTN}>
               {syncing ? <><Spin /> {t('mi.forecasting', 'Syncing…')}</> : `🔄 ${t('mi.sync_now', 'Sync Now')}`}
             </button>
           </div>
@@ -804,13 +1224,15 @@ export default function FarmerMarketIntelligencePage() {
 
       {/* Market Overview & Crop Cards */}
       {syncStatus && (
-        <div className="mb-6">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">{t('mi.market_overview', 'Market Overview')}</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <StatCard label={t('mi.latest_date', 'Latest Date')} value={syncStatus.newest || "—"} sub={syncStatus.oldest ? `from ${syncStatus.oldest}` : ""} color="#16a34a" />
-            <StatCard label={t('mi.cities_tracked', 'Cities Tracked')} value={cities.length || "—"} color="#16a34a" />
-            <StatCard label={t('mi.commodities', 'Commodities')} value={commodities.length || "—"} color="#16a34a" />
-            <StatCard label={t('market.live_apmc_data', 'Live APMC Data')} value={t('market.active', 'Active')} color="#16a34a" />
+        <div style={{ marginBottom: "24px" }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--tx)", marginBottom: "12px" }}>
+            {t('mi.market_overview', 'Market Overview')}
+          </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
+            <StatCard label={t('mi.latest_date', 'Latest Date')} value={syncStatus.newest || "—"} sub={syncStatus.oldest ? `from ${syncStatus.oldest}` : ""} />
+            <StatCard label={t('mi.cities_tracked', 'Cities Tracked')} value={cities.length || "—"} />
+            <StatCard label={t('mi.commodities', 'Commodities')} value={commodities.length || "—"} />
+            <StatCard label={t('market.live_apmc_data', 'Live APMC Data')} value={t('market.active', 'Active')} />
           </div>
         </div>
       )}
@@ -820,11 +1242,72 @@ export default function FarmerMarketIntelligencePage() {
         {/* SIDEBAR */}
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <div style={CARD}>
-            <div style={{ ...LBL, marginBottom: "8px" }}>
-              {t("market.markets_cities")}
-              {selectedCities.length > 0 && <span style={{ color: "var(--cp)", marginLeft: "6px", fontWeight: 700, fontSize: "10px" }}>({selectedCities.length})</span>}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", gap: "4px" }}>
+              <div style={LBL}>
+                {t("market.markets_cities")}
+                {selectedCities.length > 0 && <span style={{ color: "var(--cp)", marginLeft: "6px", fontWeight: 700, fontSize: "10px" }}>({selectedCities.length})</span>}
+              </div>
+              <button
+                type="button"
+                onClick={() => detectUserLocation(citiesRef.current, true)}
+                disabled={locating}
+                title={t("mi.detect_location", "Detect nearest markets by GPS")}
+                style={{
+                  background: "var(--bg-m)", border: "1px solid var(--bd)", borderRadius: "6px",
+                  padding: "2px 8px", fontSize: "10px", color: "var(--cp)", fontWeight: 700,
+                  cursor: "pointer", display: "flex", alignItems: "center", gap: "4px",
+                  transition: "all .15s"
+                }}
+              >
+                <span>📍</span>
+                {locating
+                  ? t("mi.detecting_location", "Detecting…")
+                  : detectedPlace
+                    ? detectedPlace
+                    : t("mi.detect_location", "Detect")}
+              </button>
             </div>
+
+            {locationError && (
+              <div style={{
+                marginBottom: "8px", padding: "6px 8px", background: "var(--warn-bg)",
+                border: "1px solid var(--warn)", borderRadius: "6px", fontSize: "10.5px",
+                color: "var(--tx)", lineHeight: 1.4
+              }}>
+                {locationError}
+              </div>
+            )}
+
             <CitySearchSelect cities={cities} selectedCities={selectedCities} onToggle={toggleCity} />
+
+            {/* Quick-pick popular Mandis when no city is selected */}
+            {selectedCities.length === 0 && (
+              <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid var(--bd)" }}>
+                <div style={{ fontSize: "10px", color: "var(--tx-s)", marginBottom: "6px", fontWeight: 600 }}>
+                  {t("mi.quick_markets", "Popular Mandis:")}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                  {["Pune", "Nashik", "Nagpur", "Mumbai", "Chhatrapati Sambhajinagar", "Kolhapur", "Solapur", "Jalgaon"].map(hub => {
+                    const match = cities.find(c => c.toLowerCase() === hub.toLowerCase() || c.toLowerCase().startsWith(hub.toLowerCase()));
+                    if (!match) return null;
+                    return (
+                      <button
+                        key={hub}
+                        type="button"
+                        onClick={() => toggleCity(match)}
+                        style={{
+                          background: "var(--bg-m)", border: "1px solid var(--bd)",
+                          borderRadius: "12px", padding: "2px 8px", fontSize: "10px",
+                          color: "var(--tx-m)", cursor: "pointer", transition: "all .12s"
+                        }}
+                      >
+                        + {hub}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={CARD}>
@@ -900,51 +1383,76 @@ export default function FarmerMarketIntelligencePage() {
                 {/* The single chart — passes both actual + forecast series together */}
                 {lineSeries.length > 0 || arimaChartActual.length > 0
                   ? <LineChart series={lineSeries} forecastSeries={arimaChartForecast} />
-                  : <div style={{ padding: "40px", textAlign: "center", color: "var(--tx-s)", fontSize: "13px" }}>
-                      {loading ? t("market.loading") : t("market.select_market_notice")}
+                  : <div style={{ padding: "48px 20px", textAlign: "center", color: "var(--tx-s)" }}>
+                      <div style={{ fontSize: "36px", marginBottom: "10px" }}>📍</div>
+                      <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--tx)", marginBottom: "6px" }}>
+                        {t("mi.select_markets_prompt", "Select one or more markets to view live price trends & forecasts.")}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--tx-m)", maxWidth: "440px", margin: "0 auto 16px" }}>
+                        {locationStatus === "denied"
+                          ? t("mi.location_unavailable", "Location access unavailable. Please select your market manually from the left panel.")
+                          : t("mi.location_permission_needed", "Allow location access to auto-detect nearest APMC markets.")}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => detectUserLocation(citiesRef.current, true)}
+                        disabled={locating}
+                        style={{ ...BTN, display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 18px", fontSize: "12px", margin: "0 auto" }}
+                      >
+                        {locating ? <><Spin /> {t("mi.detecting_location", "Detecting…")}</> : <>📍 {t("mi.detect_location", "Auto-Detect Nearest Markets")}</>}
+                      </button>
                     </div>}
               </div>
 
               {/* ── ARIMA controls + side panel ── */}
-              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-6 shadow-sm">
+              <div style={CARD}>
                 {/* Section header */}
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600 dark:text-green-400">
-                    <span className="text-xl">📈</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: "10px",
+                    background: "var(--cp-pale)", display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "20px", flexShrink: 0
+                  }}>
+                    📈
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
+                    <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--tx)", lineHeight: 1.2 }}>
                       {t('mi.forecast_title', 'AI Price Forecast')}
                     </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <p style={{ fontSize: "12px", color: "var(--tx-m)", marginTop: "2px" }}>
                       {t('mi.forecast_desc', 'Forecast overlays directly onto the chart above. Select city, crop & horizon.')}
                     </p>
                   </div>
                 </div>
 
                 {/* Controls row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 mb-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800">
-                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                <div style={{
+                  display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between",
+                  gap: "14px", padding: "12px 16px", marginBottom: "20px",
+                  background: "var(--bg-l)", borderRadius: "10px", border: "1px solid var(--bd)"
+                }}>
+                  <div style={{ fontSize: "13px", color: "var(--tx-m)" }}>
                     {t('mi.using', 'Configured:')}{' '}
-                    <span className="font-semibold text-gray-800 dark:text-white">{selectedCities[0] || '—'}</span>
+                    <span style={{ fontWeight: 700, color: "var(--tx)" }}>{selectedCities[0] || '—'}</span>
                     {' · '}
-                    <span className="font-semibold text-gray-800 dark:text-white">{commodity || '—'}</span>
-                    <span className="text-[10px] text-gray-400 block sm:inline sm:ml-2">({t('mi.from_sidebar', 'from sidebar')})</span>
+                    <span style={{ fontWeight: 700, color: "var(--tx)" }}>{commodity || '—'}</span>
+                    <span style={{ fontSize: "11px", color: "var(--tx-s)", marginLeft: "6px" }}>({t('mi.from_sidebar', 'from sidebar')})</span>
                   </div>
                   
-                  <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('mi.horizon', 'Horizon')}</span>
-                      <div className="flex bg-white dark:bg-gray-800 p-0.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".6px" }}>{t('mi.horizon', 'Horizon')}</span>
+                      <div style={{ display: "flex", background: "var(--bg-m)", padding: "2px", borderRadius: "8px", border: "1px solid var(--bd)" }}>
                         {[7, 30].map(d => (
                           <button
                             key={d}
                             onClick={() => setArimaDays(d)}
-                            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
-                              arimaDays === d
-                                ? 'bg-green-600 text-white shadow-sm'
-                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                            }`}
+                            style={{
+                              padding: "4px 10px", fontSize: "12px", fontWeight: 700, borderRadius: "6px", border: "none", cursor: "pointer",
+                              background: arimaDays === d ? "var(--cp)" : "transparent",
+                              color: arimaDays === d ? "var(--cp-text)" : "var(--tx-m)",
+                              transition: "all .15s"
+                            }}
                           >
                             {d}d
                           </button>
@@ -955,7 +1463,7 @@ export default function FarmerMarketIntelligencePage() {
                     <button
                       onClick={handleArimaForecast}
                       disabled={arimaLoading}
-                      className="w-full sm:w-auto px-5 py-2 flex items-center justify-center gap-2 text-xs font-bold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-sans"
+                      style={{ ...BTN, display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", fontSize: "12px" }}
                     >
                       {arimaLoading ? (
                         <>
@@ -969,16 +1477,20 @@ export default function FarmerMarketIntelligencePage() {
                 </div>
 
                 {arimaError && (
-                  <div className="mb-6 p-4 rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/50 text-red-700 dark:text-red-400 text-sm flex items-center gap-2">
+                  <div style={{
+                    marginBottom: "20px", padding: "12px 16px", borderRadius: "10px",
+                    border: "1px solid var(--danger)", background: "var(--danger-bg)", color: "var(--danger)",
+                    fontSize: "13px", display: "flex", alignItems: "center", gap: "8px"
+                  }}>
                     ⚠️ {arimaError}
                   </div>
                 )}
 
                 {/* ── Side panel: per-day values (shown after forecast runs) ── */}
                 {arimaData ? (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-2 border-b border-gray-100 dark:border-gray-700/50 pb-2">
-                      <span className="text-xs font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid var(--bd)", paddingBottom: "8px" }}>
+                      <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".8px" }}>
                         📅 {arimaDays}-{t('mi.daily_forecast_suffix', 'Day Daily Forecast')} — {arimaData.city} · {arimaData.commodity}
                       </span>
                     </div>
@@ -992,38 +1504,35 @@ export default function FarmerMarketIntelligencePage() {
                       const trough = Math.min(...arimaData.forecast.map(p => p.min_price));
                       
                       return (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px" }}>
                           {[
                             {
                               label: t('mi.avg_price', 'Avg Price'),
                               val: `₹${Math.round(avg).toLocaleString('en-IN')}`,
-                              colorClass: 'text-purple-600 dark:text-purple-400',
-                              bgClass: 'bg-purple-50/50 dark:bg-purple-950/10 border-purple-100 dark:border-purple-900/30'
+                              color: "var(--info)",
                             },
                             {
                               label: t('mi.forecast_trend', 'Forecasted Trend'),
                               val: `${delta >= 0 ? '▲' : '▼'} ₹${Math.abs(Math.round(delta)).toLocaleString('en-IN')}`,
-                              colorClass: delta >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400',
-                              bgClass: delta >= 0 
-                                ? 'bg-green-50/50 dark:bg-green-950/10 border-green-100 dark:border-green-900/30' 
-                                : 'bg-red-50/50 dark:bg-red-950/10 border-red-100 dark:border-red-900/30'
+                              color: delta >= 0 ? "var(--safe)" : "var(--danger)",
                             },
                             {
                               label: t('mi.peak_max', 'Peak (Max)'),
                               val: `₹${Math.round(peak).toLocaleString('en-IN')}`,
-                              colorClass: 'text-amber-600 dark:text-amber-400',
-                              bgClass: 'bg-amber-50/50 dark:bg-amber-950/10 border-amber-100 dark:border-amber-900/30'
+                              color: "var(--warn)",
                             },
                             {
                               label: t('mi.floor_min', 'Floor (Min)'),
                               val: `₹${Math.round(trough).toLocaleString('en-IN')}`,
-                              colorClass: 'text-blue-600 dark:text-blue-400',
-                              bgClass: 'bg-blue-50/50 dark:bg-blue-950/10 border-blue-100 dark:border-blue-900/30'
+                              color: "var(--cp)",
                             }
-                          ].map(({ label, val, colorClass, bgClass }) => (
-                            <div key={label} className={`p-4 rounded-xl border text-center transition-all ${bgClass}`}>
-                              <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{label}</div>
-                              <div className={`text-xl font-black ${colorClass} tracking-tight`}>{val}</div>
+                          ].map(({ label, val, color }) => (
+                            <div key={label} style={{
+                              padding: "12px", borderRadius: "10px", border: "1px solid var(--bd)",
+                              background: "var(--bg-l)", textAlign: "center"
+                            }}>
+                              <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: "4px" }}>{label}</div>
+                              <div style={{ fontSize: "18px", fontWeight: 900, color, fontFamily: "var(--fd)" }}>{val}</div>
                             </div>
                           ))}
                         </div>
@@ -1031,7 +1540,7 @@ export default function FarmerMarketIntelligencePage() {
                     })()}
 
                     {/* Daily horizontal cards */}
-                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
+                    <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "10px" }}>
                       {arimaData.forecast.map((pt, i) => {
                         const prevPrice = i === 0 ? arimaData.last_actual_price : arimaData.forecast[i - 1].price;
                         const change = pt.price - prevPrice;
@@ -1039,35 +1548,37 @@ export default function FarmerMarketIntelligencePage() {
                         return (
                           <div
                             key={i}
-                            className={`min-w-[110px] flex-shrink-0 bg-white dark:bg-gray-800 border rounded-xl p-3 text-center transition-all hover:scale-105 duration-200 ${
-                              isUp 
-                                ? 'border-t-4 border-t-green-500 border-gray-200 dark:border-gray-700' 
-                                : 'border-t-4 border-t-red-500 border-red-100 dark:border-red-900/50 bg-red-50/10 dark:bg-red-950/5'
-                            }`}
+                            style={{
+                              minWidth: "115px", flexShrink: 0, background: "var(--bg-l)",
+                              border: "1px solid var(--bd)",
+                              borderTop: `4px solid ${isUp ? 'var(--safe)' : 'var(--danger)'}`,
+                              borderRadius: "10px", padding: "10px", textAlign: "center"
+                            }}
                           >
-                            <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+                            <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: "6px" }}>
                               {t('mi.day', 'Day')} {i + 1}
-                              <span className="block text-[8px] font-normal text-gray-400 dark:text-gray-500 mt-0.5">{pt.date.slice(5)}</span>
+                              <span style={{ display: "block", fontSize: "9px", fontWeight: 400, color: "var(--tx-s)", marginTop: "2px" }}>{pt.date.slice(5)}</span>
                             </div>
                             
-                            <div className="font-extrabold text-sm text-gray-950 dark:text-white mb-1">
+                            <div style={{ fontWeight: 900, fontSize: "14px", color: "var(--tx)", fontFamily: "var(--fd)", marginBottom: "4px" }}>
                               ₹{pt.price.toLocaleString('en-IN')}
                             </div>
                             
-                            <div className={`text-[10px] font-bold mb-3 flex items-center justify-center gap-0.5 ${
-                              isUp ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                            }`}>
+                            <div style={{
+                              fontSize: "10px", fontWeight: 700, marginBottom: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "2px",
+                              color: isUp ? "var(--safe)" : "var(--danger)"
+                            }}>
                               {isUp ? '▲' : '▼'} ₹{Math.abs(Math.round(change)).toLocaleString('en-IN')}
                             </div>
                             
-                            <div className="text-[9px] text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/50 pt-2 space-y-0.5">
-                              <div className="flex justify-between gap-1">
-                                <span className="text-[8px] text-gray-400">{t('mi.high_short', 'H:')}</span>
-                                <span className="font-medium text-gray-700 dark:text-gray-300">₹{Math.round(pt.max_price).toLocaleString('en-IN')}</span>
+                            <div style={{ fontSize: "10px", color: "var(--tx-m)", borderTop: "1px solid var(--bd)", paddingTop: "6px" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: "4px", marginBottom: "2px" }}>
+                                <span style={{ color: "var(--tx-s)" }}>{t('mi.high_short', 'H:')}</span>
+                                <span style={{ fontWeight: 600, color: "var(--tx)" }}>₹{Math.round(pt.max_price).toLocaleString('en-IN')}</span>
                               </div>
-                              <div className="flex justify-between gap-1">
-                                <span className="text-[8px] text-gray-400">{t('mi.low_short', 'L:')}</span>
-                                <span className="font-medium text-gray-700 dark:text-gray-300">₹{Math.round(pt.min_price).toLocaleString('en-IN')}</span>
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: "4px" }}>
+                                <span style={{ color: "var(--tx-s)" }}>{t('mi.low_short', 'L:')}</span>
+                                <span style={{ fontWeight: 600, color: "var(--tx)" }}>₹{Math.round(pt.min_price).toLocaleString('en-IN')}</span>
                               </div>
                             </div>
                           </div>
@@ -1077,12 +1588,15 @@ export default function FarmerMarketIntelligencePage() {
                   </div>
                 ) : (
                   !arimaLoading && (
-                    <div className="p-8 text-center bg-gray-50 dark:bg-gray-900/20 border border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
-                      <span className="text-2xl mb-2 block">🔮</span>
-                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    <div style={{
+                      padding: "36px 20px", textAlign: "center",
+                      background: "var(--bg-l)", border: "1px dashed var(--bd)", borderRadius: "12px"
+                    }}>
+                      <span style={{ fontSize: "2rem", display: "block", marginBottom: "8px" }}>🔮</span>
+                      <p style={{ fontSize: "14px", fontWeight: 700, color: "var(--tx)", marginBottom: "4px" }}>
                         {t('mi.no_forecast', 'No forecast runs active')}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p style={{ fontSize: "12px", color: "var(--tx-s)" }}>
                         {t('mi.no_forecast_sub', 'Select a city & commodity, choose horizon, and click Run Forecast to overlay predictions.')}
                       </p>
                     </div>

@@ -30,8 +30,8 @@ export default function StorageList({ storages=[], selectedId, riskLevel, onSele
             onClick={() => onSelect?.(s)}
             style={{
               padding:"12px 14px", borderRadius:"10px", cursor:"pointer",
-              border:`1.5px solid ${isSelected ? "var(--cp)" : urgent ? "rgba(139,58,43,.3)" : "var(--bd)"}`,
-              background: isSelected ? "var(--cp-pale)" : urgent ? "#FEF2F2" : "var(--bg-l)",
+              border:`1.5px solid ${isSelected ? "var(--cp)" : urgent ? "var(--danger)" : "var(--bd)"}`,
+              background: isSelected ? "var(--cp-pale)" : urgent ? "var(--danger-bg)" : "var(--bg-l)",
               transition:"all .15s",
             }}
           >
@@ -51,8 +51,8 @@ export default function StorageList({ storages=[], selectedId, riskLevel, onSele
                       fontWeight:700, flexShrink:0 }}>✓ {t("storage.verified")}</span>
                   )}
                   {isNew && (
-                    <span style={{ fontSize:"9px", color:"var(--cp)",
-                      background:"rgba(43,69,112,.12)", padding:"1px 6px", borderRadius:"99px",
+                    <span style={{ fontSize:"9px", color:"var(--info)",
+                      background:"var(--info-bg)", padding:"1px 6px", borderRadius:"99px",
                       fontWeight:700, flexShrink:0 }}>{t("storage.new")}</span>
                   )}
                 </div>
@@ -99,7 +99,7 @@ export default function StorageList({ storages=[], selectedId, riskLevel, onSele
                 style={{
                   padding:"5px 12px", borderRadius:"7px", border:"none",
                   background: isFull ? "var(--bg-m)" : s.has_operator ? "var(--cp)" : "var(--safe)",
-                  color: isFull ? "var(--tx-s)" : "#fff",
+                  color: isFull ? "var(--tx-s)" : "var(--cp-text)",
                   fontSize:"11px", fontWeight:700,
                   cursor: isFull ? "not-allowed" : "pointer", flexShrink:0
                 }}>

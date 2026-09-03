@@ -26,7 +26,7 @@ const CARD = {
   padding:"20px", border:"1px solid var(--bd)",
 };
 const ERR_BOX = {
-  background:"rgba(139,58,43,.08)", border:"1px solid rgba(139,58,43,.25)",
+  background:"var(--danger-bg)", border:"1px solid var(--danger)",
   color:"var(--danger)", borderRadius:"10px", padding:"10px 14px",
   fontSize:"13px", marginBottom:"12px",
 };

@@ -373,7 +373,15 @@
     "no_forecast": "कोई पूर्वानुमान सक्रिय नहीं है",
     "no_forecast_sub": "शहर और फसल चुनें, अवधि चुनें और पूर्वानुमान देखें पर क्लिक करें।",
     "no_data": "इस चयन के लिए कोई डेटा उपलब्ध नहीं है",
-    "no_markets_match": "कोई मंडी नहीं मिली"
+    "no_markets_match": "कोई मंडी नहीं मिली",
+    "detect_location": "स्थान खोजें",
+    "detecting_location": "स्थान खोज रहे हैं…",
+    "location_detected": "{{location}} के नजदीकी मंडी",
+    "location_unavailable": "स्थान अनुपलब्ध है। कृपया नीचे से अपनी मंडी चुनें।",
+    "location_permission_needed": "नजदीकी APMC मंडी देखने के लिए स्थान अनुमति दें।",
+    "select_markets_prompt": "लाइव भाव और पूर्वानुमान देखने के लिए बाईं ओर से मंडी चुनें।",
+    "no_nearby_markets": "आपके स्थान के 70 किमी के दायरे में कोई APMC मंडी नहीं मिली। कृपया नीचे से मंडी चुनें।",
+    "quick_markets": "मुख्य मंडियां:"
   },
   "common": {
     "english": "English",

@@ -48,9 +48,9 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 function RiskBadge({ level }) {
   const { t } = useTranslation();
   const RISK_CFG = {
-    CRITICAL: { color: "#8B3A2B", bg: "rgba(139,58,43,.08)", border: "rgba(139,58,43,.3)", icon: "🚨", label: t("risk.critical") },
-    RISKY:    { color: "#B4741E", bg: "rgba(180,116,30,.08)", border: "rgba(180,116,30,.3)", icon: "⚠️", label: t("risk.risky") },
-    SAFE:     { color: "#3F6B33", bg: "rgba(63,107,51,.08)", border: "rgba(63,107,51,.3)", icon: "✅", label: t("risk.safe") }
+    CRITICAL: { color: "var(--danger)", bg: "var(--danger-bg)", border: "var(--danger)", icon: "🚨", label: t("risk.critical") },
+    RISKY:    { color: "var(--warn)",   bg: "var(--warn-bg)",   border: "var(--warn)",   icon: "⚠️", label: t("risk.risky") },
+    SAFE:     { color: "var(--safe)",   bg: "var(--safe-bg)",   border: "var(--safe)",   icon: "✅", label: t("risk.safe") }
   };
   const c = RISK_CFG[level] || RISK_CFG.SAFE;
   return (

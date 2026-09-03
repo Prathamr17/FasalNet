@@ -50,11 +50,11 @@ export default function Navbar() {
   };
 
   const ROLE_COLORS = {
-    farmer:       { bg: "#DCE8D2", color: "#3F6B33" },
-    operator:     { bg: "#DCE2EC", color: "#2B4570" },
-    admin:        { bg: "#E7DCE7", color: "#5C3A5C" },
-    customer:     { bg: "#F1E1BF", color: "#B4741E" },
-    delivery_boy: { bg: "#E7DCE7", color: "#5C3A5C" },
+    farmer:       { bg: "var(--cp-pale)", color: "var(--cp)" },
+    operator:     { bg: "var(--info-bg)", color: "var(--info)" },
+    admin:        { bg: "var(--danger-bg)", color: "var(--danger)" },
+    customer:     { bg: "var(--warn-bg)", color: "var(--warn)" },
+    delivery_boy: { bg: "var(--cp-pale)", color: "var(--cp)" },
   };
 
   // Close user-menu on outside click

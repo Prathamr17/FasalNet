@@ -22,9 +22,9 @@ export default function HomePage() {
   ];
 
   const ROLES = [
-    { emoji: "🌾", label: t("auth.farmer"),   color: "#3F6B33", bg: "#DCE8D2", desc: t("home.role_farmer_desc") },
-    { emoji: "🏭", label: t("auth.operator"), color: "#2B4570", bg: "#DCE2EC", desc: t("home.role_operator_desc") },
-    { emoji: "🛒", label: t("auth.customer"), color: "#B4741E", bg: "#F1E1BF", desc: t("home.role_customer_desc") },
+    { emoji: "🌾", label: t("auth.farmer"),   color: "var(--cp)", bg: "var(--cp-pale)", desc: t("home.role_farmer_desc") },
+    { emoji: "🏭", label: t("auth.operator"), color: "var(--info)", bg: "var(--info-bg)", desc: t("home.role_operator_desc") },
+    { emoji: "🛒", label: t("auth.customer"), color: "var(--warn)", bg: "var(--warn-bg)", desc: t("home.role_customer_desc") },
   ];
 
   const FEATURES = [
