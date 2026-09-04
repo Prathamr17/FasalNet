@@ -1,0 +1,467 @@
+/* FasalNet — "Mandi Ledger" Design System
+   Grounded in the APMC rate-board: ruled ledger lines, stamped status marks,
+   mono price digits, husk-paper surfaces. Built for outdoor, sunlit, low-end-
+   Android reading conditions — high contrast, minimal glow, legible at a glance.
+   All variable & class names are unchanged from v6, so this is a drop-in swap. */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import "leaflet/dist/leaflet.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════
+   MANDI LEDGER DESIGN SYSTEM — all roles share base tokens
+   Individual role accents override only --cp, --cp-dark, --cp-pale
+═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Base — husk-paper ledger surface */
+  --bg:       #F1EEE1;
+  --bg-l:     #FBFAF4;
+  --bg-m:     #E9E4D2;
+  --bg-d:     #DDD6BE;
+  --bg-card:  #FBFAF4;
+
+  --tx:       #23281F;
+  --tx-m:     #5B6152;
+  --tx-s:     #8B9080;
+
+  --bd:       #D8D0B6;
+  --bd-h:     #C2B896;
+
+  --safe:     #3F7A34;
+  --safe-bg:  #DCE8D4;
+  --warn:     #A6742A;
+  --warn-bg:  #F1E4C6;
+  --danger:   #8B3A2B;
+  --danger-bg:#F0DCD4;
+  --info:     #2B4570;
+  --info-bg:  #DCE2EC;
+
+  --sh:  0 1px 0 var(--bd), 0 6px 20px rgba(35,40,31,.06);
+  --sh2: 0 1px 0 rgba(35,40,31,.05);
+  --sh3: 0 10px 34px rgba(35,40,31,.16);
+
+  --r:  6px;
+  --r2: 8px;
+
+  --fd: 'Fraunces', serif;
+  --fb: 'Work Sans', sans-serif;
+  --fm: 'IBM Plex Mono', monospace;
+
+  /* Default (farmer) accent — field leaf */
+  --cp:      #3F6B33;
+  --cp-dark: #2E4F25;
+  --cp-pale: #DCE8D2;
+  --cp-glow: rgba(63,107,51,.18);
+  --cp-text: #FFFFFF;
+
+  /* Scrollbar Tokens (Light Mode) */
+  --sb-track: rgba(0, 0, 0, 0.05);
+  --sb-thumb: #B8B097;
+  --sb-thumb-hover: #8C846B;
+}
+
+/* ── FARMER ACCENT — field leaf ────────────────────────── */
+[data-role="farmer"] {
+  --cp:      #3F6B33;
+  --cp-dark: #2E4F25;
+  --cp-pale: #DCE8D2;
+  --cp-glow: rgba(63,107,51,.18);
+  --cp-text: #FFFFFF;
+}
+
+/* ── OPERATOR ACCENT — godown ledger indigo ────────────── */
+[data-role="operator"] {
+  --cp:      #2B4570;
+  --cp-dark: #1E2F52;
+  --cp-pale: #DCE2EC;
+  --cp-glow: rgba(43,69,112,.18);
+  --cp-text: #FFFFFF;
+}
+
+/* ── CUSTOMER ACCENT — turmeric ─────────────────────────── */
+[data-role="customer"] {
+  --cp:      #B4741E;
+  --cp-dark: #8E5B16;
+  --cp-pale: #F1E1BF;
+  --cp-glow: rgba(180,116,30,.20);
+  --cp-text: #FFFFFF;
+}
+
+/* ── DELIVERY BOY ACCENT — brinjal ──────────────────────── */
+[data-role="delivery_boy"] {
+  --cp:      #5C3A5C;
+  --cp-dark: #452A45;
+  --cp-pale: #E7DCE7;
+  --cp-glow: rgba(92,58,92,.20);
+  --cp-text: #FFFFFF;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DARK THEME — "Monsoon Night" — Applied when data-theme="dark" or .dark
+═══════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"], .dark {
+  --bg:       #191C16;
+  --bg-l:     #22261D;
+  --bg-m:     #1E211A;
+  --bg-d:     #141610;
+  --bg-card:  #22261D;
+
+  --tx:       #EDE8D8;
+  --tx-m:     #A8A78F;
+  --tx-s:     #787866;
+
+  --bd:       #33362A;
+  --bd-h:     #484B3A;
+
+  --safe:     #6FA85F;
+  --safe-bg:  rgba(63,107,51,.22);
+  --warn:     #D3A552;
+  --warn-bg:  rgba(166,116,42,.22);
+  --danger:   #C77A5F;
+  --danger-bg:rgba(139,58,43,.24);
+  --info:     #7B99CC;
+  --info-bg:  rgba(43,69,112,.24);
+
+  --sh:  0 1px 0 rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.3);
+  --sh2: 0 1px 0 rgba(0,0,0,.3);
+  --sh3: 0 10px 34px rgba(0,0,0,.45);
+
+  /* Scrollbar Tokens (Dark Mode) - clearly visible & accessible */
+  --sb-track: rgba(255, 255, 255, 0.08);
+  --sb-thumb: #646E58;
+  --sb-thumb-hover: #8D997C;
+}
+
+/* Dark theme role accents */
+[data-theme="dark"][data-role="farmer"], .dark[data-role="farmer"] {
+  --cp:      #6FA85F;
+  --cp-dark: #5B8F4C;
+  --cp-pale: rgba(111,168,95,.20);
+  --cp-glow: rgba(111,168,95,.25);
+  --cp-text: #12160F;
+}
+
+[data-theme="dark"][data-role="operator"], .dark[data-role="operator"] {
+  --cp:      #7B99CC;
+  --cp-dark: #6383B8;
+  --cp-pale: rgba(123,153,204,.20);
+  --cp-glow: rgba(123,153,204,.25);
+  --cp-text: #12160F;
+}
+
+[data-theme="dark"][data-role="customer"], .dark[data-role="customer"] {
+  --cp:      #D9A64E;
+  --cp-dark: #C08F3A;
+  --cp-pale: rgba(217,166,78,.20);
+  --cp-glow: rgba(217,166,78,.25);
+  --cp-text: #12160F;
+}
+
+[data-theme="dark"][data-role="delivery_boy"], .dark[data-role="delivery_boy"] {
+  --cp:      #A47AA4;
+  --cp-dark: #8C638C;
+  --cp-pale: rgba(164,122,164,.20);
+  --cp-glow: rgba(164,122,164,.25);
+  --cp-text: #12160F;
+}
+
+/* ═══ RESET & BASE ═════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--fb);
+  background: var(--bg);
+  color: var(--tx);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    linear-gradient(var(--bd) 1px, transparent 1px);
+  background-size: 100% 32px;
+  background-attachment: local;
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--cp); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+
+/* ═══ TYPOGRAPHY ═══════════════════════════════════════════ */
+h1,h2,h3,h4 {
+  font-family: var(--fd);
+  font-weight: 600;
+  font-optical-sizing: auto;
+  line-height: 1.15;
+  letter-spacing: -.01em;
+}
+
+/* ═══ SCROLLBAR ════════════════════════════════════════════ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sb-thumb) var(--sb-track);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sb-track);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb);
+  border-radius: 99px;
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sb-thumb-hover);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--cp);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ═══ FORM ELEMENTS ════════════════════════════════════════ */
+.inp {
+  width: 100%;
+  background: var(--bg-l);
+  border: 1.5px solid var(--bd);
+  border-radius: var(--r);
+  padding: 9px 13px;
+  font-size: 13px;
+  font-family: var(--fb);
+  color: var(--tx);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.inp:focus {
+  border-color: var(--cp);
+  box-shadow: 0 0 0 3px var(--cp-glow);
+}
+.inp::placeholder { color: var(--tx-s); }
+
+/* ═══ BUTTONS ══════════════════════════════════════════════ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 9px 18px; border-radius: var(--r);
+  font-family: var(--fb); font-weight: 600; font-size: 13px;
+  letter-spacing: .01em;
+  cursor: pointer; transition: all .15s;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary {
+  background: var(--cp); color: var(--cp-text);
+  border: 1.5px solid var(--cp-dark);
+  box-shadow: var(--sh2);
+}
+.btn-primary:hover { background: var(--cp-dark); }
+.btn-ghost {
+  background: transparent; color: var(--tx-m);
+  border: 1.5px solid var(--bd);
+}
+.btn-ghost:hover { border-color: var(--cp); color: var(--cp); }
+.btn-danger {
+  background: var(--danger-bg); color: var(--danger);
+  border: 1.5px solid var(--danger);
+}
+.btn-danger:hover { background: var(--danger); color: #fff; }
+
+/* ═══ CARDS ════════════════════════════════════════════════ */
+.card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--bd);
+  border-top: 2px solid var(--bd-h);
+  border-radius: var(--r2);
+  box-shadow: var(--sh2);
+}
+
+/* ═══ SECTION LABEL — ledger heading rule ═════════════════ */
+.section-label {
+  font-family: var(--fm);
+  font-size: 11px; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--tx-s);
+}
+.section-label::before { content: "— "; color: var(--bd-h); }
+
+/* ═══ PROGRESS BAR ═════════════════════════════════════════ */
+.prog { height: 6px; background: var(--bg-m); border-radius: 3px; overflow: hidden; border: 1px solid var(--bd); }
+.prog-fill {
+  height: 100%;
+  background: var(--cp);
+  width: var(--w, 0%);
+  transition: width 1s cubic-bezier(.4,0,.2,1);
+}
+
+/* ═══ BADGES — rate-board stamp marks ══════════════════════ */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 3px;
+  font-family: var(--fm);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase;
+  border: 1px solid transparent;
+}
+.badge-safe     { background: var(--safe-bg);   color: var(--safe);   border-color: var(--safe); }
+.badge-warn     { background: var(--warn-bg);   color: var(--warn);   border-color: var(--warn); }
+.badge-danger   { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+.badge-info     { background: var(--info-bg);   color: var(--info);   border-color: var(--info); }
+.badge-neutral  { background: var(--bg-m);      color: var(--tx-m);   border-color: var(--bd); }
+
+/* ═══ SKELETON ═════════════════════════════════════════════ */
+.skel {
+  background: linear-gradient(90deg, var(--bg-m) 25%, var(--bd) 50%, var(--bg-m) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--r);
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ═══ ANIMATIONS ═══════════════════════════════════════════ */
+@keyframes fadeIn    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+@keyframes fadeInUp  { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+@keyframes slideIn   { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:none} }
+@keyframes popIn     { from{opacity:0;transform:scale(.94)} to{opacity:1;transform:scale(1)} }
+@keyframes toastIn   { from{opacity:0;transform:translateY(20px) scale(.95)} to{opacity:1;transform:none} }
+@keyframes spin      { to{transform:rotate(360deg)} }
+
+.anim-fade    { animation: fadeIn   .3s ease both; }
+.anim-fadeup  { animation: fadeInUp .4s ease both; }
+.anim-slide   { animation: slideIn  .35s ease both; }
+.anim-pop     { animation: popIn    .25s cubic-bezier(.34,1.56,.64,1) both; }
+.anim-spin    { animation: spin 1s linear infinite; }
+
+.d1 { animation-delay: .04s }
+.d2 { animation-delay: .08s }
+.d3 { animation-delay: .12s }
+.d4 { animation-delay: .16s }
+.d5 { animation-delay: .20s }
+
+/* ═══ TOAST ════════════════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  background: var(--tx); color: var(--bg-l);
+  padding: 12px 18px; border-radius: var(--r);
+  font-size: 13px; font-weight: 600;
+  box-shadow: var(--sh3);
+  animation: toastIn .3s ease both;
+  display: flex; align-items: center; gap: 8px;
+  max-width: 320px;
+}
+
+/* ═══ MINI CHART BARS ══════════════════════════════════════ */
+.minichart {
+  display: flex; align-items: flex-end; gap: 3px;
+  height: 36px;
+}
+.minichart-bar {
+  flex: 1; border-radius: 2px 2px 0 0;
+  background: var(--cp);
+  opacity: .5;
+  transition: opacity .2s;
+  min-width: 4px;
+}
+.minichart-bar.active { opacity: 1; }
+
+/* ═══ NOTIFICATION PANEL ═══════════════════════════════════ */
+.notif-panel {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 380px; max-width: 100vw;
+  background: var(--bg-l);
+  border-left: 1.5px solid var(--bd);
+  box-shadow: -8px 0 32px rgba(35,40,31,.14);
+  z-index: 9000;
+  display: flex; flex-direction: column;
+  animation: notifSlide .25s ease both;
+}
+@keyframes notifSlide { from{transform:translateX(100%)} to{transform:none} }
+
+@media (max-width: 600px) {
+  .notif-panel {
+    width: 100vw;
+    top: 0; border-left: none;
+    animation: notifSlideUp .25s ease both;
+  }
+  @keyframes notifSlideUp { from{transform:translateY(100%)} to{transform:none} }
+}
+
+/* ═══ ORDER STEPPER ════════════════════════════════════════ */
+.stepper {
+  display: flex; align-items: center;
+  padding: 20px 0;
+}
+.step-dot {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fm);
+  font-size: 12px; font-weight: 600;
+  flex-shrink: 0;
+  transition: all .3s;
+}
+.step-dot.done    { background: var(--safe);   color: #fff; }
+.step-dot.active  { background: var(--cp);     color: var(--cp-text); box-shadow: 0 0 0 4px var(--cp-glow); }
+.step-dot.pending { background: var(--bg-m);   color: var(--tx-s); border: 2px solid var(--bd); }
+.step-line {
+  flex: 1; height: 2px;
+  background: var(--bg-d);
+  position: relative; overflow: hidden;
+}
+.step-line.done::after {
+  content: ''; position: absolute; inset: 0;
+  background: var(--safe);
+}
+
+/* ═══ LEAFLET OVERRIDES ════════════════════════════════════ */
+.leaflet-container { font-family: var(--fb) !important; }
+.leaflet-popup-content-wrapper {
+  border-radius: var(--r) !important;
+  box-shadow: var(--sh3) !important;
+  border: 1.5px solid var(--bd) !important;
+}
+.leaflet-popup-content { margin: 0 !important; }
+.leaflet-popup-tip-container { display: none; }
+
+/* ═══ CHART DONUT (SVG) ════════════════════════════════════ */
+.donut-ring { transform: rotate(-90deg); transform-origin: center; }
+
+/* ═══ SIGNATURE — MANDI RATE TICKER ════════════════════════
+   The single memorable device: a ruled sub-strip beneath the
+   navbar, styled after the chalk/paint rate boards outside a
+   real APMC mandi gate — mono digits, tick separators, a
+   role-colored pulse dot standing in for "live". ═══════════ */
+.fn-ticker {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 20px;
+  background: var(--bg-m);
+  border-bottom: 1.5px solid var(--bd);
+  font-family: var(--fm);
+  font-size: 10.5px; font-weight: 500;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--tx-m);
+  overflow: hidden; white-space: nowrap;
+}
+.fn-ticker-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cp); flex-shrink: 0;
+  box-shadow: 0 0 0 3px var(--cp-glow);
+  animation: tickerPulse 1.8s ease-in-out infinite;
+}
+@keyframes tickerPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.fn-ticker-sep { color: var(--bd-h); }
+
+/* ═══ UTILITY ══════════════════════════════════════════════ */
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aspin    { animation: spin .8s linear infinite; border-radius: 50%; }

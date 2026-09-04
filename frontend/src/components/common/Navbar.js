@@ -1,0 +1,302 @@
+// components/common/Navbar.js — v11: Full localization & responsive design
+import { useState, useRef, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useAuth }  from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
+import i18n from "../../i18n";
+
+const LANGUAGES = [
+  { code: "en", label: "EN" },
+  { code: "hi", label: "हिं" },
+  { code: "mr", label: "मरा" },
+];
+
+export default function Navbar() {
+  const { t }            = useTranslation();
+  const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const navigate  = useNavigate();
+  const location  = useLocation();
+
+  const [mobileOpen,   setMobileOpen]   = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // ── Nav link definitions per role ──────────────────────────────
+  const NAV_LINKS = {
+    farmer: [
+      { to: "/discover",   label: t("nav.discover")     },
+      { to: "/market",     label: t("nav.market")       },
+      { to: "/ml-predict", label: t("nav.crop_advisor") },
+      { to: "/bookings",   label: t("nav.bookings")     },
+    ],
+    operator: [
+      { to: "/operator",   label: t("nav.dashboard")    },
+    ],
+    admin: [
+      { to: "/discover",   label: t("nav.discover")     },
+      { to: "/market",     label: t("nav.market")       },
+      { to: "/operator",   label: t("nav.dashboard")    },
+    ],
+    customer: [
+      { to: "/marketplace", label: t("nav.marketplace") },
+      { to: "/customer/map", label: t("nav.map")        },
+      { to: "/my-orders",   label: t("nav.orders")      },
+    ],
+    delivery_boy: [
+      { to: "/delivery",    label: t("nav.dashboard")   },
+    ],
+  };
+
+  const ROLE_COLORS = {
+    farmer:       { bg: "var(--cp-pale)", color: "var(--cp)" },
+    operator:     { bg: "var(--info-bg)", color: "var(--info)" },
+    admin:        { bg: "var(--danger-bg)", color: "var(--danger)" },
+    customer:     { bg: "var(--warn-bg)", color: "var(--warn)" },
+    delivery_boy: { bg: "var(--cp-pale)", color: "var(--cp)" },
+  };
+
+  // Close user-menu on outside click
+  useEffect(() => {
+    const h = e => {
+      if (menuRef.current && !menuRef.current.contains(e.target))
+        setUserMenuOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  // Close mobile drawer on route change
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
+
+  const handleLang   = code => {
+    i18n.changeLanguage(code);
+    localStorage.setItem("fasalnet_lang", code);
+  };
+  const handleLogout = () => { logout(); navigate("/login"); setMobileOpen(false); setUserMenuOpen(false); };
+
+  const links    = NAV_LINKS[user?.role] || [];
+  const isActive = path => location.pathname === path || location.pathname.startsWith(path + "/");
+  const roleClr  = ROLE_COLORS[user?.role] || {};
+
+  const dateLocale = i18n.language === "hi" ? "hi-IN" : i18n.language === "mr" ? "mr-IN" : "en-IN";
+  const dateFormatted = new Date().toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
+
+  return (
+    <>
+      {/* ── Top bar ────────────────────────────────────────────── */}
+      <nav style={{
+        position: "sticky", top: 0, zIndex: 200,
+        background: "var(--bg-l)",
+        borderBottom: "1.5px solid var(--bd)",
+        boxShadow: "0 1px 4px rgba(0,0,0,.05)",
+      }}>
+        <div style={{
+          maxWidth: "1280px", margin: "0 auto", padding: "0 20px",
+          height: "56px", display: "flex", alignItems: "center", gap: "12px",
+        }}>
+
+          {/* Logo */}
+          <Link to="/" style={{ display: "flex", alignItems: "center", gap: "8px",
+            textDecoration: "none", flexShrink: 0 }}>
+            <img src="/logo.png" alt="FasalNet" style={{ width: 34, height: 34, objectFit: "contain", borderRadius: 6 }} />
+            <span style={{ fontFamily: "var(--fd)", fontWeight: 700, fontSize: 18,
+              color: "var(--tx)", letterSpacing: "-.2px" }}>
+              {t("app_name")}
+            </span>
+          </Link>
+
+          {/* Divider — desktop only */}
+          <div className="fnav-desktop-only"
+            style={{ width: 1, height: 20, background: "var(--bd)", flexShrink: 0 }} />
+
+          {/* Desktop nav links */}
+          <div className="fnav-desktop-only"
+            style={{ display: "flex", gap: 2, alignItems: "center", flex: 1 }}>
+            {links.map(({ to, label }) => (
+              <Link key={to} to={to} style={{
+                padding: "6px 12px", borderRadius: 8, textDecoration: "none",
+                fontSize: 13, fontWeight: isActive(to) ? 700 : 500,
+                color:      isActive(to) ? "var(--cp)"      : "var(--tx-m)",
+                background: isActive(to) ? "var(--cp-pale)" : "transparent",
+                transition: "all .15s",
+              }}>
+                {label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Right controls */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
+
+            {/* Theme toggle */}
+            <button onClick={toggleTheme}
+              title={theme === "light" ? t("common.theme_dark") : t("common.theme_light")}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                width: 34, height: 34, borderRadius: 8,
+                background: "var(--bg-m)", border: "1.5px solid var(--bd)",
+                fontSize: 16, cursor: "pointer", flexShrink: 0,
+              }}>
+              {theme === "light" ? "🌙" : "☀️"}
+            </button>
+
+            {/* Language switcher — desktop only */}
+            <div className="fnav-desktop-only" style={{ display: "flex", gap: 2 }}>
+              {LANGUAGES.map(({ code, label }) => (
+                <button key={code} onClick={() => handleLang(code)} style={{
+                  background: i18n.language === code ? "var(--cp-pale)" : "transparent",
+                  border: i18n.language === code ? "1px solid var(--cp)" : "none",
+                  borderRadius: 6, padding: "4px 8px",
+                  fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  color: i18n.language === code ? "var(--cp)" : "var(--tx-s)",
+                }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* User menu */}
+            {user ? (
+              <div ref={menuRef} style={{ position: "relative" }}>
+                <button onClick={() => setUserMenuOpen(v => !v)} style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  background: "var(--bg-m)", border: "1.5px solid var(--bd)",
+                  borderRadius: 9, padding: "5px 10px", cursor: "pointer",
+                }}>
+                  <div style={{
+                    width: 24, height: 24, borderRadius: "50%",
+                    background: roleClr.bg || "var(--cp-pale)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 11, fontWeight: 800, color: roleClr.color || "var(--cp)",
+                  }}>
+                    {user.name?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                  <div className="fnav-desktop-only"
+                    style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--tx)", lineHeight: 1.2 }}>
+                      {user.name?.split(" ")[0]}
+                    </span>
+                    <span style={{ fontSize: 10, color: "var(--tx-m)" }}>
+                      {t(`auth.${user.role}`, user.role)}
+                    </span>
+                  </div>
+                  <span style={{ color: "var(--tx-s)", fontSize: 9 }}>▼</span>
+                </button>
+
+                {userMenuOpen && (
+                  <div className="card" style={{
+                    position: "absolute", right: 0, top: "calc(100% + 6px)",
+                    width: 170, padding: 6, zIndex: 999,
+                    boxShadow: "var(--sh3)",
+                  }}>
+                    <Link to="/settings" onClick={() => setUserMenuOpen(false)} style={{
+                      display: "block", padding: "8px 12px", borderRadius: 7,
+                      fontSize: 13, color: "var(--tx)", textDecoration: "none", fontWeight: 500,
+                    }}>
+                      ⚙️ {t("nav.settings")}
+                    </Link>
+                    <button onClick={handleLogout} style={{
+                      width: "100%", padding: "8px 12px", borderRadius: 7,
+                      fontSize: 13, color: "var(--danger)", background: "transparent",
+                      border: "none", cursor: "pointer", textAlign: "left", fontWeight: 500,
+                    }}>
+                      ↪ {t("nav.sign_out")}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 6 }}>
+                <Link to="/login"  className="btn btn-ghost"   style={{ fontSize: 12, padding: "6px 14px" }}>{t("auth.sign_in")}</Link>
+                <Link to="/signup" className="btn btn-primary" style={{ fontSize: 12, padding: "6px 14px" }}>{t("auth.sign_up")}</Link>
+              </div>
+            )}
+
+            {/* Hamburger — mobile only */}
+            <button onClick={() => setMobileOpen(v => !v)}
+              className="fnav-mobile-only"
+              style={{
+                background: "var(--bg-m)", border: "1.5px solid var(--bd)",
+                borderRadius: 8, padding: "6px 9px", cursor: "pointer",
+                fontSize: 15, color: "var(--tx)",
+              }}>
+              {mobileOpen ? "✕" : "☰"}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* ── Signature strip: mandi rate-board ticker ────────────── */}
+      {user && (
+        <div className="fn-ticker">
+          <span className="fn-ticker-dot" />
+          <span>{t(`auth.${user.role}`, user.role)?.toString().toUpperCase()}</span>
+          <span className="fn-ticker-sep">·</span>
+          <span>{t("app_name")?.toString().toUpperCase()} {t("nav.coordination_board")}</span>
+          <span className="fn-ticker-sep">·</span>
+          <span>{dateFormatted}</span>
+        </div>
+      )}
+
+      {/* ── Mobile drawer (only mounts when open) ──────────────── */}
+      {mobileOpen && (
+        <div className="card" style={{
+          position: "fixed", top: 57, left: 0, right: 0, zIndex: 199,
+          borderTop: 0, borderRadius: 0, borderLeft: "none", borderRight: "none",
+          padding: "8px 16px 16px",
+          boxShadow: "0 8px 24px rgba(0,0,0,.08)",
+        }}>
+          {links.map(({ to, label }) => (
+            <Link key={to} to={to} style={{
+              display: "block", padding: "10px 12px", borderRadius: 8,
+              fontSize: 14, fontWeight: isActive(to) ? 700 : 500,
+              color:      isActive(to) ? "var(--cp)"      : "var(--tx)",
+              background: isActive(to) ? "var(--cp-pale)" : "transparent",
+              textDecoration: "none", marginBottom: 2,
+            }}>
+              {label}
+            </Link>
+          ))}
+          <div style={{ display: "flex", gap: 6, padding: "10px 12px 4px" }}>
+            {LANGUAGES.map(({ code, label }) => (
+              <button key={code} onClick={() => handleLang(code)} style={{
+                background: i18n.language === code ? "var(--cp-pale)" : "var(--bg-m)",
+                border: `1.5px solid ${i18n.language === code ? "var(--cp)" : "var(--bd)"}`,
+                borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600,
+                cursor: "pointer", color: i18n.language === code ? "var(--cp)" : "var(--tx-m)",
+              }}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {user && (
+            <button onClick={handleLogout} style={{
+              width: "100%", textAlign: "left", padding: "10px 12px", borderRadius: 8,
+              fontSize: 14, color: "var(--danger)", background: "transparent",
+              border: "none", cursor: "pointer", marginTop: 4,
+            }}>
+              ↪ {t("nav.sign_out")}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/*
+        CSS strategy: use unique class names (fnav-*) to avoid conflicts
+        with any global .hidden-mobile / .show-mobile rules in index.css
+      */}
+      <style>{`
+        @media (max-width: 640px) {
+          .fnav-desktop-only { display: none !important; }
+          .fnav-mobile-only  { display: flex !important; }
+        }
+        @media (min-width: 641px) {
+          .fnav-desktop-only { display: flex !important; }
+          .fnav-mobile-only  { display: none !important; }
+        }
+      `}</style>
+    </>
+  );
+}
