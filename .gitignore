@@ -14,6 +14,7 @@ __pycache__/
 *.pyd
 
 # Virtual environments
+fn/
 venv/
 env/
 ENV/
@@ -34,6 +35,8 @@ pnpm-debug.log*
 # Build output
 build/
 dist/
+
+
 
 # React cache
 .next/

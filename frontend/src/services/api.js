@@ -111,9 +111,11 @@ export const marketAPI = {
   trend:          (params) => api.get("/api/market/trend",         { params }),
   heatmap:        (params) => api.get("/api/market/heatmap",       { params }),
   compare:        (params) => api.get("/api/market/compare",       { params }),
-  arimaForecast:  (params) => api.get("/api/market/arima-forecast",{ params }),
-  refresh:        (data)   => api.post("/api/market/refresh",      data),
-  syncStatus:     ()       => api.get("/api/market/sync-status"),
+  arimaForecast:        (params) => api.get("/api/market/arima-forecast",{ params }),
+  forecastV3Predictions:(data)   => api.post("/api/market/forecast-v3/predictions", data),
+  forecastV3Trends:     (data)   => api.post("/api/market/forecast-v3/trends",      data),
+  refresh:              (data)   => api.post("/api/market/refresh",      data),
+  syncStatus:           ()       => api.get("/api/market/sync-status"),
 };
 
 export default api;

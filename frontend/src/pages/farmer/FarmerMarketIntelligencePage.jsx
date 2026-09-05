@@ -10,6 +10,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { marketAPI, mlAPI } from "../../services/api";
+import TrendIndicators from "../../components/farmer/TrendIndicators";
 
 const PALETTE = [
   "#3F6B33","#2B4570","#B4741E","#8B3A2B",
@@ -1027,9 +1028,10 @@ export default function FarmerMarketIntelligencePage() {
   const [detectedPlace,   setDetectedPlace]   = useState("");
   const [locationError,   setLocationError]   = useState("");
 
-  // ARIMA state
+  // ARIMA & V3 Forecast state
   const [arimaLoading,  setArimaLoading]  = useState(false);
   const [arimaData,     setArimaData]     = useState(null);  // { city, commodity, forecast, actual_context }
+  const [v3Data,        setV3Data]        = useState(null);  // v3 forecast & trend indicators
   const [arimaDays,     setArimaDays]     = useState(7);
   const [arimaCity,     setArimaCity]     = useState("");
   const [arimaCommodity,setArimaCommodity]= useState("");
@@ -1173,16 +1175,37 @@ export default function FarmerMarketIntelligencePage() {
       }))
     : [];
 
-  // ARIMA forecast
+  // ARIMA & V3 Market Forecast
   const handleArimaForecast = async () => {
     // Use the first selected city from the trend sidebar (most recently applied)
     const city = selectedCities[0] || "";
     const comm = commodity || "";
     if (!city || !comm) { setArimaError("Select a market and commodity from the sidebar first."); return; }
-    setArimaLoading(true); setArimaError(""); setArimaData(null);
+    setArimaLoading(true); setArimaError(""); setArimaData(null); setV3Data(null);
     try {
-      const { data } = await marketAPI.arimaForecast({ city, commodity: comm, days: arimaDays });
-      setArimaData(data);
+      const [arimaRes, v3Res] = await Promise.allSettled([
+        marketAPI.arimaForecast({ city, commodity: comm, days: arimaDays }),
+        marketAPI.forecastV3Predictions({ city, commodity: comm })
+      ]);
+
+      if (v3Res.status === "fulfilled" && v3Res.value?.data?.status === "success") {
+        setV3Data(v3Res.value.data);
+      }
+
+      if (arimaRes.status === "fulfilled" && arimaRes.value?.data) {
+        setArimaData(arimaRes.value.data);
+      } else if (v3Res.status === "fulfilled" && v3Res.value?.data?.status === "success") {
+        const v3 = v3Res.value.data;
+        const target7 = v3.forecast?.["7_day"];
+        const target14 = v3.forecast?.["14_day"];
+        const pts = [];
+        if (target7) pts.push({ date: target7.target_date, price: target7.forecasted_price, min_price: target7.confidence_bounds?.lower_95, max_price: target7.confidence_bounds?.upper_95 });
+        if (target14 && arimaDays >= 14) pts.push({ date: target14.target_date, price: target14.forecasted_price, min_price: target14.confidence_bounds?.lower_95, max_price: target14.confidence_bounds?.upper_95 });
+        setArimaData({ city, commodity: comm, forecast: pts });
+      } else {
+        const err = v3Res.reason?.response?.data?.error || arimaRes.reason?.response?.data?.error || "Forecast failed.";
+        setArimaError(err);
+      }
     } catch (err) {
       setArimaError(err.response?.data?.error || "Forecast failed.");
     } finally { setArimaLoading(false); }
@@ -1442,13 +1465,6 @@ export default function FarmerMarketIntelligencePage() {
               <div style={CARD}>
                 {/* Section header */}
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                  <div style={{
-                    width: 40, height: 40, borderRadius: "10px",
-                    background: "var(--cp-pale)", display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "20px", flexShrink: 0
-                  }}>
-                    📈
-                  </div>
                   <div>
                     <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--tx)", lineHeight: 1.2 }}>
                       {t('mi.forecast_title', 'AI Price Forecast')}
@@ -1470,7 +1486,6 @@ export default function FarmerMarketIntelligencePage() {
                     <span style={{ fontWeight: 700, color: "var(--tx)" }}>{selectedCities[0] || '—'}</span>
                     {' · '}
                     <span style={{ fontWeight: 700, color: "var(--tx)" }}>{commodity || '—'}</span>
-                    <span style={{ fontSize: "11px", color: "var(--tx-s)", marginLeft: "6px" }}>({t('mi.from_sidebar', 'from sidebar')})</span>
                   </div>
                   
                   <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
@@ -1525,7 +1540,7 @@ export default function FarmerMarketIntelligencePage() {
                   <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid var(--bd)", paddingBottom: "8px" }}>
                       <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".8px" }}>
-                        📅 {arimaDays}-{t('mi.daily_forecast_suffix', 'Day Daily Forecast')} — {arimaData.city} · {arimaData.commodity}
+                        {arimaDays}-{t('mi.daily_forecast_suffix', 'Day Daily Forecast')} — {arimaData.city} · {arimaData.commodity}
                       </span>
                     </div>
 
@@ -1636,6 +1651,11 @@ export default function FarmerMarketIntelligencePage() {
                     </div>
                   )
                 )}
+
+                {/* ── Extended Market Trends (v3 Signals Ensemble) ── */}
+                {v3Data?.trend_indicators && (
+                  <TrendIndicators trends={v3Data.trend_indicators} modelInfo={v3Data.model_info} />
+                )}
               </div>
             </div>
           )}
@@ -1691,9 +1711,6 @@ export default function FarmerMarketIntelligencePage() {
           {/* TAB 3: Price Tools (was ML Predict) */}
           {activeTab === 3 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div style={{ padding: "12px 14px", background: "rgba(124,58,237,.06)", border: "1px solid rgba(124,58,237,.15)", borderRadius: "10px", fontSize: "12px", color: "var(--tx-m)" }}>
-                <strong style={{ color: "var(--tx)" }}>ℹ️ {t("market.about_tools")}</strong> {t("market.about_tools_sub")}
-              </div>
               <QuickPricePredict meta={mlMeta} />
               <QuickMarketRec    meta={mlMeta} />
             </div>
