@@ -1,8 +1,5 @@
 """
-FasalNet v11 — Flask Application Entry Point
-New in v11:
-  - Market Forecast v3 endpoints (7/14-day forecasts + 30/60-day trends)
-  - Masked model details for confidentiality
+FasalNet v10 — Flask Application Entry Point
 New in v10:
   - Market Intelligence blueprint (ARIMA data layer from Neon DB)
   - Auto daily sync via APScheduler at 07:00 IST
@@ -34,8 +31,7 @@ from routes.settings    import settings_bp
 from routes.delivery    import delivery_bp
 from routes.otp         import otp_bp
 from routes.ml          import ml_bp
-from routes.market_data import market_bp   # ── v10
-from routes.market_forecast_v3 import forecast_v3_bp  # ── v3 NEW ⭐
+from routes.market_data import market_bp   # ── NEW v10
 
 
 def _start_scheduler(app):
@@ -104,9 +100,8 @@ def create_app(cfg=Config) -> Flask:
     for bp in [
         auth_bp, farmer_bp, booking_bp, operator_bp,
         customer_bp, settings_bp, delivery_bp, otp_bp,
-        ml_bp,           # v9  — unchanged
-        market_bp,       # v10 — ARIMA data layer
-        forecast_v3_bp,  # v3  — NEW v3 endpoints ⭐
+        ml_bp,        # v9  — unchanged
+        market_bp,    # v10 — ARIMA data layer
     ]:
         app.register_blueprint(bp)
 
@@ -118,19 +113,18 @@ def create_app(cfg=Config) -> Flask:
     def health():
         return jsonify({
             "status":  "ok",
-            "service": "FasalNet API v11",
+            "service": "FasalNet API v10",
             "modules": [
                 "farmer", "operator", "customer", "delivery",
                 "booking", "payment", "settings",
                 "email_otp", "ml_predictions",
-                "market_intelligence",   # v10
-                "market_forecast_v3",    # NEW v11 ⭐
+                "market_intelligence",   # NEW v10
             ],
         }), 200
 
     @app.route("/")
     def root():
-        return jsonify({"message": "FasalNet API v11"}), 200
+        return jsonify({"message": "FasalNet API v10"}), 200
 
     @app.errorhandler(404)
     def not_found(e):  return jsonify({"error": "Not found"}), 404
