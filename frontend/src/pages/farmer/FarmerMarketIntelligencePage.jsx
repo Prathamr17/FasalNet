@@ -859,20 +859,84 @@ function HeatmapGrid({ matrix, dates, commodities }) {
 }
 
 // ─── SHARED STYLES ─────────────────────────────────────────────────────────────
-const CARD = { background: "var(--bg-m)", borderRadius: "14px", padding: "18px 20px", border: "1px solid var(--bd)" };
-const INP  = { width: "100%", background: "var(--bg-l)", border: "1px solid var(--bd)", color: "var(--tx)", fontFamily: "var(--fb)", fontSize: "13px", padding: "8px 12px", borderRadius: "9px", outline: "none", boxSizing: "border-box" };
-const LBL  = { fontSize: "10px", fontWeight: 700, color: "var(--tx-m)", textTransform: "uppercase", letterSpacing: ".7px", display: "block", marginBottom: "4px" };
-const BTN  = { background: "linear-gradient(135deg,var(--cp),var(--cp-dark))", color: "var(--bg)", border: "none", borderRadius: "9px", padding: "9px 18px", fontFamily: "var(--fd)", fontWeight: 800, fontSize: "13px", cursor: "pointer" };
-const SECONDARY_BTN = { background: "var(--bg-l)", color: "var(--tx-m)", border: "1px solid var(--bd)", borderRadius: "9px", padding: "8px 16px", fontFamily: "var(--fd)", fontWeight: 600, fontSize: "12px", cursor: "pointer" };
+const CARD = {
+  background: "var(--bg-m)",
+  borderRadius: "16px",
+  padding: "18px 20px",
+  border: "1px solid var(--bd)",
+  boxShadow: "0 2px 10px rgba(0,0,0,0.02)",
+  transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+};
+const INP = {
+  width: "100%",
+  background: "var(--bg-l)",
+  border: "1px solid var(--bd)",
+  color: "var(--tx)",
+  fontFamily: "var(--fb)",
+  fontSize: "12.5px",
+  padding: "8px 12px",
+  borderRadius: "10px",
+  outline: "none",
+  boxSizing: "border-box",
+  transition: "all 0.18s ease",
+};
+const LBL = {
+  fontSize: "10px",
+  fontWeight: 700,
+  color: "var(--tx-m)",
+  textTransform: "uppercase",
+  letterSpacing: ".7px",
+  display: "block",
+  marginBottom: "4px"
+};
+const BTN = {
+  background: "linear-gradient(135deg,var(--cp),var(--cp-dark))",
+  color: "var(--bg)",
+  border: "none",
+  borderRadius: "10px",
+  padding: "8px 16px",
+  fontFamily: "var(--fd)",
+  fontWeight: 800,
+  fontSize: "12.5px",
+  cursor: "pointer",
+  boxShadow: "0 2px 8px var(--cp-glow)",
+  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+};
+const SECONDARY_BTN = {
+  background: "var(--bg-l)",
+  color: "var(--tx-m)",
+  border: "1px solid var(--bd)",
+  borderRadius: "10px",
+  padding: "7px 14px",
+  fontFamily: "var(--fd)",
+  fontWeight: 600,
+  fontSize: "11.5px",
+  cursor: "pointer",
+  transition: "all 0.18s ease",
+};
 
 function Spin() {
   return <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />;
 }
 
-function StatCard({ label, value, sub }) {
+function StatCard({ label, value, sub, icon }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div style={CARD} className="text-center shadow-sm">
-      <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".7px", marginBottom: "6px" }}>{label}</div>
+    <div
+      style={{
+        ...CARD,
+        transform: hovered ? "translateY(-3px)" : "none",
+        boxShadow: hovered ? "0 8px 24px rgba(63,107,51,0.12)" : "0 2px 8px rgba(0,0,0,0.02)",
+        borderColor: hovered ? "rgba(63,107,51,0.4)" : "var(--bd)"
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="text-center cursor-default"
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginBottom: "6px" }}>
+        {icon && <span style={{ fontSize: "14px" }}>{icon}</span>}
+        <span style={{ fontSize: "10.5px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".7px" }}>{label}</span>
+      </div>
       <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "var(--cp)", fontFamily: "var(--fd)", lineHeight: 1.1 }}>{value}</div>
       {sub && <div style={{ fontSize: "11px", color: "var(--tx-s)", marginTop: "4px" }}>{sub}</div>}
     </div>
@@ -1211,62 +1275,69 @@ export default function FarmerMarketIntelligencePage() {
 
       {/* Header */}
       <div className="animate-[fadeup_0.4s_ease-out] mb-6">
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
           <div>
-            <h1 style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--tx)", display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-              📊 {t('mi.title', 'Market Intelligence')}
+            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--tx)", display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
+              <span style={{ fontSize: "1.8rem" }}>📊</span> {t('mi.title', 'Market Intelligence')}
             </h1>
             <p style={{ fontSize: "13px", color: "var(--tx-m)" }}>
               {t('mi.subtitle', 'Live APMC price data · Maharashtra · Auto-updated daily')}
             </p>
           </div>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            {syncStatus?.newest && (
-              <div style={{ fontSize: "11px", color: "var(--tx-s)", background: "var(--bg-l)", padding: "6px 14px", borderRadius: "20px", border: "1px solid var(--bd)" }}>
-                {t('mi.latest_date', 'Latest:')} {syncStatus.newest}
-              </div>
-            )}
-            <button onClick={handleSync} disabled={syncing} style={SECONDARY_BTN}>
-              {syncing ? <><Spin /> {t('mi.forecasting', 'Syncing…')}</> : `🔄 ${t('mi.sync_now', 'Sync Now')}`}
-            </button>
-          </div>
+          {syncStatus?.newest && (
+            <div style={{
+              fontSize: "12px", fontWeight: 600, color: "var(--cp)",
+              background: "var(--bg-m)", padding: "6px 16px", borderRadius: "20px",
+              border: "1px solid var(--bd)", boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+              display: "flex", alignItems: "center", gap: "6px"
+            }}>
+              <span>🗓️</span> {t('mi.latest_date', 'Latest:')} <strong style={{ color: "var(--tx)" }}>{syncStatus.newest}</strong>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Market Overview & Crop Cards */}
+      {/* Market Overview Cards */}
       {syncStatus && (
-        <div style={{ marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--tx)", marginBottom: "12px" }}>
-            {t('mi.market_overview', 'Market Overview')}
-          </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
-            <StatCard label={t('mi.latest_date', 'Latest Date')} value={syncStatus.newest || "—"} sub={syncStatus.oldest ? `from ${syncStatus.oldest}` : ""} />
-            <StatCard label={t('mi.cities_tracked', 'Cities Tracked')} value={cities.length || "—"} />
-            <StatCard label={t('mi.commodities', 'Commodities')} value={commodities.length || "—"} />
-            <StatCard label={t('market.live_apmc_data', 'Live APMC Data')} value={t('market.active', 'Active')} />
+        <div style={{ marginBottom: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px" }}>
+            <StatCard icon="🗓️" label={t('mi.latest_date', 'Latest Date')} value={syncStatus.newest || "—"} sub={syncStatus.oldest ? `from ${syncStatus.oldest}` : ""} />
+            <StatCard icon="📍" label={t('mi.cities_tracked', 'Cities Tracked')} value={cities.length || "—"} />
+            <StatCard icon="🌾" label={t('mi.commodities', 'Commodities')} value={commodities.length || "—"} />
+            <StatCard icon="⚡" label={t('market.live_apmc_data', 'Live APMC Data')} value={t('market.active', 'Active')} />
           </div>
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "248px 1fr", gap: "16px", alignItems: "start" }}>
-
-        {/* SIDEBAR */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={CARD}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", gap: "4px" }}>
+      {/* ── UNIFIED HORIZONTAL FILTER SECTION ── */}
+      <div style={{ ...CARD, marginBottom: "24px", padding: "18px 20px" }} className="shadow-sm">
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))",
+          gap: "20px",
+          alignItems: "start"
+        }}>
+          
+          {/* 1. MARKETS / CITIES */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
               <div style={LBL}>
-                {t("market.markets_cities")}
-                {selectedCities.length > 0 && <span style={{ color: "var(--cp)", marginLeft: "6px", fontWeight: 700, fontSize: "10px" }}>({selectedCities.length})</span>}
+                📍 {t("market.markets_cities")}
+                {selectedCities.length > 0 && (
+                  <span style={{ color: "var(--cp)", marginLeft: "6px", fontWeight: 800, fontSize: "11px" }}>
+                    ({selectedCities.length})
+                  </span>
+                )}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 {selectedCities.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setSelectedCities([])}
                     title={t("common.clear_all", "Clear All")}
                     style={{
-                      background: "var(--bg-m)", border: "1px solid var(--bd)", borderRadius: "6px",
-                      padding: "2px 7px", fontSize: "10px", color: "var(--danger)", fontWeight: 700,
+                      background: "var(--bg-l)", border: "1px solid var(--bd)", borderRadius: "7px",
+                      padding: "3px 8px", fontSize: "10.5px", color: "var(--danger)", fontWeight: 700,
                       cursor: "pointer", display: "flex", alignItems: "center", gap: "3px",
                       transition: "all .15s"
                     }}
@@ -1281,8 +1352,8 @@ export default function FarmerMarketIntelligencePage() {
                   disabled={locating}
                   title={t("mi.detect_location", "Detect nearest markets by GPS")}
                   style={{
-                    background: "var(--bg-m)", border: "1px solid var(--bd)", borderRadius: "6px",
-                    padding: "2px 8px", fontSize: "10px", color: "var(--cp)", fontWeight: 700,
+                    background: "var(--bg-l)", border: "1px solid var(--bd)", borderRadius: "7px",
+                    padding: "3px 9px", fontSize: "10.5px", color: "var(--cp)", fontWeight: 700,
                     cursor: "pointer", display: "flex", alignItems: "center", gap: "4px",
                     transition: "all .15s"
                   }}
@@ -1299,8 +1370,8 @@ export default function FarmerMarketIntelligencePage() {
 
             {locationError && (
               <div style={{
-                marginBottom: "8px", padding: "6px 8px", background: "var(--warn-bg)",
-                border: "1px solid var(--warn)", borderRadius: "6px", fontSize: "10.5px",
+                padding: "6px 8px", background: "var(--warn-bg)",
+                border: "1px solid var(--warn)", borderRadius: "7px", fontSize: "10.5px",
                 color: "var(--tx)", lineHeight: 1.4
               }}>
                 {locationError}
@@ -1316,8 +1387,8 @@ export default function FarmerMarketIntelligencePage() {
 
             {/* Quick-pick popular Mandis when no city is selected */}
             {selectedCities.length === 0 && (
-              <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid var(--bd)" }}>
-                <div style={{ fontSize: "10px", color: "var(--tx-s)", marginBottom: "6px", fontWeight: 600 }}>
+              <div style={{ marginTop: "4px", paddingTop: "6px", borderTop: "1px dashed var(--bd)" }}>
+                <div style={{ fontSize: "10px", color: "var(--tx-s)", marginBottom: "4px", fontWeight: 600 }}>
                   {t("mi.quick_markets", "Popular Mandis:")}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
@@ -1330,7 +1401,7 @@ export default function FarmerMarketIntelligencePage() {
                         type="button"
                         onClick={() => toggleCity(match)}
                         style={{
-                          background: "var(--bg-m)", border: "1px solid var(--bd)",
+                          background: "var(--bg-l)", border: "1px solid var(--bd)",
                           borderRadius: "12px", padding: "2px 8px", fontSize: "10px",
                           color: "var(--tx-m)", cursor: "pointer", transition: "all .12s"
                         }}
@@ -1344,59 +1415,125 @@ export default function FarmerMarketIntelligencePage() {
             )}
           </div>
 
-          <div style={CARD}>
-            <label style={LBL}>{t("market.commodity")}</label>
-            <select style={INP} value={commodity} onChange={e => setCommodity(e.target.value)}>
+          {/* 2. COMMODITY */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label style={LBL}>🌾 {t("market.commodity")}</label>
+              {commodity && (
+                <span style={{ fontSize: "10.5px", color: "var(--cp)", fontWeight: 800 }}>
+                  {commodity}
+                </span>
+              )}
+            </div>
+            <select
+              style={{ ...INP, cursor: "pointer" }}
+              value={commodity}
+              onChange={e => setCommodity(e.target.value)}
+            >
               <option value="">— {t("market.all_commodities")} —</option>
-              {commodities.map(c => <option key={c}>{c}</option>)}
+              {commodities.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
+
+            <div style={{
+              display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap", marginTop: "4px",
+              padding: "6px 8px", background: "var(--bg-l)", borderRadius: "8px", border: "1px solid var(--bd)"
+            }}>
+              <span style={{ fontSize: "10px", color: "var(--tx-s)", fontWeight: 600 }}>{t("market.popular_crops", "Popular:")}</span>
+              {["Onion", "Tomato", "Wheat", "Soyabean", "Cotton", "Potato", "Gram"].map(crop => {
+                if (!commodities.includes(crop)) return null;
+                const isSel = commodity === crop;
+                return (
+                  <button
+                    key={crop}
+                    type="button"
+                    onClick={() => setCommodity(crop)}
+                    style={{
+                      background: isSel ? "var(--cp)" : "transparent",
+                      color: isSel ? "var(--cp-text)" : "var(--tx-m)",
+                      border: "1px solid",
+                      borderColor: isSel ? "var(--cp)" : "var(--bd)",
+                      borderRadius: "10px", padding: "1px 7px", fontSize: "10px",
+                      cursor: "pointer", transition: "all .12s", fontWeight: isSel ? 700 : 500
+                    }}
+                  >
+                    {crop}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div style={CARD}>
-            <label style={LBL}>{t("market.date_range")}</label>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <div><div style={{ ...LBL, marginBottom: "3px" }}>{t("market.from")}</div><input type="date" style={INP} value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
-              <div><div style={{ ...LBL, marginBottom: "3px" }}>{t("market.to")}</div><input type="date" style={INP} value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
+          {/* 3. DATE RANGE & APPLY */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label style={LBL}>📅 {t("market.date_range")}</label>
+              <div style={{ display: "flex", gap: "4px" }}>
+                {[{ label: "7d", d: 7 }, { label: "30d", d: 30 }, { label: "90d", d: 90 }, { label: "1yr", d: 365 }].map(({ label, d }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => {
+                      const end = new Date(), start = new Date();
+                      start.setDate(end.getDate() - d);
+                      setStartDate(start.toISOString().split("T")[0]);
+                      setEndDate(end.toISOString().split("T")[0]);
+                    }}
+                    style={{ ...SECONDARY_BTN, padding: "2px 7px", fontSize: "10px", borderRadius: "6px" }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div style={{ marginTop: "8px", padding: "8px 10px", background: "rgba(43,69,112,.06)", border: "1px solid rgba(43,69,112,.15)", borderRadius: "8px", fontSize: "11px", lineHeight: 1.7 }}>
-              <span style={{ color: "#2B4570", fontWeight: 700 }}>● {t("mi.today")}:</span>
-              <span style={{ color: "var(--tx-m)", marginLeft: "4px" }}>{todayFmt}</span><br />
-              <span style={{ color: "#B4741E", fontWeight: 700 }}>● {t("mi.tomorrow")}:</span>
-              <span style={{ color: "var(--tx-m)", marginLeft: "4px" }}>{tomorrowFmt}</span>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              <div>
+                <span style={{ fontSize: "9.5px", color: "var(--tx-s)", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: "2px" }}>{t("market.from")}</span>
+                <input type="date" style={{ ...INP, padding: "6px 8px", fontSize: "11.5px" }} value={startDate} onChange={e => setStartDate(e.target.value)} />
+              </div>
+              <div>
+                <span style={{ fontSize: "9.5px", color: "var(--tx-s)", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: "2px" }}>{t("market.to")}</span>
+                <input type="date" style={{ ...INP, padding: "6px 8px", fontSize: "11.5px" }} value={endDate} onChange={e => setEndDate(e.target.value)} />
+              </div>
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginTop: "10px" }}>
-              {[{ label: "7d", d: 7 }, { label: "30d", d: 30 }, { label: "90d", d: 90 }, { label: "1yr", d: 365 }].map(({ label, d }) => (
-                <button key={label} onClick={() => {
-                  const end = new Date(), start = new Date(); start.setDate(end.getDate() - d);
-                  setStartDate(start.toISOString().split("T")[0]); setEndDate(end.toISOString().split("T")[0]);
-                }} style={{ ...SECONDARY_BTN, padding: "4px 10px", fontSize: "11px" }}>{label}</button>
-              ))}
+
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "2px" }}>
+              <div style={{ flex: 1, padding: "5px 8px", background: "rgba(43,69,112,.06)", border: "1px solid rgba(43,69,112,.15)", borderRadius: "7px", fontSize: "10px", lineHeight: 1.4 }}>
+                <span style={{ color: "#2B4570", fontWeight: 700 }}>● {t("mi.today")}:</span> {todayFmt} · <span style={{ color: "#B4741E", fontWeight: 700 }}>● {t("mi.tomorrow")}:</span> {tomorrowFmt}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeTab === 0) fetchTrend();
+                  if (activeTab === 1) fetchCompare();
+                  if (activeTab === 2) fetchHeatmap();
+                }}
+                disabled={loading}
+                style={{ ...BTN, padding: "7px 16px", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}
+              >
+                {loading ? <><Spin /> {t("market.loading")}</> : `${t("market.apply", "Apply")} →`}
+              </button>
             </div>
-            <button onClick={() => {
-              if (activeTab === 0) fetchTrend();
-              if (activeTab === 1) fetchCompare();
-              if (activeTab === 2) fetchHeatmap();
-            }} style={{ ...BTN, width: "100%", marginTop: "10px", justifyContent: "center", display: "flex", alignItems: "center", gap: "6px" }}>
-              {loading ? <><Spin /> {t("market.loading")}</> : t("market.apply")}
-            </button>
           </div>
+
         </div>
+      </div>
 
-        {/* MAIN CONTENT */}
-        <div style={{ minWidth: 0 }}>
-          {/* Tabs */}
-          <div style={{ display: "flex", marginBottom: "18px", borderBottom: "2px solid var(--bd)" }}>
-            {TABS.map((tab, i) => (
-              <button key={i} onClick={() => setActiveTab(i)} style={{
-                background: "transparent", border: "none",
-                borderBottom: activeTab === i ? "3px solid var(--cp)" : "3px solid transparent",
-                marginBottom: "-2px", padding: "8px 18px", cursor: "pointer",
-                fontFamily: "var(--fd)", fontWeight: activeTab === i ? 700 : 500,
-                fontSize: "13px", color: activeTab === i ? "var(--cp)" : "var(--tx-m)",
-                display: "flex", alignItems: "center", gap: "5px", transition: "all .18s", whiteSpace: "nowrap",
-              }}>{tab.icon} {tab.label}</button>
-            ))}
-          </div>
+      {/* ── FULL WIDTH MAIN CONTENT AREA ── */}
+      <div style={{ width: "100%" }}>
+        {/* Tabs */}
+        <div style={{ display: "flex", marginBottom: "18px", borderBottom: "2px solid var(--bd)", overflowX: "auto" }}>
+          {TABS.map((tab, i) => (
+            <button key={i} onClick={() => setActiveTab(i)} style={{
+              background: "transparent", border: "none",
+              borderBottom: activeTab === i ? "3px solid var(--cp)" : "3px solid transparent",
+              marginBottom: "-2px", padding: "8px 18px", cursor: "pointer",
+              fontFamily: "var(--fd)", fontWeight: activeTab === i ? 700 : 500,
+              fontSize: "13px", color: activeTab === i ? "var(--cp)" : "var(--tx-m)",
+              display: "flex", alignItems: "center", gap: "6px", transition: "all .18s", whiteSpace: "nowrap",
+            }}>{tab.icon} {tab.label}</button>
+          ))}
+        </div>
 
           {/* TAB 0: Unified Trend + ARIMA chart, plus ARIMA side panel */}
           {activeTab === 0 && (
@@ -1470,7 +1607,7 @@ export default function FarmerMarketIntelligencePage() {
                     <span style={{ fontWeight: 700, color: "var(--tx)" }}>{selectedCities[0] || '—'}</span>
                     {' · '}
                     <span style={{ fontWeight: 700, color: "var(--tx)" }}>{commodity || '—'}</span>
-                    <span style={{ fontSize: "11px", color: "var(--tx-s)", marginLeft: "6px" }}>({t('mi.from_sidebar', 'from sidebar')})</span>
+                    <span style={{ fontSize: "11px", color: "var(--tx-s)", marginLeft: "6px" }}>({t('mi.from_filters', 'from filters')})</span>
                   </div>
                   
                   <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
@@ -1700,7 +1837,6 @@ export default function FarmerMarketIntelligencePage() {
           )}
 
         </div>
-      </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

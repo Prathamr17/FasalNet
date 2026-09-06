@@ -91,12 +91,13 @@ def me():
 
 # ── Google OAuth ───────────────────────────────────────────────────
 @auth_bp.route("/google", methods=["POST"])
+@auth_bp.route("/google-login", methods=["POST"])
 def google_auth():
     """
     Verify a Google ID-token received from the frontend Sign-In SDK.
     Creates a new user on first sign-in; returns JWT otherwise.
 
-    Body: { "id_token": "<google_id_token>", "role": "customer" }
+    Body: { "id_token": "<google_id_token>", "role": "farmer" }
     """
     data    = request.get_json(silent=True) or {}
     id_tok  = data.get("id_token", "")
@@ -108,33 +109,46 @@ def google_auth():
         role = "farmer"
 
     # Verify with Google's tokeninfo endpoint
-    resp = http_requests.get(
-        "https://oauth2.googleapis.com/tokeninfo",
-        params={"id_token": id_tok},
-        timeout=10
-    )
+    try:
+        resp = http_requests.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": id_tok},
+            timeout=10
+        )
+    except Exception as e:
+        return jsonify({"error": f"Failed to verify Google token: {str(e)}"}), 502
+
     if resp.status_code != 200:
-        return jsonify({"error": "Invalid Google token"}), 401
+        return jsonify({"error": "Invalid or expired Google token"}), 401
 
     info = resp.json()
 
-    # Optional: verify audience matches your client ID
-    client_id = os.getenv("GOOGLE_CLIENT_ID", "")
+    # Verify audience matches configured client ID if set
+    client_id = os.getenv("GOOGLE_CLIENT_ID") or os.getenv("REACT_APP_GOOGLE_CLIENT_ID", "")
     if client_id and info.get("aud") != client_id:
         return jsonify({"error": "Token audience mismatch"}), 401
 
     email = info.get("email", "")
     name  = info.get("name", "Google User")
 
+    if not email:
+        return jsonify({"error": "No email returned from Google token"}), 400
+
     # Find or create user
     user = query("SELECT * FROM users WHERE email=%s", (email,), fetchone=True)
 
     if not user:
-        # Generate a phone-like placeholder from email (max 15 chars)
-        fake_phone = email.split("@")[0][:15].replace(".", "")
+        # Generate a phone-like placeholder from email (numeric digits, unique)
+        import time
+        sanitized = "".join(c for c in email.split("@")[0] if c.isdigit())
+        if len(sanitized) >= 10:
+            fake_phone = sanitized[:10]
+        else:
+            fake_phone = "9" + str(int(time.time()))[-9:]
+
         # Ensure uniqueness
         if query("SELECT id FROM users WHERE phone=%s", (fake_phone,), fetchone=True):
-            fake_phone = fake_phone[:10] + str(len(fake_phone))
+            fake_phone = "9" + str(int(time.time() * 1000))[-9:]
 
         user = query(
             """INSERT INTO users (name,phone,email,password_hash,role,language)

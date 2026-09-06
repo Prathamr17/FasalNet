@@ -1,5 +1,5 @@
 // pages/SignupPage.js — multilang: English + Marathi only
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
@@ -11,10 +11,71 @@ const DEST_MAP = {
   operator: "/operator",
 };
 
+const DEFAULT_GOOGLE_CLIENT_ID = "908938746183-nk466eofdifsrj865ftkh50aheftvkb3.apps.googleusercontent.com";
+
+function useGoogleAuth(onSuccess, onError) {
+  useEffect(() => {
+    const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID;
+    if (!CLIENT_ID) return;
+
+    const renderGoogleBtn = () => {
+      if (window.google?.accounts?.id) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: CLIENT_ID,
+            callback: (res) => {
+              if (res && res.credential) {
+                onSuccess(res.credential);
+              } else if (onError) {
+                onError("Google sign-up did not return valid credentials.");
+              }
+            },
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+
+          const btnEl = document.getElementById("google-signup-btn");
+          if (btnEl) {
+            btnEl.innerHTML = "";
+            window.google.accounts.id.renderButton(btnEl, {
+              type: "standard",
+              theme: "outline",
+              size: "large",
+              text: "signup_with",
+              shape: "rectangular",
+              logo_alignment: "left",
+              width: btnEl.offsetWidth > 200 ? btnEl.offsetWidth : 432,
+            });
+          }
+        } catch (e) {
+          console.warn("Google Identity error:", e);
+        }
+      }
+    };
+
+    if (window.google?.accounts?.id) {
+      renderGoogleBtn();
+    } else {
+      let script = document.getElementById("google-gsi-client");
+      if (!script) {
+        script = document.createElement("script");
+        script.id = "google-gsi-client";
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        script.onload = renderGoogleBtn;
+        document.head.appendChild(script);
+      } else {
+        script.addEventListener("load", renderGoogleBtn);
+      }
+    }
+  }, [onSuccess, onError]);
+}
+
 export default function SignupPage() {
-  const { t }         = useTranslation();
-  const { login }     = useAuth();
-  const navigate      = useNavigate();
+  const { t }                          = useTranslation();
+  const { login, loginWithGoogle }     = useAuth();
+  const navigate                       = useNavigate();
 
   const ROLES = [
     { id: "farmer",   emoji: "🌾", label: t("auth.farmer"),   desc: t("auth.upload_produce"), color: "#3F6B33", bg: "rgba(63,107,51,.1)", border: "rgba(63,107,51,.3)" },
@@ -34,6 +95,21 @@ export default function SignupPage() {
   const [step,     setStep]     = useState(1);
   const [showOTP,  setShowOTP]  = useState(false);
   const [locating, setLocating] = useState(false);
+
+  const handleGoogleSignup = async (idToken) => {
+    setError("");
+    setLoad(true);
+    try {
+      const user = await loginWithGoogle(idToken, form.role || "farmer");
+      navigate(DEST_MAP[user.role] || "/discover", { replace: true });
+    } catch (err) {
+      setError(err.response?.data?.error || "Google sign-up failed. Please try again.");
+    } finally {
+      setLoad(false);
+    }
+  };
+
+  useGoogleAuth(handleGoogleSignup, (err) => setError(err));
 
   const set          = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const selectedRole = ROLES.find(r => r.id === form.role);
@@ -195,6 +271,16 @@ export default function SignupPage() {
                 boxShadow: "0 4px 20px var(--cp-glow)" }}>
               {t("auth.continue_as")} {selectedRole?.label} →
             </button>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "16px 0" }}>
+              <div style={{ flex: 1, height: "1px", background: "var(--bd)" }} />
+              <span style={{ fontSize: "12px", color: "var(--tx-s)" }}>{t("auth.or")}</span>
+              <div style={{ flex: 1, height: "1px", background: "var(--bd)" }} />
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", minHeight: "44px" }}>
+              <div id="google-signup-btn" style={{ width: "100%", display: "flex", justifyContent: "center" }} />
+            </div>
           </div>
         )}
 
