@@ -448,7 +448,6 @@ def recommend_market():
             # misleading prices.
             if market_encoder and mkt["name"] not in market_encoder.classes_:
                 continue
-
             raw = {
                 "State":         mkt.get("state", state),
                 "District Name": mkt.get("district", mkt["name"]),

@@ -30,6 +30,7 @@ DATABASE_URL = (
     os.environ.get("DATABASE_URL")
     or os.environ.get("DB_URL")
     or getattr(Config, "DATABASE_URL", "")
+    or "postgresql://neondb_owner:npg_hNsGgVLf62uB@ep-gentle-feather-anbhl1fl-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 )
 TABLE = "mh_market_prices"
 

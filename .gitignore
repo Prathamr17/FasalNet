@@ -36,8 +36,6 @@ pnpm-debug.log*
 build/
 dist/
 
-
-
 # React cache
 .next/
 .cache/
