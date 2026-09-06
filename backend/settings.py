@@ -20,7 +20,12 @@ class Config:
     DB_USER     = os.getenv("DB_USER", "postgres")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
 
-    DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("DB_URL")
+    DEFAULT_DATABASE_URL = (
+        "postgresql://neondb_owner:npg_hNsGgVLf62uB"
+        "@ep-gentle-feather-anbhl1fl-pooler.c-6.us-east-1.aws.neon.tech"
+        "/neondb?sslmode=require&channel_binding=require"
+    )
+    DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("DB_URL") or DEFAULT_DATABASE_URL
 
     # ── JWT ───────────────────────────────────────────────────
     JWT_SECRET_KEY            = os.getenv("JWT_SECRET_KEY", "jwt-fasalnet-secret")
