@@ -384,7 +384,16 @@
     "select_markets_prompt": "Select one or more markets to view live price trends & forecasts.",
     "no_nearby_markets": "No APMC markets found within 30–40 km of your location. Please select a market manually.",
     "no_markets_selected": "No markets selected",
-    "quick_markets": "Popular Mandis:"
+    "quick_markets": "Popular Mandis:",
+    "extended_trends": "Extended Market Trends",
+    "beyond_horizon": "Long-term 30 & 60 day directional trend signals",
+    "trend_30": "30-Day Trend",
+    "trend_60": "60-Day Trend",
+    "days": "Days",
+    "confidence_high": "High Confidence",
+    "confidence_medium": "Medium Confidence",
+    "confidence_low": "Low Confidence",
+    "analysis_reason": "Analysis"
   },
   "common": {
     "english": "English",

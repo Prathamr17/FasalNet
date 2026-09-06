@@ -1,4 +1,4 @@
-// services/api.js — v10 + Market Intelligence (ARIMA data layer)
+// services/api.js — v10 + Market Intelligence (ARIMA data layer + v3 forecast)
 import axios from "axios";
 
 const BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -103,17 +103,22 @@ export const mlAPI = {
   spoilageMeta: ()     => api.get("/api/predict/spoilage/meta"),
 };
 
-// ── Market Intelligence (v12 — ARIMA data layer) ──────────────────
+// ── Market Intelligence (v12 — ARIMA data layer + v3 forecast) ────
 export const marketAPI = {
-  cities:         ()       => api.get("/api/market/cities"),
-  commodities:    (city)   => api.get("/api/market/commodities",   { params: { city } }),
-  summary:        (params) => api.get("/api/market/summary",       { params }),
-  trend:          (params) => api.get("/api/market/trend",         { params }),
-  heatmap:        (params) => api.get("/api/market/heatmap",       { params }),
-  compare:        (params) => api.get("/api/market/compare",       { params }),
-  arimaForecast:  (params) => api.get("/api/market/arima-forecast",{ params }),
-  refresh:        (data)   => api.post("/api/market/refresh",      data),
-  syncStatus:     ()       => api.get("/api/market/sync-status"),
+  cities:                  ()       => api.get("/api/market/cities"),
+  commodities:             (city)   => api.get("/api/market/commodities",   { params: { city } }),
+  summary:                 (params) => api.get("/api/market/summary",       { params }),
+  trend:                   (params) => api.get("/api/market/trend",         { params }),
+  heatmap:                 (params) => api.get("/api/market/heatmap",       { params }),
+  compare:                 (params) => api.get("/api/market/compare",       { params }),
+  arimaForecast:           (params) => api.get("/api/market/arima-forecast",{ params }),
+  forecastV3Predictions:   (data)   => api.post("/api/market/forecast-v3/predictions", data),
+  forecastV3Trends:        (data)   => api.post("/api/market/forecast-v3/trends", data),
+  forecastV3TodayTomorrow: (data)   => api.post("/api/market/forecast-v3/today-tomorrow", data),
+  forecastV3Continuous:    (data)   => api.post("/api/market/forecast-v3/continuous", data),
+  forecastV3TrendSignal:   (data)   => api.post("/api/market/forecast-v3/trend-signal", data),
+  refresh:                 (data)   => api.post("/api/market/refresh",      data),
+  syncStatus:              ()       => api.get("/api/market/sync-status"),
 };
 
 export default api;

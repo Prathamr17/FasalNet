@@ -355,6 +355,7 @@
     "forecast_title": "AI भाव पूर्वानुमान",
     "forecast_desc": "पूर्वानुमान सीधे ऊपर दिए गए चार्ट पर दिखाई देता है।",
     "using": "चयनित:",
+    "from_sidebar": "फ़िल्टर से",
     "from_filters": "फ़िल्टर से",
     "popular_crops": "प्रमुख फसलें:",
     "horizon": "अवधि",

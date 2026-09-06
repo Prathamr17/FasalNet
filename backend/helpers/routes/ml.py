@@ -401,53 +401,14 @@ def recommend_market():
         month     = int(data.get("month", today.month))
         state     = data.get("state",    "Maharashtra")
 
-        # ── Generate candidate markets ──────────────────────────
-        # v2 bundles carry training-data market metadata
-        mkt_by_state = bundle.get("markets_by_state")
-
-        if data.get("markets"):
-            # Explicit market list from request — use as-is
-            markets_to_check = data["markets"]
-        elif mkt_by_state:
-            # New model (v2): use real market names from training data
-            state_markets = mkt_by_state.get(state, [])
-            if not state_markets:
-                # Fallback: try all states if requested state has no data
-                state_markets = []
-                for s_markets in mkt_by_state.values():
-                    state_markets.extend(s_markets)
-
-            # Deduplicate by Market Name (some markets may appear
-            # with multiple district entries)
-            seen = set()
-            unique_markets = []
-            for m in state_markets:
-                if m["Market Name"] not in seen:
-                    seen.add(m["Market Name"])
-                    unique_markets.append(m)
-
-            markets_to_check = [
-                {"name": m["Market Name"], "district": m["District Name"], "state": m["State"]}
-                for m in unique_markets
-            ]
-        else:
-            # Old model (v1): fall back to district-based lookup
-            markets_to_check = [
-                {"name": d, "district": d, "state": state}
-                for d in DISTRICTS_BY_STATE.get(state, ["Pune","Mumbai","Nashik"])[:6]
-            ]
-
-        # ── Check which markets the encoder recognises ──────────
-        market_encoder = bundle.get("encoders", {}).get("Market Name")
+        markets_to_check = data.get("markets") or [
+            {"name": d, "district": d, "state": state}
+            for d in DISTRICTS_BY_STATE.get(state, ["Pune","Mumbai","Nashik"])[:6]
+        ]
 
         model   = bundle["model"]
         results = []
         for mkt in markets_to_check:
-            # Skip markets unknown to the encoder — predictions
-            # would default to class 0 (wrong market), causing
-            # misleading prices.
-            if market_encoder and mkt["name"] not in market_encoder.classes_:
-                continue
             raw = {
                 "State":         mkt.get("state", state),
                 "District Name": mkt.get("district", mkt["name"]),
