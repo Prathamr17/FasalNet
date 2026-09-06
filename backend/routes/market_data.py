@@ -19,13 +19,17 @@ from sqlalchemy.pool import NullPool
 warnings.filterwarnings("ignore")
 log = logging.getLogger(__name__)
 
+try:
+    from settings import Config
+except ImportError:
+    Config = None
+
 market_bp = Blueprint("market", __name__, url_prefix="/api/market")
 
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://neondb_owner:npg_hNsGgVLf62uB"
-    "@ep-gentle-feather-anbhl1fl-pooler.c-6.us-east-1.aws.neon.tech"
-    "/neondb?sslmode=require&channel_binding=require",
+DATABASE_URL = (
+    os.environ.get("DATABASE_URL")
+    or os.environ.get("DB_URL")
+    or getattr(Config, "DATABASE_URL", "")
 )
 TABLE = "mh_market_prices"
 

@@ -47,7 +47,7 @@ def _start_scheduler(app):
         from datetime import date, timedelta
 
         IST = pytz.timezone("Asia/Kolkata")
-        DATABASE_URL = os.environ.get("DATABASE_URL", "")
+        DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get("DB_URL") or getattr(Config, "DATABASE_URL", "")
 
         def daily_sync():
             with app.app_context():
