@@ -10,6 +10,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { marketAPI, mlAPI } from "../../services/api";
+import ForecastIntelligencePage from "./ForecastIntelligencePage";
 
 const PALETTE = [
   "#3F6B33","#2B4570","#B4741E","#8B3A2B",
@@ -1055,6 +1056,8 @@ function QuickMarketRec({ meta }) {
 }
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
+
+// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function FarmerMarketIntelligencePage() {
   const { t, i18n } = useTranslation();
 
@@ -1078,7 +1081,6 @@ export default function FarmerMarketIntelligencePage() {
   const [mlMeta,      setMlMeta]      = useState(null);
   const [activeTab,   setActiveTab]   = useState(0);
   const [loading,     setLoading]     = useState(false);
-  const [syncing,     setSyncing]     = useState(false);
   const [toast,       setToast]       = useState("");
 
   // Location detection state & run-once refs
@@ -1091,7 +1093,7 @@ export default function FarmerMarketIntelligencePage() {
   const [detectedPlace,   setDetectedPlace]   = useState("");
   const [locationError,   setLocationError]   = useState("");
 
-  // ARIMA state
+  // ARIMA & V3 Forecast state
   const [arimaLoading,  setArimaLoading]  = useState(false);
   const [arimaData,     setArimaData]     = useState(null);  // { city, commodity, forecast, actual_context }
   const [arimaDays,     setArimaDays]     = useState(7);
@@ -1099,6 +1101,12 @@ export default function FarmerMarketIntelligencePage() {
   const [arimaCommodity,setArimaCommodity]= useState("");
   const [arimaError,    setArimaError]    = useState("");
   const [showCitiesPanel, setShowCitiesPanel] = useState(false);
+
+  // ── Today/Tomorrow highlight + 30/60-day binary trend signal (new, 3-part forecast split) ──
+  const [todayTomorrow,     setTodayTomorrow]     = useState(null); // { today, tomorrow }
+  const [ttLoading,         setTtLoading]         = useState(false);
+  const [trendSignalData,   setTrendSignalData]   = useState(null); // { 30_day, 60_day }
+  const [trendSignalLoading,setTrendSignalLoading]= useState(false);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
 
@@ -1212,21 +1220,7 @@ export default function FarmerMarketIntelligencePage() {
     if (activeTab === 2) fetchHeatmap();
   }, [activeTab, fetchTrend, fetchCompare, fetchHeatmap]);
 
-  // Change #1: Sync Now → after sync, reload data
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      await marketAPI.refresh({ start: startDate, end: endDate });
-      showToast("🔄 Sync started — reloading data shortly…");
-      setTimeout(() => {
-        marketAPI.syncStatus().then(({ data }) => setSyncStatus(data)).catch(() => {});
-        if (activeTab === 0) fetchTrend();
-        if (activeTab === 1) fetchCompare();
-        if (activeTab === 2) fetchHeatmap();
-      }, 4000);
-    } catch { showToast("⚠ Sync failed — check backend."); }
-    finally { setSyncing(false); }
-  };
+
 
   const toggleCity = (city) =>
     setSelectedCities(prev => prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]);
@@ -1237,19 +1231,61 @@ export default function FarmerMarketIntelligencePage() {
       }))
     : [];
 
-  // ARIMA forecast
+  // ── 3-part forecast: (1) Today/Tomorrow highlight, (2) 7/14-day continuous XGBoost, (3) 30/60-day binary trend signal ──
   const handleArimaForecast = async () => {
     // Use the first selected city from the trend sidebar (most recently applied)
     const city = selectedCities[0] || "";
     const comm = commodity || "";
     if (!city || !comm) { setArimaError("Select a market and commodity from the sidebar first."); return; }
-    setArimaLoading(true); setArimaError(""); setArimaData(null);
+
+    setArimaLoading(true); setTtLoading(true); setTrendSignalLoading(true);
+    setArimaError(""); setArimaData(null);
+    setTodayTomorrow(null); setTrendSignalData(null);
+
     try {
-      const { data } = await marketAPI.arimaForecast({ city, commodity: comm, days: arimaDays });
-      setArimaData(data);
+      const [ttRes, contRes, trendRes] = await Promise.allSettled([
+        marketAPI.forecastV3TodayTomorrow({ city, commodity: comm }),
+        marketAPI.forecastV3Continuous({ city, commodity: comm, horizon: arimaDays }),
+        marketAPI.forecastV3TrendSignal({ city, commodity: comm }),
+      ]);
+
+      // 1) Today / Tomorrow highlight
+      if (ttRes.status === "fulfilled" && ttRes.value?.data?.status === "success") {
+        setTodayTomorrow(ttRes.value.data);
+      }
+
+      // 2) 7/14-day continuous forecast — every day is its own real XGBoost prediction,
+      //    so the line actually moves instead of flattening into a repeated point.
+      if (contRes.status === "fulfilled" && contRes.value?.data?.status === "success") {
+        const daily = contRes.value.data.daily || [];
+        const pts = daily.map(d => ({
+          date:      d.date,
+          price:     d.price,
+          max_price: d.upper_95,
+          min_price: d.lower_95,
+          upper_80:  d.upper_80,
+          lower_80:  d.lower_80,
+        }));
+        setArimaData({
+          city,
+          commodity: comm,
+          forecast: pts,
+          last_actual_price: ttRes.status === "fulfilled" ? ttRes.value?.data?.today?.price : undefined,
+        });
+      } else {
+        const err = contRes.reason?.response?.data?.error || "Continuous forecast failed.";
+        setArimaError(err);
+      }
+
+      // 3) 30/60-day binary trend signal
+      if (trendRes.status === "fulfilled" && trendRes.value?.data?.status === "success") {
+        setTrendSignalData(trendRes.value.data.trend_signal);
+      }
     } catch (err) {
       setArimaError(err.response?.data?.error || "Forecast failed.");
-    } finally { setArimaLoading(false); }
+    } finally {
+      setArimaLoading(false); setTtLoading(false); setTrendSignalLoading(false);
+    }
   };
 
   // Build forecast chart series
@@ -1259,7 +1295,6 @@ export default function FarmerMarketIntelligencePage() {
   const arimaChartForecast = arimaData?.forecast
     ? [{ label: arimaData.city, color: PALETTE[0], points: arimaData.forecast }]
     : [];
-
   const dateLocale  = i18n.language === "mr" ? "mr-IN" : i18n.language === "hi" ? "hi-IN" : "en-IN";
   const todayFmt    = new Date().toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" });
   const tomorrowFmt = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" }); })();
@@ -1575,205 +1610,23 @@ export default function FarmerMarketIntelligencePage() {
                     </div>}
               </div>
 
-              {/* ── ARIMA controls + side panel ── */}
-              <div style={CARD}>
-                {/* Section header */}
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                  <div style={{
-                    width: 40, height: 40, borderRadius: "10px",
-                    background: "var(--cp-pale)", display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "20px", flexShrink: 0
-                  }}>
-                    📈
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--tx)", lineHeight: 1.2 }}>
-                      {t('mi.forecast_title', 'AI Price Forecast')}
-                    </h3>
-                    <p style={{ fontSize: "12px", color: "var(--tx-m)", marginTop: "2px" }}>
-                      {t('mi.forecast_desc', 'Forecast overlays directly onto the chart above. Select city, crop & horizon.')}
-                    </p>
-                  </div>
-                </div>
+              {/* ── AI Forecast Panel — rendered by ForecastIntelligencePage ── */}
+              <ForecastIntelligencePage
+                selectedCities={selectedCities}
+                commodity={commodity}
+                arimaDays={arimaDays}
+                setArimaDays={setArimaDays}
+                arimaData={arimaData}
+                arimaLoading={arimaLoading}
+                arimaError={arimaError}
+                arimaChartForecast={arimaChartForecast}
+                todayTomorrow={todayTomorrow}
+                ttLoading={ttLoading}
+                trendSignalData={trendSignalData}
+                trendSignalLoading={trendSignalLoading}
+                onRunForecast={handleArimaForecast}
+              />
 
-                {/* Controls row */}
-                <div style={{
-                  display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between",
-                  gap: "14px", padding: "12px 16px", marginBottom: "20px",
-                  background: "var(--bg-l)", borderRadius: "10px", border: "1px solid var(--bd)"
-                }}>
-                  <div style={{ fontSize: "13px", color: "var(--tx-m)" }}>
-                    {t('mi.using', 'Configured:')}{' '}
-                    <span style={{ fontWeight: 700, color: "var(--tx)" }}>{selectedCities[0] || '—'}</span>
-                    {' · '}
-                    <span style={{ fontWeight: 700, color: "var(--tx)" }}>{commodity || '—'}</span>
-                    <span style={{ fontSize: "11px", color: "var(--tx-s)", marginLeft: "6px" }}>({t('mi.from_filters', 'from filters')})</span>
-                  </div>
-                  
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".6px" }}>{t('mi.horizon', 'Horizon')}</span>
-                      <div style={{ display: "flex", background: "var(--bg-m)", padding: "2px", borderRadius: "8px", border: "1px solid var(--bd)" }}>
-                        {[7, 14].map(d => (
-                          <button
-                            key={d}
-                            onClick={() => setArimaDays(d)}
-                            style={{
-                              padding: "4px 10px", fontSize: "12px", fontWeight: 700, borderRadius: "6px", border: "none", cursor: "pointer",
-                              background: arimaDays === d ? "var(--cp)" : "transparent",
-                              color: arimaDays === d ? "var(--cp-text)" : "var(--tx-m)",
-                              transition: "all .15s"
-                            }}
-                          >
-                            {d}d
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <button
-                      onClick={handleArimaForecast}
-                      disabled={arimaLoading}
-                      style={{ ...BTN, display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", fontSize: "12px" }}
-                    >
-                      {arimaLoading ? (
-                        <>
-                          <Spin /> {t('mi.forecasting', 'Forecasting...')}
-                        </>
-                      ) : (
-                        <>🔮 {t('mi.run_forecast', 'Run Forecast')}</>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {arimaError && (
-                  <div style={{
-                    marginBottom: "20px", padding: "12px 16px", borderRadius: "10px",
-                    border: "1px solid var(--danger)", background: "var(--danger-bg)", color: "var(--danger)",
-                    fontSize: "13px", display: "flex", alignItems: "center", gap: "8px"
-                  }}>
-                    ⚠️ {arimaError}
-                  </div>
-                )}
-
-                {/* ── Side panel: per-day values (shown after forecast runs) ── */}
-                {arimaData ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid var(--bd)", paddingBottom: "8px" }}>
-                      <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".8px" }}>
-                        📅 {arimaDays}-{t('mi.daily_forecast_suffix', 'Day Daily Forecast')} — {arimaData.city} · {arimaData.commodity}
-                      </span>
-                    </div>
-
-                    {/* Summary stats grid */}
-                    {(() => {
-                      const prices = arimaData.forecast.map(p => p.price);
-                      const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-                      const delta = prices[prices.length - 1] - prices[0];
-                      const peak = Math.max(...arimaData.forecast.map(p => p.max_price));
-                      const trough = Math.min(...arimaData.forecast.map(p => p.min_price));
-                      
-                      return (
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px" }}>
-                          {[
-                            {
-                              label: t('mi.avg_price', 'Avg Price'),
-                              val: `₹${Math.round(avg).toLocaleString('en-IN')}`,
-                              color: "var(--info)",
-                            },
-                            {
-                              label: t('mi.forecast_trend', 'Forecasted Trend'),
-                              val: `${delta >= 0 ? '▲' : '▼'} ₹${Math.abs(Math.round(delta)).toLocaleString('en-IN')}`,
-                              color: delta >= 0 ? "var(--safe)" : "var(--danger)",
-                            },
-                            {
-                              label: t('mi.peak_max', 'Peak (Max)'),
-                              val: `₹${Math.round(peak).toLocaleString('en-IN')}`,
-                              color: "var(--warn)",
-                            },
-                            {
-                              label: t('mi.floor_min', 'Floor (Min)'),
-                              val: `₹${Math.round(trough).toLocaleString('en-IN')}`,
-                              color: "var(--cp)",
-                            }
-                          ].map(({ label, val, color }) => (
-                            <div key={label} style={{
-                              padding: "12px", borderRadius: "10px", border: "1px solid var(--bd)",
-                              background: "var(--bg-l)", textAlign: "center"
-                            }}>
-                              <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: "4px" }}>{label}</div>
-                              <div style={{ fontSize: "18px", fontWeight: 900, color, fontFamily: "var(--fd)" }}>{val}</div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Daily horizontal cards */}
-                    <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "10px" }}>
-                      {arimaData.forecast.map((pt, i) => {
-                        const prevPrice = i === 0 ? arimaData.last_actual_price : arimaData.forecast[i - 1].price;
-                        const change = pt.price - prevPrice;
-                        const isUp = change >= 0;
-                        return (
-                          <div
-                            key={i}
-                            style={{
-                              minWidth: "115px", flexShrink: 0, background: "var(--bg-l)",
-                              border: "1px solid var(--bd)",
-                              borderTop: `4px solid ${isUp ? 'var(--safe)' : 'var(--danger)'}`,
-                              borderRadius: "10px", padding: "10px", textAlign: "center"
-                            }}
-                          >
-                            <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: "6px" }}>
-                              {t('mi.day', 'Day')} {i + 1}
-                              <span style={{ display: "block", fontSize: "9px", fontWeight: 400, color: "var(--tx-s)", marginTop: "2px" }}>{pt.date.slice(5)}</span>
-                            </div>
-                            
-                            <div style={{ fontWeight: 900, fontSize: "14px", color: "var(--tx)", fontFamily: "var(--fd)", marginBottom: "4px" }}>
-                              ₹{pt.price.toLocaleString('en-IN')}
-                            </div>
-                            
-                            <div style={{
-                              fontSize: "10px", fontWeight: 700, marginBottom: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "2px",
-                              color: isUp ? "var(--safe)" : "var(--danger)"
-                            }}>
-                              {isUp ? '▲' : '▼'} ₹{Math.abs(Math.round(change)).toLocaleString('en-IN')}
-                            </div>
-                            
-                            <div style={{ fontSize: "10px", color: "var(--tx-m)", borderTop: "1px solid var(--bd)", paddingTop: "6px" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", gap: "4px", marginBottom: "2px" }}>
-                                <span style={{ color: "var(--tx-s)" }}>{t('mi.high_short', 'H:')}</span>
-                                <span style={{ fontWeight: 600, color: "var(--tx)" }}>₹{Math.round(pt.max_price).toLocaleString('en-IN')}</span>
-                              </div>
-                              <div style={{ display: "flex", justifyContent: "space-between", gap: "4px" }}>
-                                <span style={{ color: "var(--tx-s)" }}>{t('mi.low_short', 'L:')}</span>
-                                <span style={{ fontWeight: 600, color: "var(--tx)" }}>₹{Math.round(pt.min_price).toLocaleString('en-IN')}</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  !arimaLoading && (
-                    <div style={{
-                      padding: "36px 20px", textAlign: "center",
-                      background: "var(--bg-l)", border: "1px dashed var(--bd)", borderRadius: "12px"
-                    }}>
-                      <span style={{ fontSize: "2rem", display: "block", marginBottom: "8px" }}>🔮</span>
-                      <p style={{ fontSize: "14px", fontWeight: 700, color: "var(--tx)", marginBottom: "4px" }}>
-                        {t('mi.no_forecast', 'No forecast runs active')}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "var(--tx-s)" }}>
-                        {t('mi.no_forecast_sub', 'Select a city & commodity, choose horizon, and click Run Forecast to overlay predictions.')}
-                      </p>
-                    </div>
-                  )
-                )}
-              </div>
             </div>
           )}
 
@@ -1828,17 +1681,13 @@ export default function FarmerMarketIntelligencePage() {
           {/* TAB 3: Price Tools (was ML Predict) */}
           {activeTab === 3 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div style={{ padding: "12px 14px", background: "rgba(124,58,237,.06)", border: "1px solid rgba(124,58,237,.15)", borderRadius: "10px", fontSize: "12px", color: "var(--tx-m)" }}>
-                <strong style={{ color: "var(--tx)" }}>ℹ️ {t("market.about_tools")}</strong> {t("market.about_tools_sub")}
-              </div>
               <QuickPricePredict meta={mlMeta} />
               <QuickMarketRec    meta={mlMeta} />
             </div>
           )}
 
         </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
   );
 }
