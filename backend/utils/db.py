@@ -37,8 +37,14 @@ def get_db():
 def close_db(error=None):
     """Return the request-scoped connection back to the pool."""
     conn = g.pop("db_conn", None)
-    if conn is not None:
-        get_pool().putconn(conn)
+    if conn is not None and _pool is not None:
+        try:
+            _pool.putconn(conn)
+        except Exception:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def query(sql: str, params=None, fetchone=False, fetchall=False, commit=False):

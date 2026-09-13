@@ -20,6 +20,7 @@ ai_bp = Blueprint("ai_advisor", __name__, url_prefix="/api/ai")
 
 
 @ai_bp.route("/market-advice", methods=["GET", "POST"])
+@ai_bp.route("/recommendation", methods=["GET", "POST"])
 def market_advice():
     """
     Generate grounded AI agricultural recommendation combining:

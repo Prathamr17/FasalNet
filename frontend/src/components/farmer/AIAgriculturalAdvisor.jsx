@@ -182,6 +182,15 @@ export default function AIAgriculturalAdvisor({
     setUserInput("");
     setChatLoading(true);
 
+    // Format previous chat history turns for Gemini conversation memory
+    const formattedHistory = chatMessages
+      .filter((m) => m.sender === "user" || m.sender === "ai")
+      .slice(-6)
+      .map((m) => ({
+        role: m.sender === "user" ? "user" : "assistant",
+        content: m.text
+      }));
+
     try {
       const res = await aiAPI.chat({
         message: query,
@@ -191,7 +200,8 @@ export default function AIAgriculturalAdvisor({
         lat,
         lon,
         conversation_id: conversationId,
-        language: currentLang
+        language: currentLang,
+        chat_history: formattedHistory
       });
 
       if (res?.data?.status === "success") {
@@ -202,6 +212,7 @@ export default function AIAgriculturalAdvisor({
           sender: "ai",
           text: res.data.reply,
           sources: res.data.sources || [],
+          ai_engine: res.data.ai_engine || "Google Gemini + RAG",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         };
         setChatMessages((prev) => [...prev, aiMsg]);
@@ -217,11 +228,15 @@ export default function AIAgriculturalAdvisor({
       }
     } catch (err) {
       console.error("Chat error:", err);
+      const errMsg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        "Network error connecting to AI Chat. Please check your connection and try again.";
       setChatMessages((prev) => [
         ...prev,
         {
           sender: "ai",
-          text: "Network error connecting to AI Chat. Please check your connection and try again.",
+          text: errMsg,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         }
       ]);
@@ -629,12 +644,17 @@ export default function AIAgriculturalAdvisor({
                       </div>
                     )}
 
-                    <div
-                      className={`text-[9px] mt-1 text-right ${
-                        msg.sender === "user" ? "text-emerald-100" : "text-gray-400"
-                      }`}
-                    >
-                      {msg.timestamp}
+                    <div className="mt-1 flex items-center justify-between text-[9px]">
+                      {msg.sender === "ai" && msg.ai_engine ? (
+                        <span className="text-emerald-700 dark:text-emerald-300 font-medium">
+                          ⚡ {msg.ai_engine}
+                        </span>
+                      ) : (
+                        <span></span>
+                      )}
+                      <span className={msg.sender === "user" ? "text-emerald-100" : "text-gray-400"}>
+                        {msg.timestamp}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -644,7 +664,7 @@ export default function AIAgriculturalAdvisor({
                   <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-none px-4 py-3 border border-gray-200 dark:border-gray-600 flex items-center gap-2">
                     <div className="w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                      FasalNet AI is analyzing context with RAG & Open-Meteo...
+                      FasalNet AI is analyzing with Gemini, XGBoost & RAG...
                     </span>
                   </div>
                 </div>

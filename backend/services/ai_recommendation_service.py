@@ -118,49 +118,45 @@ def get_nearby_markets_comparison(
     """
     nearby_list = []
     try:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT market, district, MAX(arrival_date) as last_date
+        rows = query("""
+            SELECT market, district, MAX(arrival_date) as last_date
+            FROM mh_market_prices
+            WHERE LOWER(commodity) = LOWER(%s)
+            GROUP BY market, district
+        """, (commodity,), fetchall=True) or []
+
+        for r in rows:
+            m_name = r.get("market") or ""
+            d_name = r.get("district") or ""
+
+            m_coords = resolve_market_coordinates(f"{m_name} {d_name}")
+            m_lat = m_coords["lat"]
+            m_lon = m_coords["lon"]
+
+            dist_km = _haversine_distance_km(lat, lon, m_lat, m_lon)
+            if 0.5 < dist_km <= max_radius_km:
+                price_row = query("""
+                    SELECT modal_price, min_price, max_price, arrival_date
                     FROM mh_market_prices
                     WHERE LOWER(commodity) = LOWER(%s)
-                    GROUP BY market, district
-                """, (commodity,))
-                rows = cur.fetchall()
+                      AND LOWER(market) = LOWER(%s)
+                    ORDER BY arrival_date DESC
+                    LIMIT 1
+                """, (commodity, m_name), fetchone=True)
 
-                for r in rows:
-                    m_name = r[0] or ""
-                    d_name = r[1] or ""
-
-                    m_coords = resolve_market_coordinates(f"{m_name} {d_name}")
-                    m_lat = m_coords["lat"]
-                    m_lon = m_coords["lon"]
-
-                    dist_km = _haversine_distance_km(lat, lon, m_lat, m_lon)
-                    if 0.5 < dist_km <= max_radius_km:
-                        cur.execute("""
-                            SELECT modal_price, min_price, max_price, arrival_date
-                            FROM mh_market_prices
-                            WHERE LOWER(commodity) = LOWER(%s)
-                              AND LOWER(market) = LOWER(%s)
-                            ORDER BY arrival_date DESC
-                            LIMIT 1
-                        """, (commodity, m_name))
-                        price_row = cur.fetchone()
-
-                        if price_row:
-                            nearby_list.append({
-                                "market_name": f"{m_name} APMC",
-                                "city_name": m_name,
-                                "district": d_name,
-                                "distance_km": round(dist_km, 1),
-                                "modal_price": float(price_row[0]),
-                                "min_price": float(price_row[1]),
-                                "max_price": float(price_row[2]),
-                                "price_date": str(price_row[3]),
-                                "lat": m_lat,
-                                "lon": m_lon
-                            })
+                if price_row and price_row.get("modal_price") is not None:
+                    nearby_list.append({
+                        "market_name": f"{m_name} APMC",
+                        "city_name": m_name,
+                        "district": d_name,
+                        "distance_km": round(dist_km, 1),
+                        "modal_price": float(price_row["modal_price"]),
+                        "min_price": float(price_row.get("min_price") or price_row["modal_price"]),
+                        "max_price": float(price_row.get("max_price") or price_row["modal_price"]),
+                        "price_date": str(price_row.get("arrival_date")),
+                        "lat": m_lat,
+                        "lon": m_lon
+                    })
     except Exception as e:
         logger.warning(f"Database query for nearby markets failed: {e}")
 
@@ -916,13 +912,36 @@ def synthesize_dynamic_chat_reply(
 
 
 # ── LLM / GENAI ENHANCER (GOOGLE GEMINI WITH DETERMINISTIC FALLBACK) ─────────
-def _call_gemini_llm(prompt: str, system_instruction: str) -> Optional[str]:
-    """Call Google Gemini API if API key is provided."""
+def _call_gemini_llm(
+    prompt: str,
+    system_instruction: str,
+    max_tokens: int = 2048,
+    json_mode: bool = False
+) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Call Google Gemini API using active Gemini 3 / 2.5 models.
+    Returns (generated_text, error_message).
+    """
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not api_key:
-        return None
+        return None, "GEMINI_API_KEY is not configured in backend/.env"
 
-    models_to_try = ["gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro"]
+    models_to_try = [
+        "gemini-3-flash-preview",
+        "gemini-3.1-flash-lite",
+        "gemini-3.7-flash",
+        "gemini-2.5-flash"
+    ]
+
+    gen_config: Dict[str, Any] = {
+        "temperature": 0.2 if json_mode else 0.4,
+        "topP": 0.85,
+        "maxOutputTokens": max_tokens
+    }
+    if json_mode:
+        gen_config["responseMimeType"] = "application/json"
+
+    last_err = None
     for model_name in models_to_try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
         payload = {
@@ -938,28 +957,36 @@ def _call_gemini_llm(prompt: str, system_instruction: str) -> Optional[str]:
                     {"text": system_instruction}
                 ]
             },
-            "generationConfig": {
-                "temperature": 0.2,
-                "topP": 0.8,
-                "maxOutputTokens": 1200
-            }
+            "generationConfig": gen_config
         }
 
         try:
-            resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=12)
+            resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=18)
             if resp.status_code == 200:
                 data = resp.json()
                 candidates = data.get("candidates", [])
                 if candidates:
                     parts = candidates[0].get("content", {}).get("parts", [])
                     if parts and "text" in parts[0]:
-                        return parts[0]["text"]
+                        return parts[0]["text"], None
+            elif resp.status_code == 429:
+                last_err = f"Gemini API rate limit/quota reached on {model_name} (HTTP 429)"
+                logger.warning(last_err)
+            elif resp.status_code in (400, 403):
+                err_data = resp.json().get("error", {})
+                last_err = f"Gemini API authentication/bad request ({resp.status_code}): {err_data.get('message', resp.text[:120])}"
+                logger.warning(last_err)
             else:
-                logger.warning(f"Gemini API returned status {resp.status_code}: {resp.text[:150]}")
+                last_err = f"Gemini model {model_name} returned status {resp.status_code}: {resp.text[:120]}"
+                logger.warning(last_err)
+        except requests.exceptions.Timeout:
+            last_err = f"Gemini API request timed out on {model_name}"
+            logger.warning(last_err)
         except Exception as e:
-            logger.warning(f"Error calling Gemini model {model_name}: {e}")
+            last_err = f"Error calling Gemini model {model_name}: {str(e)}"
+            logger.warning(last_err)
 
-    return None
+    return None, last_err
 
 
 # ── MAIN ADVISORY SERVICE ENTRY POINT ────────────────────────────────────────
@@ -1012,7 +1039,7 @@ def get_agricultural_market_advice(
         "1. Never invent future prices, market names, or weather values.\n"
         "2. Strictly use the provided XGBoost forecast numbers and Open-Meteo weather values.\n"
         "3. Strictly base agronomic recommendations on the provided ICAR knowledge chunks.\n"
-        "4. Respond with valid JSON matching the exact schema:\n"
+        "4. Output a valid JSON object matching the exact schema:\n"
         "{\"recommendation\": \"...\", \"reason\": \"...\", \"market_analysis\": \"...\", \"price_forecast_summary\": \"...\", \"weather_impact\": \"...\", \"crop_advice\": \"...\", \"risk_level\": \"Low|Moderate|High\", \"confidence\": \"High|Medium|Low\", \"suggested_action\": \"...\"}"
     )
 
@@ -1040,12 +1067,13 @@ USER QUESTION / FOCUS:
 Generate a concise, high-impact JSON response adhering strictly to the above facts.
 """
 
-    llm_response_text = _call_gemini_llm(llm_prompt, system_instruction)
+    llm_response_text, gemini_err = _call_gemini_llm(llm_prompt, system_instruction, max_tokens=2048, json_mode=True)
     if llm_response_text:
         try:
-            clean_json_str = re.sub(r"^```json\s*", "", llm_response_text.strip(), flags=re.MULTILINE)
-            clean_json_str = re.sub(r"```$", "", clean_json_str.strip(), flags=re.MULTILINE)
-            parsed = json.loads(clean_json_str)
+            # Extract JSON substring
+            match = re.search(r"\{.*\}", llm_response_text.strip(), re.DOTALL)
+            json_text = match.group(0) if match else llm_response_text.strip()
+            parsed = json.loads(json_text)
 
             # Preserve numerical safety
             grounded_result["recommendation"] = parsed.get("recommendation", grounded_result["recommendation"])
@@ -1057,9 +1085,15 @@ Generate a concise, high-impact JSON response adhering strictly to the above fac
             grounded_result["risk_level"] = parsed.get("risk_level", grounded_result["risk_level"])
             grounded_result["confidence"] = parsed.get("confidence", grounded_result["confidence"])
             grounded_result["suggested_action"] = parsed.get("suggested_action", grounded_result["suggested_action"])
+            grounded_result["ai_engine"] = "Google Gemini 3 (Grounded)"
             logger.info("Successfully enhanced recommendation with Gemini LLM.")
         except Exception as e:
             logger.warning(f"Failed to parse LLM JSON response, using deterministic engine: {e}")
+            grounded_result["ai_engine"] = "FasalNet Grounded Engine"
+    else:
+        grounded_result["ai_engine"] = "FasalNet Grounded Engine"
+        if gemini_err:
+            grounded_result["ai_notice"] = gemini_err
 
     _set_cached_advice(cache_key, grounded_result)
     return grounded_result
@@ -1079,13 +1113,36 @@ def ask_ai_farmer_chat(
 ) -> Dict[str, Any]:
     """
     Handles conversational natural language farmer queries with conversation session tracking,
-    coreference resolution, and multilingual generation.
+    coreference resolution, and multilingual generation using Google Gemini.
     """
     conv_id, session = _get_or_create_session(conversation_id)
     language = (language or "en").lower().strip()
 
-    # Coreference resolution: If message refers to prior context or switches crop
+    # Sync chat history from frontend if supplied
+    if chat_history and isinstance(chat_history, list):
+        for item in chat_history:
+            role = "user" if item.get("role") == "user" or item.get("sender") == "user" else "assistant"
+            content = item.get("content") or item.get("text") or ""
+            if content and not any(h.get("content") == content for h in session["history"]):
+                session["history"].append({"role": role, "content": content})
+
+    # Coreference resolution: If message refers to prior context, switches horizon, city, or crop
     msg_lower = message.lower()
+
+    # Detect horizon shift in user query (e.g. "What about after 7 days?", "What about 14 days?")
+    if any(phrase in msg_lower for phrase in ["after 7 days", "14 days", "14 day", "next week", "14-day", "१४ दिवस", "14 दिन", "२ आठवडे", "2 weeks"]):
+        days = 14
+    elif any(phrase in msg_lower for phrase in ["7 days", "7 day", "7-day", "७ दिवस", "7 दिन", "1 week", "एक आठवडा"]):
+        days = 7
+
+    # Detect city shift in user query (e.g. "What about Kolhapur?", "What about Pune?")
+    all_known_cities = list(TOWN_COORDINATES.keys()) + list(DISTRICT_COORDINATES.keys())
+    for known_c in all_known_cities:
+        if known_c.lower() in msg_lower and len(known_c) > 3:
+            city = known_c
+            lat, lon = None, None  # Force coordinate re-resolution
+            break
+
     crop_synonyms = {
         "onion": ["onion", "kanda", "pyaz", "कांदा", "प्याज"],
         "tomato": ["tomato", "tamatar", "टोमॅटो", "टमाटर"],
@@ -1113,6 +1170,9 @@ def ask_ai_farmer_chat(
         commodity = detected_crop
     elif session.get("last_context", {}).get("commodity"):
         commodity = session["last_context"]["commodity"]
+
+    if session.get("last_context", {}).get("city") and not any(known_c.lower() in msg_lower for known_c in all_known_cities if len(known_c) > 3):
+        city = session["last_context"]["city"]
 
     advice = get_agricultural_market_advice(
         city=city,
@@ -1149,48 +1209,55 @@ def ask_ai_farmer_chat(
         "target_price": advice.get("market_context", {}).get("target_price")
     }
 
-    lang_instruction = "Respond in English."
+    # Build Recent Conversation Turns string
+    history_snippets = []
+    for h in session.get("history", [])[-6:]:
+        role_label = "Farmer" if h.get("role") == "user" else "FasalNet AI"
+        text_content = h.get("content", "").strip()
+        if text_content:
+            history_snippets.append(f"{role_label}: {text_content[:200]}")
+    history_str = "\n".join(history_snippets) if history_snippets else "No prior conversation history."
+
+    lang_instruction = "Respond in natural English."
     if language == "mr":
-        lang_instruction = "Respond entirely in natural Marathi (मराठी). Use proper Marathi terminology for agriculture (e.g. बाजार समिती, क्विंटल, कांदा चाळ, साठवणूक, बुरशी)."
+        lang_instruction = "Respond entirely in fluent Marathi (मराठी). Use accurate agricultural terms like बाजार समिती, क्विंटल, कांदा चाळ, साठवणूक, बुरशी."
     elif language == "hi":
-        lang_instruction = "Respond entirely in natural Hindi (हिन्दी). Use proper Hindi terminology for agriculture (e.g. मंडी, क्विंटल, भंडारण, नमी, फफूंद)."
+        lang_instruction = "Respond entirely in fluent Hindi (हिन्दी). Use accurate agricultural terms like मंडी, क्विंटल, भंडारण, नमी, फफूंद."
 
     system_instruction = (
-        "You are FasalNet AI, an intelligent agricultural market advisor for Indian farmers.\n"
+        "You are FasalNet AI, an intelligent, empathetic agricultural market advisor for Indian farmers.\n"
         f"Language Requirement: {lang_instruction}\n"
-        "You MUST clearly organize your response into distinct sections:\n"
-        "1. **Direct Answer**: Address the farmer's specific question directly with high clarity.\n"
-        "2. **Known Factual Data**: Current market price and current Open-Meteo weather.\n"
-        "3. **Model Prediction**: XGBoost forecast and upcoming rainfall.\n"
-        "4. **AI Agricultural Advisory**: Actionable harvest, curing, storage, and market timing recommendations based on ICAR guidelines.\n"
-        "5. **Risk & Confidence**: Transparent risk level and confidence.\n\n"
-        "STRICT RULES:\n"
-        "- Do NOT invent prices or numbers.\n"
-        "- Always cite the agricultural guidelines accurately.\n"
-        "- Be polite, clear, and farmer-friendly."
+        "Guidelines:\n"
+        "- Directly answer the farmer's question with high relevance and conversational clarity.\n"
+        "- Strictly base all facts, prices, weather, and agronomy on the provided data.\n"
+        "- Never invent or hallucinate market prices, weather conditions, or fake numbers.\n"
+        "- Maintain multi-turn conversational context seamlessly."
     )
 
     prompt = f"""
-USER QUERY: "{message}"
+FARMER QUESTION: "{message}"
 
-CURRENT CONTEXT & DATA:
-- Market: {city} APMC
-- Commodity: {commodity}
-- Current Modal Price: ₹{advice.get('market_context', {}).get('current_price', 0):,.2f}/quintal
-- Current Temperature: {advice.get('market_context', {}).get('temperature_c', 28)}°C
-- XGBoost {days}-Day Forecast: ₹{advice.get('market_context', {}).get('target_price', 0):,.2f}/quintal ({advice.get('market_context', {}).get('direction')}, {advice.get('market_context', {}).get('forecast_pct_change', 0):+.2f}%)
-- Forecast Rainfall over {days} days: {advice.get('market_context', {}).get('rainfall_sum_mm', 0):.1f} mm ({advice.get('market_context', {}).get('rainy_days', 0)} rainy days)
-- Weather Risk: {advice.get('market_context', {}).get('weather_risk')}
-- Nearby Market Situation: {advice.get('market_analysis')}
-- ICAR Agronomic Guidance: {advice.get('crop_advice')}
-- Recommended Action: {advice.get('suggested_action')}
-- Knowledge Sources: {[s['source'] for s in advice.get('sources', [])]}
+CONVERSATION HISTORY (for follow-up context):
+{history_str}
 
-Provide a structured, helpful, and empathetic answer for the farmer in the requested language.
+LIVE FASALNET CONTEXT & EMPIRICAL DATA:
+- Crop / Commodity: {commodity}
+- Selected Market / APMC: {city} APMC
+- Current DB Modal Price: ₹{advice.get('market_context', {}).get('current_price', 0):,.2f} per quintal
+- XGBoost {days}-Day Numerical Price Forecast: ₹{advice.get('market_context', {}).get('target_price', 0):,.2f} per quintal (Trend: {advice.get('market_context', {}).get('direction')}, {advice.get('market_context', {}).get('forecast_pct_change', 0):+.2f}%)
+- Current Weather Sensor: {advice.get('market_context', {}).get('temperature_c', 28)}°C, {advice.get('market_context', {}).get('humidity_percent', 65)}% Relative Humidity
+- Open-Meteo Upcoming Weather: {advice.get('market_context', {}).get('rainfall_sum_mm', 0):.1f} mm rain across {advice.get('market_context', {}).get('rainy_days', 0)} rainy days (Weather Risk: {advice.get('market_context', {}).get('weather_risk')})
+- Nearby Mandi Comparison & Arbitrage: {advice.get('market_analysis')}
+- ICAR / University Agronomic Knowledge: {advice.get('crop_advice')}
+- Recommended Core Action: {advice.get('suggested_action')}
+- Verified Sources Consulted: {[s['source'] for s in advice.get('sources', [])]}
+
+Answer the farmer's specific question directly, thoroughly, and helpfully in the requested language.
 """
 
-    llm_reply = _call_gemini_llm(prompt, system_instruction)
+    llm_reply, gemini_err = _call_gemini_llm(prompt, system_instruction, max_tokens=1000)
 
+    ai_engine = "Google Gemini 3 (Real-time)"
     if not llm_reply:
         # Dynamic Intent-Aware Grounded Synthesizer
         llm_reply = synthesize_dynamic_chat_reply(
@@ -1199,6 +1266,7 @@ Provide a structured, helpful, and empathetic answer for the farmer in the reque
             session=session,
             language=language
         )
+        ai_engine = "FasalNet Grounded Engine"
 
     # Save to session history
     session["history"].append({"role": "user", "content": message})
@@ -1208,6 +1276,7 @@ Provide a structured, helpful, and empathetic answer for the farmer in the reque
         "status": "success",
         "conversation_id": conv_id,
         "reply": llm_reply.strip(),
+        "ai_engine": ai_engine,
         "recommendation_summary": advice.get("recommendation"),
         "risk_level": advice.get("risk_level"),
         "risk_score": advice.get("risk_score"),
