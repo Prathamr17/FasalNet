@@ -111,58 +111,15 @@ def _set_cached(key: str, value: Dict) -> None:
 @forecast_v3_bp.post("/predictions")
 def post_forecast_v3():
     """
-    Generate 7/14-day forecasts + 30/60-day trend indicators.
-
-    Request JSON:
-    {
-        "city": "Pune",
-        "commodity": "Onion",
-        "start_date": "2026-05-01",  (optional, default: 1 year ago)
-        "end_date": "2026-08-08"     (optional, default: today)
-    }
-
-    Response JSON:
-    {
-        "status": "success",
-        "forecast": {
-            "7_day": {
-                "target_date": "2026-09-11",
-                "forecasted_price": 1229.06,
-                "expected_variance": 45.23,
-                "price_change_percent": 6.87,
-                "confidence_bounds": {
-                    "upper_95": 1318.45,
-                    "lower_95": 1139.67,
-                    "upper_80": 1287.34,
-                    "lower_80": 1170.78
-                },
-                "direction": "UP"
-            },
-            "14_day": {...}
-        },
-        "trend_indicators": {
-            "30_day": {
-                "direction": "UP",
-                "confidence": "high",
-                "reason": "Strong upward trend...",
-                "horizon_days": 30
-            },
-            "60_day": {...}
-        },
-        "model_info": {
-            "status": "optimized",
-            "data_source": "Real Database",
-            "last_updated": "2026-09-04T10:30:00"
-        },
-        "timestamp": "2026-09-04T10:30:00"
-    }
+    Generate 7/14-day forecasts + 30/60-day trend indicators powered by XGBoost + Weather.
     """
+    from services.xgboost_forecast_service import generate_xgboost_weather_forecast
 
     data = request.get_json() or {}
     city = data.get("city", "Pune").strip()
     commodity = data.get("commodity", "Onion").strip()
-    start_date = data.get("start_date", (date.today() - timedelta(days=365)).isoformat())
-    end_date = data.get("end_date", date.today().isoformat())
+    horizon = int(data.get("horizon", data.get("days", 14)))
+    horizon = 14 if horizon >= 14 else 7
 
     if not city or not commodity:
         return jsonify({
@@ -171,52 +128,13 @@ def post_forecast_v3():
         }), 400
 
     try:
-        prices_data = _fetch_historical_prices(
-            city=city,
-            commodity=commodity,
-            start_date=start_date,
-            end_date=end_date
-        )
-
-        if not prices_data or len(prices_data) < 30:
-            return jsonify({
-                "status": "error",
-                "error": "Insufficient historical data for forecasting",
-                "required_min_days": 30,
-                "received_data_points": len(prices_data) if prices_data else 0
-            }), 400
-
-        prices = [p["modal_price"] for p in prices_data]
-        dates  = [p["date"]        for p in prices_data]
-
-        forecast_7  = _generate_forecast(prices, dates, horizon=7)
-        forecast_14 = _generate_forecast(prices, dates, horizon=14)
-
-        trend_30 = calculate_trend_indicators(prices, horizon_days=30)
-        trend_60 = calculate_trend_indicators(prices, horizon_days=60)
-
-        response = {
-            "status": "success",
-            "forecast": {
-                "7_day":  forecast_7,
-                "14_day": forecast_14
-            },
-            "trend_indicators": {
-                "30_day": trend_30,
-                "60_day": trend_60
-            },
-            "model_info": {
-                "status":       "optimized",
-                "data_source":  "Real Database",
-                "last_updated": datetime.utcnow().isoformat()
-            },
-            "timestamp": datetime.utcnow().isoformat()
-        }
-
-        return jsonify(response), 200
+        result = generate_xgboost_weather_forecast(city, commodity, horizon)
+        if result.get("status") == "error":
+            return jsonify(result), 422
+        return jsonify(result), 200
 
     except Exception as exc:
-        log.error("Forecast v3 error: %s", exc)
+        log.error("Forecast v3 predictions error: %s", exc)
         return jsonify({
             "status": "error",
             "error": "Internal server error while generating forecast"
@@ -227,15 +145,6 @@ def post_forecast_v3():
 def post_trends_only():
     """
     Lightweight endpoint: 30/60-day trends only (no forecasts).
-    Use when you only need trend direction/confidence, not prices.
-
-    Request JSON:
-    {
-        "city": "Pune",
-        "commodity": "Onion",
-        "start_date": "2026-05-01",
-        "end_date": "2026-08-08"
-    }
     """
     data = request.get_json() or {}
     city      = data.get("city", "Pune").strip()
@@ -276,78 +185,26 @@ def post_trends_only():
 def post_today_tomorrow():
     """
     Highlight endpoint: TODAY's actual price + TOMORROW's XGBoost forecast only.
-
-    Request JSON:
-    {
-        "city": "Sangli",
-        "commodity": "Rice",
-        "start_date": "2026-03-01",   (optional, default: 6 months ago)
-        "end_date": "2026-09-06"      (optional, default: today)
-    }
-
-    Response JSON:
-    {
-        "status": "success",
-        "today":    { "date": "2026-09-06", "price": 6809.0 },
-        "tomorrow": {
-            "date": "2026-09-07",
-            "forecasted_price": 6905.07,
-            "price_change_percent": 1.41,
-            "direction": "UP",
-            "confidence_bounds": { "upper_95":.., "lower_95":.., "upper_80":.., "lower_80":.. }
-        }
-    }
     """
+    from services.xgboost_forecast_service import generate_xgboost_weather_forecast
+
     data = request.get_json() or {}
     city = data.get("city", "").strip()
     commodity = data.get("commodity", "").strip()
-    start_date = data.get("start_date", (date.today() - timedelta(days=182)).isoformat())
-    end_date = data.get("end_date", date.today().isoformat())
 
     if not city or not commodity:
         return jsonify({"status": "error", "error": "city and commodity are required"}), 400
 
     try:
-        prices_data = _fetch_historical_prices(city, commodity, start_date, end_date)
-        if not prices_data or len(prices_data) < 30:
-            return jsonify({
-                "status": "error",
-                "error": "Insufficient historical data for forecasting",
-                "required_min_days": 30,
-                "received_data_points": len(prices_data) if prices_data else 0
-            }), 400
+        result = generate_xgboost_weather_forecast(city, commodity, 7)
+        if result.get("status") == "error":
+            return jsonify(result), 422
 
-        prices = [p["modal_price"] for p in prices_data]
-        dates  = [p["date"]        for p in prices_data]
-        current_price = float(prices[-1])
-        today_date = dates[-1]
-
-        tomorrow = _xgboost_forecast(prices, dates, horizon=1, current_price=current_price)
-        if tomorrow is None:
-            tomorrow_payload = _naive_forecast(prices, dates, horizon=1)
-        else:
-            point, res_std = tomorrow["point"], tomorrow["res_std"]
-            z80, z95 = 1.282, 1.960
-            direction = "UP" if point > current_price else ("DOWN" if point < current_price else "NEUTRAL")
-            pct_chg = float((point - current_price) / current_price * 100) if current_price else 0.0
-            target_date = (pd.to_datetime(today_date) + timedelta(days=1)).strftime("%Y-%m-%d")
-            tomorrow_payload = {
-                "target_date": target_date,
-                "forecasted_price": float(round(point, 2)),
-                "price_change_percent": float(round(pct_chg, 2)),
-                "direction": direction,
-                "confidence_bounds": {
-                    "upper_95": float(round(point + z95 * res_std, 2)),
-                    "lower_95": float(round(max(0.0, point - z95 * res_std), 2)),
-                    "upper_80": float(round(point + z80 * res_std, 2)),
-                    "lower_80": float(round(max(0.0, point - z80 * res_std), 2)),
-                }
-            }
-
+        tt = result.get("today_tomorrow", {})
         return jsonify({
             "status": "success",
-            "today": {"date": today_date, "price": float(round(current_price, 2))},
-            "tomorrow": tomorrow_payload,
+            "today": tt.get("today"),
+            "tomorrow": tt.get("tomorrow"),
             "timestamp": datetime.utcnow().isoformat()
         }), 200
 
@@ -359,65 +216,24 @@ def post_today_tomorrow():
 @forecast_v3_bp.post("/continuous")
 def post_continuous_forecast():
     """
-    7 or 14-day CONTINUOUS daily forecast, one XGBoost model trained per day
-    (direct multi-horizon forecasting) so each day gets its own real prediction
-    instead of a single point repeated/interpolated across days.
-
-    Request JSON:
-    {
-        "city": "Sangli",
-        "commodity": "Rice",
-        "horizon": 7,                 (7 or 14, default 7)
-        "start_date": "2026-03-01",   (optional, default: 6 months ago)
-        "end_date": "2026-09-06"      (optional, default: today)
-    }
-
-    Response JSON:
-    {
-        "status": "success",
-        "model": "xgboost",
-        "daily": [
-            {"day":1, "date":"2026-09-07", "price":6905.07,
-             "upper_95":.., "lower_95":.., "upper_80":.., "lower_80":..},
-            ...
-        ]
-    }
+    7 or 14-day CONTINUOUS daily forecast powered by XGBoost + Open-Meteo weather features.
     """
+    from services.xgboost_forecast_service import generate_xgboost_weather_forecast
+
     data = request.get_json() or {}
     city = data.get("city", "").strip()
     commodity = data.get("commodity", "").strip()
-    horizon = int(data.get("horizon", 7))
+    horizon = int(data.get("horizon", data.get("days", 7)))
     horizon = 14 if horizon >= 14 else 7
-    start_date = data.get("start_date", (date.today() - timedelta(days=182)).isoformat())
-    end_date = data.get("end_date", date.today().isoformat())
 
     if not city or not commodity:
         return jsonify({"status": "error", "error": "city and commodity are required"}), 400
 
     try:
-        prices_data = _fetch_historical_prices(city, commodity, start_date, end_date)
-        if not prices_data or len(prices_data) < 30:
-            return jsonify({
-                "status": "error",
-                "error": "Insufficient historical data for forecasting",
-                "required_min_days": 30,
-                "received_data_points": len(prices_data) if prices_data else 0
-            }), 400
-
-        prices = [p["modal_price"] for p in prices_data]
-        dates  = [p["date"]        for p in prices_data]
-
-        daily = _xgboost_continuous_forecast(prices, dates, horizon)
-        if not daily:
-            return jsonify({"status": "error", "error": "Forecast could not be generated"}), 500
-
-        return jsonify({
-            "status": "success",
-            "model": "xgboost",
-            "horizon": horizon,
-            "daily": daily,
-            "timestamp": datetime.utcnow().isoformat()
-        }), 200
+        result = generate_xgboost_weather_forecast(city, commodity, horizon)
+        if result.get("status") == "error":
+            return jsonify(result), 422
+        return jsonify(result), 200
 
     except Exception as exc:
         log.error("Continuous forecast endpoint error: %s", exc)

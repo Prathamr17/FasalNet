@@ -9,7 +9,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { marketAPI, mlAPI } from "../../services/api";
+import { marketAPI, mlAPI, weatherAPI, aiAPI } from "../../services/api";
+import WeatherSection from "../../components/farmer/WeatherSection";
+import AIAgriculturalAdvisor from "../../components/farmer/AIAgriculturalAdvisor";
 import ForecastIntelligencePage from "./ForecastIntelligencePage";
 
 const PALETTE = [
@@ -728,7 +730,7 @@ function LineChart({ series, forecastSeries = [] }) {
                 <div style={{ width: 9, height: 9, borderRadius: "50%", background: hit.color, flexShrink: 0 }} />
                 <div style={{ flex: 1, fontSize: "11px", color: "var(--tx-m)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {hit.label.replace(/ APMC$/, "")}
-                  {hit.isForecast && <span style={{ color: "#5C3A5C", marginLeft: 4, fontSize: "9px", fontWeight: 700 }}>ARIMA</span>}
+                  {hit.isForecast && <span style={{ color: "#5C3A5C", marginLeft: 4, fontSize: "9px", fontWeight: 700 }}>XGBoost</span>}
                 </div>
                 <div style={{ fontWeight: 800, fontSize: "12px", color: "var(--tx)", fontFamily: "var(--fd)", flexShrink: 0 }}>
                   ₹{hit.price.toLocaleString("en-IN")}
@@ -752,7 +754,7 @@ function LineChart({ series, forecastSeries = [] }) {
             <svg width="16" height="6" style={{ flexShrink: 0 }}>
               <line x1="0" y1="3" x2="16" y2="3" stroke={s.color} strokeWidth="2.5" strokeDasharray="5 3" />
             </svg>
-            <span style={{ fontSize: "11px", color: s.color, fontWeight: 600 }}>{s.label} (ARIMA)</span>
+            <span style={{ fontSize: "11px", color: s.color, fontWeight: 600 }}>{s.label} (XGBoost)</span>
           </div>
         ))}
         <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
@@ -1108,7 +1110,52 @@ export default function FarmerMarketIntelligencePage() {
   const [trendSignalData,   setTrendSignalData]   = useState(null); // { 30_day, 60_day }
   const [trendSignalLoading,setTrendSignalLoading]= useState(false);
 
+  // Weather & Climate state (Open-Meteo)
+  const [userCoords,     setUserCoords]     = useState(null); // { lat, lon, label }
+  const [weatherData,    setWeatherData]    = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError,   setWeatherError]   = useState("");
+  const [weatherDays,    setWeatherDays]    = useState(14);
+
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
+
+  const fetchWeather = useCallback((lat, lon, days = 14, label = "") => {
+    if (lat == null || lon == null) return;
+    setWeatherLoading(true);
+    setWeatherError("");
+    if (label) {
+      setUserCoords(prev => ({ lat, lon, label: label || prev?.label || "Local Area" }));
+    }
+    weatherAPI.summary({ lat, lon, days })
+      .then(res => {
+        if (res.data?.status === "success") {
+          setWeatherData(res.data);
+        } else {
+          setWeatherError(res.data?.error || "Unable to load weather data");
+        }
+      })
+      .catch(err => {
+        setWeatherError(err.response?.data?.error || err.message || "Failed to load weather data");
+      })
+      .finally(() => {
+        setWeatherLoading(false);
+      });
+  }, []);
+
+  const handleWeatherDaysChange = (days) => {
+    setWeatherDays(days);
+    if (userCoords?.lat != null && userCoords?.lon != null) {
+      fetchWeather(userCoords.lat, userCoords.lon, days, userCoords.label);
+    }
+  };
+
+  const handleWeatherRefresh = () => {
+    if (userCoords?.lat != null && userCoords?.lon != null) {
+      fetchWeather(userCoords.lat, userCoords.lon, weatherDays, userCoords.label);
+    } else {
+      detectUserLocation(citiesRef.current, true);
+    }
+  };
 
   const detectUserLocation = useCallback((availableCities, isManual = false) => {
     if (!isManual && hasAutoLocatedRef.current) return;
@@ -1117,6 +1164,11 @@ export default function FarmerMarketIntelligencePage() {
     if (!pool || !pool.length) return;
     if (!navigator.geolocation) {
       setLocationStatus("unavailable");
+      if (pool.length > 0) {
+        const fallbackCoords = getMarketCoordinate(pool[0]) || { lat: 18.5204, lon: 73.8567 };
+        setUserCoords({ lat: fallbackCoords.lat, lon: fallbackCoords.lon, label: pool[0].replace(/ APMC$/i, "") });
+        fetchWeather(fallbackCoords.lat, fallbackCoords.lon, 14, pool[0].replace(/ APMC$/i, ""));
+      }
       return;
     }
     setLocating(true);
@@ -1136,15 +1188,18 @@ export default function FarmerMarketIntelligencePage() {
         } catch {}
 
         const nearby = findNearbyMarkets(lat, lon, pool, 40);
+        const resolvedLabel = placeName || (nearby && nearby[0] ? nearby[0].market.replace(/ APMC$/i, "") : "My Location");
+        setUserCoords({ lat, lon, label: resolvedLabel });
+        fetchWeather(lat, lon, weatherDays, resolvedLabel);
+
         if (nearby && nearby.length > 0) {
           const resolved = nearby.map(n => n.market);
           setSelectedCities(resolved);
           setHeatCity(resolved[0]);
           setArimaCity(resolved[0]);
-          const label = placeName || resolved[0].replace(/ APMC$/i, "");
-          setDetectedPlace(label);
+          setDetectedPlace(resolvedLabel);
           setLocationStatus("detected");
-          showToast(`📍 ${t("mi.location_detected", { location: label })}: ${resolved.map(r => r.replace(/ APMC$/i, '')).join(', ')}`);
+          showToast(`📍 ${t("mi.location_detected", { location: resolvedLabel })}: ${resolved.map(r => r.replace(/ APMC$/i, '')).join(', ')}`);
         } else {
           setLocationStatus("manual");
           setLocationError(t("mi.no_nearby_markets", "No APMC markets found within 30–40 km of your location. Please select a market manually."));
@@ -1158,10 +1213,15 @@ export default function FarmerMarketIntelligencePage() {
         if (err.code === 1) {
           setLocationError(t("mi.location_unavailable", "Location permission denied. Please select your market manually."));
         }
+        if (pool && pool.length > 0) {
+          const fallbackCoords = getMarketCoordinate(pool[0]) || { lat: 18.5204, lon: 73.8567 };
+          setUserCoords(prev => prev || { lat: fallbackCoords.lat, lon: fallbackCoords.lon, label: pool[0].replace(/ APMC$/i, "") });
+          fetchWeather(fallbackCoords.lat, fallbackCoords.lon, weatherDays, pool[0].replace(/ APMC$/i, ""));
+        }
       },
       { timeout: 10000, enableHighAccuracy: false }
     );
-  }, [t]);
+  }, [t, fetchWeather, weatherDays]);
 
   useEffect(() => {
     Promise.all([
@@ -1186,10 +1246,18 @@ export default function FarmerMarketIntelligencePage() {
 
       // Auto-detect location once with freshly loaded cities
       detectUserLocation(cityList, false);
+
+      // Initial weather fallback while GPS resolves
+      if (cityList.length > 0) {
+        const initialCity = cityList[0];
+        const initialCoords = getMarketCoordinate(initialCity) || { lat: 18.5204, lon: 73.8567 };
+        setUserCoords(prev => prev || { lat: initialCoords.lat, lon: initialCoords.lon, label: initialCity.replace(/ APMC$/i, "") });
+        fetchWeather(initialCoords.lat, initialCoords.lon, 14, initialCity.replace(/ APMC$/i, ""));
+      }
     }).catch((err) => {
       console.error("Failed to load initial market data:", err);
     });
-  }, [detectUserLocation]);
+  }, [detectUserLocation, fetchWeather]);
 
   const fetchTrend = useCallback(() => {
     if (!selectedCities.length || !commodity) return;
@@ -1231,69 +1299,60 @@ export default function FarmerMarketIntelligencePage() {
       }))
     : [];
 
-  // ── 3-part forecast: (1) Today/Tomorrow highlight, (2) 7/14-day continuous XGBoost, (3) 30/60-day binary trend signal ──
+  // ── XGBoost Weather-Enriched Multi-Horizon Forecast ──
   const handleArimaForecast = async () => {
-    // Use the first selected city from the trend sidebar (most recently applied)
     const city = selectedCities[0] || "";
     const comm = commodity || "";
-    if (!city || !comm) { setArimaError("Select a market and commodity from the sidebar first."); return; }
+    if (!city || !comm) {
+      setArimaError(t("mi.select_city_commodity_prompt", "Select a market and commodity first."));
+      return;
+    }
 
     setArimaLoading(true); setTtLoading(true); setTrendSignalLoading(true);
     setArimaError(""); setArimaData(null);
     setTodayTomorrow(null); setTrendSignalData(null);
 
     try {
-      const [ttRes, contRes, trendRes] = await Promise.allSettled([
-        marketAPI.forecastV3TodayTomorrow({ city, commodity: comm }),
-        marketAPI.forecastV3Continuous({ city, commodity: comm, horizon: arimaDays }),
-        marketAPI.forecastV3TrendSignal({ city, commodity: comm }),
-      ]);
+      const res = await marketAPI.xgboostForecast({
+        city,
+        commodity: comm,
+        days: arimaDays
+      });
 
-      // 1) Today / Tomorrow highlight
-      if (ttRes.status === "fulfilled" && ttRes.value?.data?.status === "success") {
-        setTodayTomorrow(ttRes.value.data);
-      }
-
-      // 2) 7/14-day continuous forecast — every day is its own real XGBoost prediction,
-      //    so the line actually moves instead of flattening into a repeated point.
-      if (contRes.status === "fulfilled" && contRes.value?.data?.status === "success") {
-        const daily = contRes.value.data.daily || [];
-        const pts = daily.map(d => ({
-          date:      d.date,
-          price:     d.price,
-          max_price: d.upper_95,
-          min_price: d.lower_95,
-          upper_80:  d.upper_80,
-          lower_80:  d.lower_80,
-        }));
-        setArimaData({
-          city,
-          commodity: comm,
-          forecast: pts,
-          last_actual_price: ttRes.status === "fulfilled" ? ttRes.value?.data?.today?.price : undefined,
-        });
+      if (res.data?.status === "success") {
+        const d = res.data;
+        setArimaData(d);
+        if (d.today_tomorrow) {
+          setTodayTomorrow(d.today_tomorrow);
+        }
       } else {
-        const err = contRes.reason?.response?.data?.error || "Continuous forecast failed.";
-        setArimaError(err);
-      }
-
-      // 3) 30/60-day binary trend signal
-      if (trendRes.status === "fulfilled" && trendRes.value?.data?.status === "success") {
-        setTrendSignalData(trendRes.value.data.trend_signal);
+        setArimaError(res.data?.error || t("mi.forecast_failed", "XGBoost forecast could not be generated."));
       }
     } catch (err) {
-      setArimaError(err.response?.data?.error || "Forecast failed.");
+      const msg = err.response?.data?.error || err.message || t("mi.forecast_failed", "XGBoost forecast failed.");
+      setArimaError(msg);
     } finally {
       setArimaLoading(false); setTtLoading(false); setTrendSignalLoading(false);
     }
   };
 
-  // Build forecast chart series
+  // Build forecast chart series — starts seamlessly from the last actual historical price point
+  const lastActualPt = arimaData?.last_actual_price != null && arimaData?.last_actual_date
+    ? { date: arimaData.last_actual_date, price: arimaData.last_actual_price, min_price: arimaData.last_actual_price, max_price: arimaData.last_actual_price }
+    : null;
+
   const arimaChartActual = arimaData?.actual_context
     ? [{ label: arimaData.city, color: PALETTE[0], points: arimaData.actual_context }]
     : [];
+
   const arimaChartForecast = arimaData?.forecast
-    ? [{ label: arimaData.city, color: PALETTE[0], points: arimaData.forecast }]
+    ? [{
+        label: arimaData.city,
+        color: PALETTE[0],
+        points: lastActualPt
+          ? [lastActualPt, ...arimaData.forecast.filter(p => p.date !== lastActualPt.date)]
+          : arimaData.forecast
+      }]
     : [];
   const dateLocale  = i18n.language === "mr" ? "mr-IN" : i18n.language === "hi" ? "hi-IN" : "en-IN";
   const todayFmt    = new Date().toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" });
@@ -1553,6 +1612,29 @@ export default function FarmerMarketIntelligencePage() {
 
         </div>
       </div>
+
+      {/* ── WEATHER & CLIMATE INTELLIGENCE (Open-Meteo) ── */}
+      <WeatherSection
+        coords={userCoords}
+        weatherData={weatherData}
+        loading={weatherLoading}
+        error={weatherError}
+        forecastDays={weatherDays}
+        setForecastDays={handleWeatherDaysChange}
+        onRefresh={handleWeatherRefresh}
+        onDetectLocation={() => detectUserLocation(citiesRef.current, true)}
+        locationStatus={locationStatus}
+      />
+
+      {/* ── PART 3: AI AGRICULTURAL ADVISOR (RAG + XGBoost + Open-Meteo + LLM) ── */}
+      <AIAgriculturalAdvisor
+        city={selectedCities[0] || (cities && cities[0]) || "Sangli"}
+        commodity={commodity || "Onion"}
+        days={arimaDays === 14 ? 14 : 7}
+        lat={userCoords?.lat}
+        lon={userCoords?.lon}
+      />
+
 
       {/* ── FULL WIDTH MAIN CONTENT AREA ── */}
       <div style={{ width: "100%" }}>

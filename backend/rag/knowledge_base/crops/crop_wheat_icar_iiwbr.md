@@ -1,0 +1,29 @@
+<!-- Source: ICAR - Indian Institute of Wheat and Barley Research (IIWBR), Karnal -->
+<!-- Institution: ICAR-IIWBR, Karnal & MPKV Rahuri -->
+<!-- Category: Cultivation, Harvest, Storage & Marketing -->
+<!-- Date: 2026-02-01 -->
+<!-- URL: https://iiwbr.icar.gov.in/crop-advisory/wheat -->
+
+# ICAR-IIWBR Agricultural Advisory: Wheat (Triticum aestivum)
+
+## 1. Climate and Growth Requirements
+- **Temperature**: Cool vegetative phase (10°C–15°C) and warm grain filling period (20°C–25°C).
+- **Terminal Heat Stress**: Sudden heat waves (>32°C) during milking/dough stage (February–March) accelerate senescence, causing shriveled grains and 15–25% yield drops.
+
+## 2. Weather Risks and Grain Quality
+- **Unseasonal Rain & Hailstorms**: Rain during grain ripening or harvesting causes lodging, earhead sprouting, and grain discolouration, reducing market grade and inviting fungal smut/rust toxins.
+- **High Moisture at Harvest**: Harvesting grain with >14% moisture causes heating, mould growth (Aspergillus flavus), and rapid grain borer infestation in storage.
+
+## 3. Harvesting & Threshing Guidance
+- **Harvest Stage**: Harvest when grain is hard and straw turns yellow-golden (moisture 12–14%).
+- **Combine Harvester / Reaper**: Harvest during dry sunny hours. Ensure combine cylinder speed is adjusted to minimize cracked kernels.
+- **Sun Drying**: Sun-dry threshing grain on clean concrete yards or tarpaulins for 2–3 days until grain moisture drops strictly below 10–12%.
+
+## 4. Post-Harvest Storage & Pest Management
+- **Safe Moisture**: Store grain at <10% moisture content in airtight metal bins or hermetic bags (PICS bags).
+- **Pest Protection**: Clean and fumigate storage bins with Aluminium Phosphide or mix dry neem leaf powder to repel Rice Weevil (Sitophilus oryzae) and Lesser Grain Borer (Rhyzopertha dominica).
+- **Shelf Life**: Properly dried wheat in sealed metal bins or cool dry warehouses remains viable for 12–24 months without quality loss.
+
+## 5. Market and Selling Strategy
+- **Government MSP vs Open Market**: Compare prevailing APMC rates with Government Minimum Support Price (MSP). When market rates exceed MSP post-harvest, staged open market selling is profitable.
+- **Action Recommendation**: Wheat is a durable non-perishable commodity. If XGBoost forecasts a price rise over 14 days and dry storage is available, farmers should hold and avoid distress selling during peak harvest arrival gluts.

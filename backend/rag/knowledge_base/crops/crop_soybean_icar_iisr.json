@@ -1,0 +1,22 @@
+{
+  "id": "crop_soybean_icar_iisr",
+  "title": "Soybean Growth, Pod Shattering, Threshing Speed & Oilseed Marketing",
+  "crop": "Soybean",
+  "category": "Cultivation, Harvest, Storage & Marketing",
+  "source": "ICAR - Indian Institute of Soybean Research (IISR), Indore",
+  "organization": "ICAR-IISR, Indore & MPKV Rahuri",
+  "location": "Maharashtra & Madhya Pradesh",
+  "date": "2026-01-18",
+  "url_reference": "https://iisrindore.icar.gov.in/crop-advisory/soybean",
+  "topics": [
+    "soybean",
+    "soyabean",
+    "oilseed",
+    "pod shattering",
+    "threshing rpm",
+    "moisture content",
+    "rain at harvest",
+    "market"
+  ],
+  "content": "\n# ICAR-IISR Agricultural Advisory: Soybean (Glycine max)\n\n## 1. Climate & Growth Requirements\n- **Temperature**: 25°C–32°C optimal for vegetative and pod development.\n- **Rainfall**: Requires 600–850 mm well-distributed rainfall. Severe dry spells at flowering/pod fill cause flower abortion and flat pods.\n\n## 2. Weather Risks at Harvest\n- **Unseasonal Rain at Maturity**: Wet conditions at harvest trigger seed germinating inside pods (pre-harvest sprouting), pod blight (Colletotrichum truncatum), seed coat darkening, and loss of seed germination viability.\n- **Over-Drying & Pod Shattering**: Dry hot winds with moisture <10% cause explosive pod shattering in the standing crop, losing up to 15–30% of grain on the field.\n\n## 3. Harvesting Guidance\n- **Optimal Harvest Time**: Harvest when 90–95% of leaves have turned yellow-brown and dropped, and pods produce a distinct rattling sound when shaken (moisture ~14–15%).\n- **Cutting Method**: Cut plants close to the ground using sickle or combine during early morning hours to reduce pod shattering.\n\n## 4. Threshing and Storage\n- **Threshing Speed**: Thresher cylinder speed should not exceed 350–400 RPM. High cylinder speeds cause seed coat cracks and internal embryo damage, reducing oil extraction quality and seed viability.\n- **Safe Storage Moisture**: Sun-dry seeds until moisture content drops to 10–11%. Store in dry, well-aerated godowns on wooden pallets (never direct on cement floors).\n\n## 5. Market and Selling Strategy\n- **Price Dynamics**: Soybean prices in Maharashtra (Latur, Nagpur, Akola, Sangli) correlate with global edible oil prices, meal exports, and domestic processing demand.\n- **Action Recommendation**: If XGBoost forecasts price escalation over 14 days and seed is dried to 10% moisture, storing in farm bags provides hedging against post-harvest market glut.\n"
+}

@@ -1,0 +1,24 @@
+{
+  "id": "crop_wheat_icar_iiwbr",
+  "title": "Wheat Production, Terminal Heat, Moisture Standards & Warehouse Storage",
+  "crop": "Wheat",
+  "category": "Cultivation, Harvest, Storage & Marketing",
+  "source": "ICAR - Indian Institute of Wheat and Barley Research (IIWBR), Karnal",
+  "organization": "ICAR-IIWBR, Karnal & MPKV Rahuri",
+  "location": "North & Central-Western India",
+  "date": "2026-02-01",
+  "url_reference": "https://iiwbr.icar.gov.in/crop-advisory/wheat",
+  "topics": [
+    "wheat",
+    "gehun",
+    "grain",
+    "terminal heat",
+    "rust",
+    "moisture content",
+    "sun drying",
+    "msp",
+    "storage",
+    "weevil"
+  ],
+  "content": "\n# ICAR-IIWBR Agricultural Advisory: Wheat (Triticum aestivum)\n\n## 1. Climate and Growth Requirements\n- **Temperature**: Cool vegetative phase (10°C–15°C) and warm grain filling period (20°C–25°C).\n- **Terminal Heat Stress**: Sudden heat waves (>32°C) during milking/dough stage (February–March) accelerate senescence, causing shriveled grains and 15–25% yield drops.\n\n## 2. Weather Risks and Grain Quality\n- **Unseasonal Rain & Hailstorms**: Rain during grain ripening or harvesting causes lodging, earhead sprouting, and grain discolouration, reducing market grade and inviting fungal smut/rust toxins.\n- **High Moisture at Harvest**: Harvesting grain with >14% moisture causes heating, mould growth (Aspergillus flavus), and rapid grain borer infestation in storage.\n\n## 3. Harvesting & Threshing Guidance\n- **Harvest Stage**: Harvest when grain is hard and straw turns yellow-golden (moisture 12–14%).\n- **Combine Harvester / Reaper**: Harvest during dry sunny hours. Ensure combine cylinder speed is adjusted to minimize cracked kernels.\n- **Sun Drying**: Sun-dry threshing grain on clean concrete yards or tarpaulins for 2–3 days until grain moisture drops strictly below 10–12%.\n\n## 4. Post-Harvest Storage & Pest Management\n- **Safe Moisture**: Store grain at <10% moisture content in airtight metal bins or hermetic bags (PICS bags).\n- **Pest Protection**: Clean and fumigate storage bins with Aluminium Phosphide or mix dry neem leaf powder to repel Rice Weevil (Sitophilus oryzae) and Lesser Grain Borer (Rhyzopertha dominica).\n- **Shelf Life**: Properly dried wheat in sealed metal bins or cool dry warehouses remains viable for 12–24 months without quality loss.\n\n## 5. Market and Selling Strategy\n- **Government MSP vs Open Market**: Compare prevailing APMC rates with Government Minimum Support Price (MSP). When market rates exceed MSP post-harvest, staged open market selling is profitable.\n- **Action Recommendation**: Wheat is a durable non-perishable commodity. If XGBoost forecasts a price rise over 14 days and dry storage is available, farmers should hold and avoid distress selling during peak harvest arrival gluts.\n"
+}

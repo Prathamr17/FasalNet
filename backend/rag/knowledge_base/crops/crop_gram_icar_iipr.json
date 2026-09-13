@@ -1,0 +1,23 @@
+{
+  "id": "crop_gram_icar_iipr",
+  "title": "Gram / Chickpea Maturity, Pod Borer Control, Moisture & Pulse Storage",
+  "crop": "Gram",
+  "category": "Cultivation, Harvest, Storage & Marketing",
+  "source": "ICAR - Indian Institute of Pulses Research (IIPR), Kanpur",
+  "organization": "ICAR-IIPR, Kanpur & MPKV Rahuri",
+  "location": "Maharashtra, MP & Rajasthan",
+  "date": "2026-02-08",
+  "url_reference": "https://iipr.icar.gov.in/crop-advisory/gram",
+  "topics": [
+    "gram",
+    "chana",
+    "chickpea",
+    "pod borer",
+    "wilt",
+    "storage",
+    "pulse beetle",
+    "moisture",
+    "market"
+  ],
+  "content": "\n# ICAR-IIPR Agricultural Advisory: Bengal Gram / Chickpea (Cicer arietinum)\n\n## 1. Climate & Soil Requirements\n- **Temperature**: Cool vegetative phase (15°C–20°C) and dry warm maturity phase (25°C–30°C).\n- **Soil**: Well-drained deep loamy soils, pH 6.0–7.5. Avoid saline or waterlogged soils.\n\n## 2. Weather Risks & Diseases\n- **Cloudy / Humid Weather**: Sustained overcast weather at flowering triggers massive Helicoverpa armigera (Gram Pod Borer) infestations and Botrytis grey mould.\n- **Unseasonal Rain at Harvest**: Causes seed discoloration, fungal infection, and pod rotting.\n\n## 3. Harvesting & Storage\n- **Maturity**: Harvest when leaves turn yellow and drop, and pods turn straw-coloured (moisture 15%).\n- **Sun Drying & Moisture**: Sun-dry grain to <9–10% moisture before storing.\n- **Pulse Beetle Protection**: Store in airtight bins with a 2-cm top layer of dry neem leaves or treated sand to prevent Callosobruchus maculatus (Pulse Beetle) infestation.\n- **Market Advisory**: Chana is a resilient pulse with strong demand. If XGBoost forecasts a price climb, store at <10% moisture and sell in phases.\n"
+}

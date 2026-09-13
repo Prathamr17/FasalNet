@@ -177,146 +177,42 @@ def get_trend():
 
 
 # ─── ARIMA Forecast ──────────────────────────────────────────────────────────
+@market_bp.route("/xgboost-forecast", methods=["GET", "POST"])
+def xgboost_forecast():
+    """
+    GET or POST /api/market/xgboost-forecast?city=Sangli&commodity=Onion&days=7
+    Returns XGBoost weather-enriched price forecast for 7 or 14 days.
+    """
+    from services.xgboost_forecast_service import generate_xgboost_weather_forecast
+
+    if request.method == "POST":
+        data = request.get_json() or {}
+        city = data.get("city", "").strip()
+        commodity = data.get("commodity", "").strip()
+        days = int(data.get("days", data.get("horizon", 7)))
+    else:
+        city = request.args.get("city", "").strip()
+        commodity = request.args.get("commodity", "").strip()
+        days_raw = request.args.get("days", request.args.get("horizon", 7))
+        try:
+            days = int(days_raw)
+        except (ValueError, TypeError):
+            days = 7
+
+    if not city or not commodity:
+        return jsonify({"status": "error", "error": "city and commodity params are required"}), 400
+
+    horizon = 14 if days >= 14 else 7
+    result = generate_xgboost_weather_forecast(city, commodity, horizon)
+    if result.get("status") == "error":
+        return jsonify(result), 422
+    return jsonify(result), 200
+
+
 @market_bp.get("/arima-forecast")
 def arima_forecast():
-    """
-    GET /api/market/arima-forecast?city=Pune&commodity=Onion&days=7
-    Returns ARIMA price forecast for `days` (7 or 30) into the future.
-    Also returns last 14 actual data points for chart continuity.
-    """
-    city      = request.args.get("city", "").strip()
-    commodity = request.args.get("commodity", "").strip()
-    days_raw  = request.args.get("days", 7)
-    try:
-        days = int(days_raw)
-    except (ValueError, TypeError):
-        days = 7
-    if not city or not commodity:
-        return jsonify({"error": "city and commodity params required"}), 400
-    days = 14 if days == 14 else 7
-
-    # Extract root town for multi-tier matching (e.g. 'Sangli' from 'Sangli(Phale...) APMC')
-    clean = re.sub(r'\(.*?\)', ' ', city)
-    clean = re.sub(r'\b(apmc|market|committee|produce|agriculture|phale|bhajipura|bhajipala)\b', ' ', clean, flags=re.IGNORECASE)
-    root_tokens = [t.strip() for t in re.findall(r'[a-zA-Z]+', clean) if len(t) > 2]
-    root_town = root_tokens[0] if root_tokens else city
-
-    engine = get_engine()
-    rows = []
-
-    try:
-        with engine.connect() as conn:
-            # 1. Exact match on market and commodity
-            q_exact = text(f"""
-                SELECT arrival_date::date AS date,
-                       ROUND(AVG(modal_price)::numeric,2) AS avg_modal,
-                       ROUND(AVG(min_price)::numeric,2)   AS avg_min,
-                       ROUND(AVG(max_price)::numeric,2)   AS avg_max
-                FROM {TABLE}
-                WHERE LOWER(TRIM(market)) = LOWER(TRIM(:city))
-                  AND LOWER(TRIM(commodity)) = LOWER(TRIM(:commodity))
-                GROUP BY date ORDER BY date ASC
-            """)
-            exact_rows = rows_to_list(conn.execute(q_exact, {"city": city, "commodity": commodity}))
-
-            # 2. If exact match has fewer than 10 points, try root town variant match
-            if len(exact_rows) >= 10:
-                rows = exact_rows
-            else:
-                q_root = text(f"""
-                    SELECT arrival_date::date AS date,
-                           ROUND(AVG(modal_price)::numeric,2) AS avg_modal,
-                           ROUND(AVG(min_price)::numeric,2)   AS avg_min,
-                           ROUND(AVG(max_price)::numeric,2)   AS avg_max
-                    FROM {TABLE}
-                    WHERE (LOWER(market) = LOWER(:city) OR LOWER(market) LIKE LOWER(:root_like))
-                      AND LOWER(TRIM(commodity)) = LOWER(TRIM(:commodity))
-                    GROUP BY date ORDER BY date ASC
-                """)
-                root_rows = rows_to_list(conn.execute(q_root, {"city": city, "root_like": f"%{root_town}%", "commodity": commodity}))
-                rows = root_rows if len(root_rows) > len(exact_rows) else exact_rows
-
-                # 3. If still fewer than 5 points, check district-level data for this market
-                if len(rows) < 5:
-                    dist_row = conn.execute(text(f"SELECT DISTINCT district FROM {TABLE} WHERE LOWER(market) LIKE :root_like LIMIT 1"), {"root_like": f"%{root_town}%"}).fetchone()
-                    if dist_row and dist_row[0]:
-                        q_dist = text(f"""
-                            SELECT arrival_date::date AS date,
-                                   ROUND(AVG(modal_price)::numeric,2) AS avg_modal,
-                                   ROUND(AVG(min_price)::numeric,2)   AS avg_min,
-                                   ROUND(AVG(max_price)::numeric,2)   AS avg_max
-                            FROM {TABLE}
-                            WHERE LOWER(district) = LOWER(:district)
-                              AND LOWER(TRIM(commodity)) = LOWER(TRIM(:commodity))
-                            GROUP BY date ORDER BY date ASC
-                        """)
-                        dist_rows = rows_to_list(conn.execute(q_dist, {"district": dist_row[0], "commodity": commodity}))
-                        if len(dist_rows) > len(rows):
-                            rows = dist_rows
-
-    except Exception as exc:
-        log.error("arima-forecast DB error: %s", exc)
-        return jsonify({"error": str(exc)}), 500
-
-    if len(rows) < 5:
-        return jsonify({
-            "error": f"Insufficient historical data for reliable ARIMA forecast for {commodity} in {city}. Please select another crop or market.",
-            "rows_found": len(rows),
-        }), 422
-
-    # Build daily series, take up to 180 days ending at the maximum available date
-    df = pd.DataFrame(rows)
-    df["date"]      = pd.to_datetime(df["date"])
-    df["avg_modal"] = pd.to_numeric(df["avg_modal"], errors="coerce")
-    df["avg_min"]   = pd.to_numeric(df["avg_min"],   errors="coerce")
-    df["avg_max"]   = pd.to_numeric(df["avg_max"],   errors="coerce")
-    df = df.set_index("date").sort_index()
-
-    max_d = df.index.max()
-    min_d = max(df.index.min(), max_d - timedelta(days=180))
-    df = df.loc[min_d:max_d]
-
-    full_idx = pd.date_range(df.index.min(), df.index.max(), freq="D")
-    df = df.reindex(full_idx)
-    for col in ["avg_modal", "avg_min", "avg_max"]:
-        df[col] = df[col].interpolate(method="linear", limit=14).ffill().bfill()
-
-    last_date = df.index[-1]
-
-    # ARIMA forecast using AIC model selection
-    fc_modal = _arima_predict(df["avg_modal"].values, days)
-    fc_min   = _arima_predict(df["avg_min"].values,   days)
-    fc_max   = _arima_predict(df["avg_max"].values,   days)
-
-    forecast_points = []
-    for i in range(days):
-        fc_date = last_date + timedelta(days=i + 1)
-        forecast_points.append({
-            "date":      fc_date.strftime("%Y-%m-%d"),
-            "price":     round(float(fc_modal[i]), 2),
-            "min_price": round(float(fc_min[i]),   2),
-            "max_price": round(float(fc_max[i]),   2),
-        })
-
-    # Return last 14 actual points for chart context
-    actual_context = []
-    for ts, row in df.tail(14).iterrows():
-        actual_context.append({
-            "date":      ts.strftime("%Y-%m-%d"),
-            "price":     round(float(row["avg_modal"]), 2) if not np.isnan(row["avg_modal"]) else None,
-            "min_price": round(float(row["avg_min"]),   2) if not np.isnan(row["avg_min"])   else None,
-            "max_price": round(float(row["avg_max"]),   2) if not np.isnan(row["avg_max"])   else None,
-        })
-
-    return jsonify({
-        "city":              city,
-        "commodity":         commodity,
-        "days":              days,
-        "last_actual_date":  last_date.strftime("%Y-%m-%d"),
-        "last_actual_price": round(float(df["avg_modal"].iloc[-1]), 2),
-        "actual_context":    actual_context,
-        "forecast":          forecast_points,
-    })
+    """Backwards compatibility alias forwarding to XGBoost Weather forecast."""
+    return xgboost_forecast()
 
 
 def _arima_predict(series: np.ndarray, steps: int) -> np.ndarray:

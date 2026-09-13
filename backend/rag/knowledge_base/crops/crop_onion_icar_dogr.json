@@ -1,0 +1,26 @@
+{
+  "id": "crop_onion_icar_dogr",
+  "title": "Onion Production, Weather Risks, Curing, Storage & Market Timing",
+  "crop": "Onion",
+  "category": "Cultivation, Harvest, Storage & Marketing",
+  "source": "ICAR - Directorate of Onion and Garlic Research (DOGR), Pune & NHRDF",
+  "organization": "ICAR-DOGR, Rajgurunagar, Pune, Maharashtra",
+  "location": "Maharashtra & Western India",
+  "date": "2026-01-15",
+  "url_reference": "https://dogr.icar.gov.in/crop-advisory/onion",
+  "topics": [
+    "onion",
+    "kanda",
+    "climate",
+    "temperature",
+    "storage",
+    "kanda chawl",
+    "curing",
+    "purple blotch",
+    "rainfall",
+    "selling timing",
+    "apmc",
+    "shelf life"
+  ],
+  "content": "\n# ICAR-DOGR Agricultural Advisory: Onion (Allium cepa)\n\n## 1. Climate and Growth Requirements\n- **Temperature**: Vegetative growth thrives at 15°C to 25°C. Bulb sizing, development, and maturity require 25°C to 35°C. Sustained temperatures >38°C cause premature bolting, sunburn, and undersized bulbs.\n- **Soil & Moisture**: Fertile sandy loam to clay loam rich in organic carbon, pH 6.5–7.5. Highly sensitive to water stagnation; waterlogged soils induce basal rot (Fusarium oxysporum) and root asphyxiation.\n- **Irrigation Schedule**: Regular light irrigations (every 7–10 days in winter, 4–6 days in summer). Stop all irrigation strictly 10–15 days before harvest to allow neck drying and enhance storage durability.\n\n## 2. Weather Risks, Rainfall & Disease Proliferation\n- **Unseasonal Rain at Harvest**: Rainfall during bulb maturity or lifting causes severe neck rot, black mould (Aspergillus niger), and rapid purple blotch (Alternaria porri) epidemics. Wet harvested bulbs cannot be cured and suffer 50–70% storage losses within 30 days.\n- **High Relative Humidity (>75%)**: Coupled with temperatures of 20°C–28°C triggers purple blotch and Stemphylium blight. Apply prophylactic spray of Tebuconazole (0.1%) or Mancozeb (0.25%) with a sticker.\n- **Cloudy Weather**: Sustained overcast weather reduces bulking rate and multiplies thrips (Thrips tabaci) infestation.\n\n## 3. Harvesting Indicators and Field Curing\n- **Harvest Stage**: Best harvested when 50% of plant tops fall over (50% neck fall). Never harvest prematurely as high internal moisture causes rapid rotting.\n- **Pre-Harvest Withholding**: Stop pesticide sprays 7 days before lifting. Stop irrigation 10–15 days prior to harvest.\n- **Field Curing (Windrowing)**: Keep uprooted bulbs in field windrows under leaf shade for 3–5 days to cure outer papery skin without direct sunscald.\n\n## 4. Post-Harvest Handling & Storage (Kanda Chawl)\n- **Shade Curing**: After windrowing, cure in well-ventilated dry sheds for 10–15 days until necks are completely dry and papery.\n- **Neck Cutting**: Leave 2.0 to 2.5 cm neck attached to the bulb. Cutting flush with the bulb invites fungal pathogens directly into fleshy scales.\n- **Optimal Storage Conditions**: Store in naturally ventilated bottom-and-side aerated structures (Kanda Chawl) at 25°C–30°C and 65%–70% relative humidity. Avoid airtight or damp rooms.\n- **Shelf Life**: Rabi onion (cured) stores safely for 4–6 months. Kharif and Late Kharif onions have high moisture and should be marketed within 20–30 days of harvest.\n\n## 5. Market Strategy & APMC Selling Decision Framework\n- **Price Volatility**: Onion prices are heavily driven by arrivals in Maharashtra APMCs (Lasalgaon, Pimpalgaon, Sangli, Pune, Solapur).\n- **Rain Supply Shocks**: Heavy rain in producing belts halts harvesting and transport, creating sudden supply deficits and short-term price spikes in regional mandis.\n- **Action Strategy**: If XGBoost predicts an upward trend and weather is dry, holding well-cured Rabi onion in Kanda Chawl yields higher returns. If heavy rain is forecast during harvest, lift mature bulbs immediately and move under roof protection.\n"
+}

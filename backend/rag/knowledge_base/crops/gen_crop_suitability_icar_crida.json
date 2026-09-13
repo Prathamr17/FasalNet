@@ -1,0 +1,23 @@
+{
+  "id": "gen_crop_suitability_icar_crida",
+  "title": "ICAR-CRIDA Crop Suitability, Seasonal Planning & Climate-Resilient Agriculture",
+  "crop": "General Crops",
+  "category": "Agro-Climatic Planning & Crop Suitability",
+  "source": "ICAR - Central Research Institute for Dryland Agriculture (CRIDA), Hyderabad",
+  "organization": "ICAR-CRIDA, Hyderabad & Department of Agriculture, Maharashtra",
+  "location": "Semi-Arid & Tropical Agro-Climatic Zones",
+  "date": "2026-02-15",
+  "url_reference": "https://crida.icar.gov.in/crop-suitability-guidelines",
+  "topics": [
+    "crop suitability",
+    "climate resilient",
+    "kharif",
+    "rabi",
+    "summer",
+    "drought",
+    "rainfall adaptation",
+    "soil type",
+    "season"
+  ],
+  "content": "\n# ICAR-CRIDA Crop Suitability & Seasonal Planning Framework\n\n## 1. Seasonality and Agro-Climatic Match\n- **Kharif (Monsoon, June–October)**:\n  - Favorable Crops: Soybean, Cotton, Rice/Paddy, Maize, Groundnut, Kharif Onion, Tomato.\n  - Requirements: Moderate to high rainfall, warm temperatures (25°C–35°C), good drainage.\n- **Rabi (Winter, October–March)**:\n  - Favorable Crops: Wheat, Gram/Chana, Rabi Onion, Potato, Garlic, Mustard, Rabi Sorghum.\n  - Requirements: Cool nights (10°C–18°C), dry days, residual soil moisture or assured irrigation.\n- **Summer / Zaid (March–June)**:\n  - Favorable Crops: Groundnut, Green Gram (Moong), Watermelon, Muskmelon, Cucumber, Cluster Bean.\n  - Requirements: High heat tolerance (>35°C), continuous drip irrigation.\n\n## 2. Soil-Specific Crop Matching\n- **Deep Black Vertisols (Clay Loam)**: High moisture retention; ideal for Cotton, Soybean, Wheat, Gram, Sugarcane. Avoid root crops in waterlogged black soils.\n- **Sandy Loam / Alluvial Soils**: Excellent drainage and aeration; ideal for Onion, Potato, Tomato, Garlic, Groundnut, Turmeric, Vegetables.\n- **Light Red Soils**: Well-drained; ideal for Groundnut, Pulses, Millets, Fruits (Pomegranate, Guava).\n\n## 3. Weather-Driven Crop Decision Rules\n- Under delayed monsoon or rainfall deficits, shift from long-duration crops (Sugarcane/Cotton) to short-duration drought-tolerant pulses (Green Gram, Black Gram, Cowpea) or Millets (Pearl Millet / Bajra).\n"
+}

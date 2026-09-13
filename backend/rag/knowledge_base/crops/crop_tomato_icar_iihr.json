@@ -1,0 +1,25 @@
+{
+  "id": "crop_tomato_icar_iihr",
+  "title": "Tomato Production, Perishability, Blight Risk, Transit & Market Arbitrage",
+  "crop": "Tomato",
+  "category": "Cultivation, Harvest, Storage & Marketing",
+  "source": "ICAR - Indian Institute of Horticultural Research (IIHR), Bengaluru",
+  "organization": "ICAR-IIHR, Bengaluru & MPKV Rahuri",
+  "location": "Southern & Western India",
+  "date": "2026-01-20",
+  "url_reference": "https://iihr.icar.gov.in/crop-advisory/tomato",
+  "topics": [
+    "tomato",
+    "tamatar",
+    "perishable",
+    "blight",
+    "early blight",
+    "late blight",
+    "fruit cracking",
+    "breaker stage",
+    "cold storage",
+    "transport",
+    "market"
+  ],
+  "content": "\n# ICAR-IIHR Agricultural Advisory: Tomato (Solanum lycopersicum)\n\n## 1. Climate and Growth Requirements\n- **Temperature**: Daytime 21°C–28°C and nighttime 15°C–20°C are ideal for flowering and fruit set. Temperatures >35°C cause flower drop and blossom-end rot; <10°C retards growth and lycopene pigmentation.\n- **Soil & Moisture**: Well-drained loamy soil, pH 6.0–7.0. Requires uniform soil moisture; alternating dry and wet spells causes severe fruit cracking.\n\n## 2. Weather Risks, Blight Outbreaks & Fruit Cracking\n- **Rainfall & High Humidity**: Rainfall during fruiting causes catastrophic Early Blight (Alternaria solani) and Late Blight (Phytophthora infestans). Late blight can destroy an entire field within 48–72 hours under cool, wet, overcast conditions.\n- **Fruit Cracking**: Sudden rain after a dry spell creates osmotic pressure inside fruits, splitting outer skins and rendering them unmarketable.\n- **Pest Risks**: High temperatures favor Tomato Pinworm (Tuta absoluta) and Whitefly vectors transmitting Tomato Leaf Curl Virus (ToLCV).\n\n## 3. Harvesting Guidance for Market Distances\n- **Maturity Stages**:\n  - **Breaker Stage (10% pinkish color at blossom end)**: Harvest for long-distance transport (300–1000 km) or 5–7 day holding.\n  - **Turning to Pink Stage (30–60% color)**: Harvest for regional APMC transport (within 50–150 km, e.g., Kolhapur, Sangli, Pune).\n  - **Red Ripe (Full red)**: Harvest strictly for immediate same-day local market retail or local processing.\n- **Harvest Timing**: Pluck early morning or late afternoon. Avoid harvesting in hot midday sun or immediately after rain (wet fruits develop transit soft rot).\n\n## 4. Post-Harvest Handling and Storage\n- **Grading & Packing**: Grade by size and ripeness. Pack in plastic crates (20–25 kg capacity) with smooth interiors to avoid puncture and compression damage.\n- **Storage Parameters**: Ripe tomatoes store at 10°C–12°C with 85%–90% RH for 7–10 days. Breaker stage tomatoes store at 12°C–15°C for up to 14–21 days.\n- **Shelf Life**: At ambient summer temperatures (30°C–35°C), ripe tomato shelf life is only 2–4 days.\n\n## 5. Market and Selling Strategy\n- **Perishability Dynamics**: Tomato is highly perishable. Holding ripe tomato on farm expecting higher future prices is risky due to weight loss and decay.\n- **Rain Supply Shocks**: Heavy rain damages fruit quality and cuts arrivals, frequently causing sharp price spikes for premium-grade undamaged produce.\n- **Action Recommendation**: If XGBoost predicts a price increase over 7 days and fruit is at breaker/turning stage, staged harvesting and dispatch to higher-priced nearby APMCs is recommended.\n"
+}

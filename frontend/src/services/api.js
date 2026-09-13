@@ -112,6 +112,7 @@ export const marketAPI = {
   heatmap:        (params) => api.get("/api/market/heatmap",       { params }),
   compare:        (params) => api.get("/api/market/compare",       { params }),
   arimaForecast:        (params) => api.get("/api/market/arima-forecast",{ params }),
+  xgboostForecast:      (params) => api.get("/api/market/xgboost-forecast", { params }),
   forecastV3Predictions:(data)   => api.post("/api/market/forecast-v3/predictions", data),
   forecastV3Trends:     (data)   => api.post("/api/market/forecast-v3/trends",      data),
   forecastV3TodayTomorrow:(data) => api.post("/api/market/forecast-v3/today-tomorrow", data),
@@ -121,4 +122,21 @@ export const marketAPI = {
   syncStatus:           ()       => api.get("/api/market/sync-status"),
 };
 
+// ── Weather & Climate (Open-Meteo) ───────────────────────────────
+export const weatherAPI = {
+  current:  (params) => api.get("/api/weather/current",  { params }),
+  forecast: (params) => api.get("/api/weather/forecast", { params }),
+  summary:  (params) => api.get("/api/weather/summary",  { params }),
+};
+
+// ── AI Agricultural Advisor (Part 3: RAG + LLM) ──────────────────
+export const aiAPI = {
+  getMarketAdvice:    (data)   => api.post("/api/ai/market-advice", data),
+  getMarketAdviceGet: (params) => api.get("/api/ai/market-advice",  { params }),
+  chat:               (data)   => api.post("/api/ai/chat",           data),
+  sources:            ()       => api.get("/api/ai/sources"),
+  health:             ()       => api.get("/api/ai/health"),
+};
+
 export default api;
+

@@ -36,6 +36,8 @@ from routes.otp         import otp_bp
 from routes.ml          import ml_bp
 from routes.market_data import market_bp   # ── v10
 from routes.market_forecast_v3 import forecast_v3_bp  # ── v3 NEW ⭐
+from routes.weather     import weather_bp      # ── Real-Time Open-Meteo Weather 🌦️
+from routes.ai_advisor  import ai_bp           # ── Part 3: RAG + LLM Agricultural Advisor 🤖
 
 
 def _start_scheduler(app):
@@ -107,6 +109,8 @@ def create_app(cfg=Config) -> Flask:
         ml_bp,           # v9  — unchanged
         market_bp,       # v10 — ARIMA data layer
         forecast_v3_bp,  # v3  — NEW v3 endpoints ⭐
+        weather_bp,      # Weather & Climate (Open-Meteo) 🌦️
+        ai_bp,           # RAG + LLM Agricultural Advisor 🤖
     ]:
         app.register_blueprint(bp)
 
@@ -125,6 +129,8 @@ def create_app(cfg=Config) -> Flask:
                 "email_otp", "ml_predictions",
                 "market_intelligence",   # v10
                 "market_forecast_v3",    # NEW v11 ⭐
+                "weather_and_climate",   # Open-Meteo Real-Time
+                "ai_agricultural_advisor", # RAG + LLM Advisory
             ],
         }), 200
 

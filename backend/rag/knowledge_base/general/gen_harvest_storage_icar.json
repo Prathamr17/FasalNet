@@ -1,0 +1,17 @@
+{
+  "id": "gen_harvest_storage_icar",
+  "crop": "General Crops",
+  "category": "Post-Harvest Management & Cold Chain",
+  "source": "ICAR - Central Institute of Post-Harvest Engineering and Technology (CIPHET), Ludhiana",
+  "institution": "ICAR-CIPHET, Ludhiana & Ministry of Agriculture & Farmers Welfare",
+  "topics": [
+    "post_harvest",
+    "storage",
+    "curing",
+    "cold_storage",
+    "grading",
+    "transport",
+    "quality"
+  ],
+  "content": "\n# ICAR-CIPHET Post-Harvest Management and Storage Guidelines\n\n## 1. General Principles of Crop Harvest Timing\n- Never harvest during rainfall or when foliage is covered with morning dew. Excess moisture accelerates microbial decay, heating in transit, and mould formation.\n- Harvest during the coolest part of the day (early morning) to minimize field heat in harvested produce.\n\n## 2. Pre-Cooling and Field Heat Removal\n- For perishable horticulture crops (tomato, leafy vegetables, fruits), removing field heat within 2–4 hours of harvest extends shelf life by 30–50%.\n- Keep harvested crates in shaded, well-ventilated packing areas away from direct sunlight.\n\n## 3. Standard Optimal Storage Temperature and Humidity Matrix\n- **Onion**: 25°C–30°C, 65%–70% RH (Ventilated Chawl) or 0°C–2°C (Cold Storage).\n- **Potato**: 8°C–10°C, 85%–90% RH (Table); 10°C–12°C (Processing).\n- **Tomato**: 10°C–12°C (Ripe), 12°C–15°C (Breaker), 85%–90% RH.\n- **Wheat & Grains**: Ambient dry, <12% seed moisture, <65% RH in sealed metal bins.\n- **Pulses & Soybean**: Ambient dry, <10% seed moisture in airtight hermetic bags.\n\n## 4. Farm-Gate Grading and Packaging Standards\n- Grade produce into Uniform Sizes: Grade A (Large/Premium), Grade B (Medium), Grade C (Small/Damaged).\n- Mixing diseased or over-ripe produce with Grade A lots drastically reduces the entire batch's market valuation at APMC auctions.\n"
+}

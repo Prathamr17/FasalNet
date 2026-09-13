@@ -1,0 +1,24 @@
+{
+  "id": "crop_potato_icar_cpri",
+  "title": "Potato Production, Late Blight Risk, Dehaulming, Curing & Cold Storage",
+  "crop": "Potato",
+  "category": "Cultivation, Harvest, Storage & Marketing",
+  "source": "ICAR - Central Potato Research Institute (CPRI), Shimla",
+  "organization": "ICAR-CPRI & State Agricultural Universities",
+  "location": "All India Potato Belts",
+  "date": "2026-01-10",
+  "url_reference": "https://cpri.icar.gov.in/crop-advisory/potato",
+  "topics": [
+    "potato",
+    "alu",
+    "batata",
+    "tuberization",
+    "late blight",
+    "dehaulming",
+    "curing",
+    "cold storage",
+    "greening",
+    "apmc"
+  ],
+  "content": "\n# ICAR-CPRI Agricultural Advisory: Potato (Solanum tuberosum)\n\n## 1. Climate and Growth Requirements\n- **Temperature**: Vegetative growth thrives at 20°C–25°C, while tuberization requires night temperatures of 15°C–18°C. Night temperatures >22°C drastically halt tuber formation.\n- **Soil Requirements**: Deep, well-aerated sandy loam with pH 5.2–6.8. Heavy soils cause misshapen tubers and harvesting bruises.\n\n## 2. Weather Risks and Disease Triggers\n- **Late Blight (Phytophthora infestans)**: Triggered by temperatures between 12°C–22°C with relative humidity >85% and continuous leaf wetness.\n- **Rain at Harvesting**: Rain during lifting exposes tubers to bacterial soft rot (Erwinia carotovora) and Pythium leak in transit/storage.\n- **Tuber Greening**: Exposure of developing tubers to sunlight induces chlorophyll and toxic solanine alkaloid formation. Proper earthing-up is critical.\n\n## 3. Harvesting and Curing Guidance\n- **Dehaulming (Haulm Cutting)**: Cut aerial vine foliage 10–12 days before digging. This allows the tuber periderm (skin) to harden and mature, preventing peeling during handling.\n- **Lifting Operations**: Harvest on bright sunny days when soil is friable. Avoid bruised or damaged tubers.\n- **Curing (Suberization)**: Cure harvested tubers in dark, ventilated heaps at 15°C–20°C with 85%–90% RH for 10–14 days to heal wounds and thicken skins.\n\n## 4. Post-Harvest & Cold Storage\n- **Cold Storage Conditions**: Table potatoes: 8°C–10°C with 85%–90% RH (with CIPC sprout suppressant). Processing potatoes: 10°C–12°C to prevent reducing sugar accumulation (cold-sweetening).\n- **Shelf Life**: Cured potato stores under farm conditions in dark, dry ventilated spaces for 45–60 days; in cold storage for 6–9 months.\n\n## 5. Market and Selling Strategy\n- **Price Trend Drivers**: Large cold store releases in UP/Punjab/Gujarat dictate national baseline prices. Regional APMC prices in Maharashtra (Pune, Manchar, Sangli) spike during festive and off-season intervals.\n- **Action Recommendation**: If XGBoost predicts stable or rising prices, holding cured potato in well-ventilated dark farm storage for 2–4 weeks is viable.\n"
+}

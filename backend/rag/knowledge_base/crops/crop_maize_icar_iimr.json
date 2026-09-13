@@ -1,0 +1,24 @@
+{
+  "id": "crop_maize_icar_iimr",
+  "title": "Maize Cob Ripening, Fall Armyworm, Aflatoxin Prevention & Feed Marketing",
+  "crop": "Maize",
+  "category": "Cultivation, Harvest, Storage & Marketing",
+  "source": "ICAR - Indian Institute of Maize Research (IIMR), Ludhiana",
+  "organization": "ICAR-IIMR & Agricultural Universities",
+  "location": "All India Maize Belts",
+  "date": "2026-02-05",
+  "url_reference": "https://iimr.icar.gov.in/crop-advisory/maize",
+  "topics": [
+    "maize",
+    "makka",
+    "corn",
+    "fall armyworm",
+    "cob drying",
+    "black layer",
+    "aflatoxin",
+    "poultry feed",
+    "moisture",
+    "apmc"
+  ],
+  "content": "\n# ICAR-IIMR Agricultural Advisory: Maize / Corn (Zea mays)\n\n## 1. Growth Conditions & Climate\n- **Temperature**: 20°C–30°C optimal for photosynthesis and cob sizing.\n- **Soil**: Fertile, well-drained loams rich in organic matter. Sensitive to water stagnation.\n\n## 2. Weather Risks & Pests\n- **Fall Armyworm (Spodoptera frugiperda)**: Severe threat during vegetative stage.\n- **Rain at Maturity**: Rain during cob drying creates aflatoxin contamination by Aspergillus fungi, disqualifying grain for poultry feed and starch processing.\n\n## 3. Harvesting & Storage Protocol\n- **Harvest Stage**: Harvest when husk cover turns dry and papery, and a black layer forms at the grain base (physiological maturity, moisture 25–30%).\n- **Cob Drying**: Dry harvested cobs on clean concrete yards until grain moisture reaches 14–15% before shelling.\n- **Grain Storage**: Store shelled grain at <12% moisture in fumigated dry godowns.\n- **Market Demand**: Maize is heavily driven by poultry feed mills and starch manufacturers. Compare local APMC prices against industrial buyer contracts.\n"
+}

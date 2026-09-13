@@ -1,11 +1,13 @@
-// pages/farmer/ForecastIntelligencePage.jsx — FasalNet v3 Engine UI
+// pages/farmer/ForecastIntelligencePage.jsx — FasalNet XGBoost + Weather Engine UI
 // ─────────────────────────────────────────────────────────────────────────────
-// Pure-UI forecast panel for FasalNet v3 Market Forecast Endpoints:
-//   - Today & Tomorrow highlight (POST /api/market/forecast-v3/today-tomorrow)
-//   - 7/14-day Continuous Multi-Horizon XGBoost Forecast (POST /api/market/forecast-v3/continuous)
-//   - 30/60-day Binary Trend Indicators (POST /api/market/forecast-v3/trend-signal)
-//   - Model Engine Status Metadata (POST /api/market/forecast-v3/predictions)
+// Real XGBoost Market Price Forecasting with Open-Meteo Weather Integration:
+//   - Today & Tomorrow highlight
+//   - 7/14-Day Continuous Multi-Horizon XGBoost Forecast
+//   - Model Evaluation Metrics (MAE, RMSE, MAPE, R²)
+//   - Weather Risk & Rainfall Impact Intelligence
+//   - 30/60-Day Binary Trend Indicators
 
+import React from "react";
 import { useTranslation } from "react-i18next";
 
 // ── Shared style tokens & modern design constants ───────────────────────────
@@ -53,7 +55,7 @@ function EngineStatusBadge({ t }) {
     <div style={{
       display: "flex",
       alignItems: "center",
-      justify: "space-between",
+      justifyContent: "space-between",
       flexWrap: "wrap",
       gap: "8px",
       padding: "10px 16px",
@@ -69,22 +71,179 @@ function EngineStatusBadge({ t }) {
           display: "inline-block"
         }} />
         <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--tx)" }}>
-          FasalNet v3 Engine
+          FasalNet XGBoost + Open-Meteo Engine
         </span>
         <span style={{ fontSize: "11px", color: "var(--tx-m)", borderLeft: "1px solid var(--bd)", paddingLeft: "8px" }}>
-          SARIMAX(1,1,1)(1,1,1,7) + XGBoost Multi-Horizon Ensemble
+          Direct Multi-Horizon XGBoost Regressor + Exogenous Agro-Weather Features
         </span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "11px", fontWeight: 600, color: "var(--tx-s)" }}>
         <span>🗄️ {t("mi.data_source", "Real DB (mh_market_prices)")}</span>
         <span>•</span>
-        <span style={{ color: "var(--cp)", fontWeight: 700 }}>{t("mi.model_status", "Optimized (Heteroscedastic CI)")}</span>
+        <span style={{ color: "var(--cp)", fontWeight: 700 }}>{t("mi.model_status", "Real Time-Series Validation")}</span>
       </div>
     </div>
   );
 }
 
-// ── SECTION 1: Today & Tomorrow Highlight ──────────────────────────────────────
+// ── SECTION 1: Model Evaluation & Performance Card ───────────────────────────
+function ModelEvaluationCard({ metrics, t }) {
+  if (!metrics) return null;
+
+  return (
+    <div style={{ ...CARD, padding: "18px 20px", background: "var(--bg-m)", border: "1px solid var(--bd)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "15px" }}>📊</span>
+          <div>
+            <h4 style={{ fontSize: "13.5px", fontWeight: 800, color: "var(--tx)", margin: 0 }}>
+              {t("mi.model_eval_title", "XGBoost Model Performance & Validation")}
+            </h4>
+            <span style={{ fontSize: "10.5px", color: "var(--tx-s)" }}>
+              {metrics.validation_split || "80/20 Chronological Time-Series Validation"} · {metrics.sample_size || 0} {t("mi.historical_days", "historical market days")}
+            </span>
+          </div>
+        </div>
+        <span style={{
+          fontSize: "10.5px", fontWeight: 700, color: "var(--cp)", background: "rgba(63,107,51,0.1)",
+          padding: "3px 9px", borderRadius: "12px", border: "1px solid rgba(63,107,51,0.2)"
+        }}>
+          ✓ No Data Leakage
+        </span>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "10px" }}>
+        {[
+          { label: "MAE", value: `₹${metrics.mae ?? "—"}`, desc: "Mean Absolute Error", color: "var(--tx)" },
+          { label: "RMSE", value: `₹${metrics.rmse ?? "—"}`, desc: "Root Mean Sq Error", color: "var(--tx)" },
+          { label: "MAPE", value: `${metrics.mape ?? "—"}%`, desc: "Mean Abs % Error", color: (metrics.mape ?? 0) <= 15 ? "#10B981" : "#B4741E" },
+          { label: "R² Score", value: `${metrics.r2 != null ? Number(metrics.r2).toFixed(2) : "—"}`, desc: "Variance Explained", color: (metrics.r2 ?? 0) >= 0.5 ? "#10B981" : "var(--tx-m)" },
+        ].map((item, idx) => (
+          <div key={idx} style={{
+            background: "var(--bg-l)", borderRadius: "10px", padding: "10px 12px",
+            border: "1px solid var(--bd)", textAlign: "center"
+          }}>
+            <div style={{ fontSize: "9.5px", fontWeight: 800, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              {item.label}
+            </div>
+            <div style={{ fontSize: "16px", fontWeight: 900, color: item.color, fontFamily: "var(--fd)", margin: "3px 0" }}>
+              {item.value}
+            </div>
+            <div style={{ fontSize: "9.5px", color: "var(--tx-s)" }}>
+              {item.desc}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── SECTION 2: Weather & Price Intelligence Signal ────────────────────────────
+function WeatherRiskSignalCard({ summary, t }) {
+  if (!summary) return null;
+
+  const isRiskHigh = summary.weather_risk === "High";
+  const isRiskMod = summary.weather_risk === "Moderate";
+  const riskColor = isRiskHigh ? "#EF4444" : isRiskMod ? "#F59E0B" : "#10B981";
+  const riskBg = isRiskHigh ? "rgba(239,68,68,0.1)" : isRiskMod ? "rgba(245,158,11,0.1)" : "rgba(16,185,129,0.1)";
+  const riskBorder = isRiskHigh ? "rgba(239,68,68,0.3)" : isRiskMod ? "rgba(245,158,11,0.3)" : "rgba(16,185,129,0.3)";
+
+  const isUp = summary.direction === "UP";
+  const isDown = summary.direction === "DOWN";
+  const trendColor = isUp ? "#10B981" : isDown ? "#EF4444" : "var(--tx-m)";
+
+  return (
+    <div style={{
+      ...CARD,
+      padding: "18px 20px",
+      background: "linear-gradient(135deg, var(--bg-l) 0%, rgba(43,69,112,0.03) 100%)",
+      border: "1px solid var(--bd)"
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "16px" }}>🌦️</span>
+          <div>
+            <h4 style={{ fontSize: "14px", fontWeight: 800, color: "var(--tx)", margin: 0 }}>
+              {t("mi.weather_price_intel", "Weather + Price Intelligence Signals")}
+            </h4>
+            <span style={{ fontSize: "10.5px", color: "var(--tx-s)" }}>
+              {t("mi.weather_price_sub", "Combined agro-climate factors influencing supply & price movements")}
+            </span>
+          </div>
+        </div>
+
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: "6px",
+          background: riskBg, border: `1px solid ${riskBorder}`,
+          borderRadius: "20px", padding: "4px 12px", fontSize: "11px", fontWeight: 800, color: riskColor
+        }}>
+          <span>{isRiskHigh ? "⚠️" : isRiskMod ? "⛅" : "☀️"}</span>
+          <span>{summary.weather_risk} {t("mi.weather_risk", "Weather Risk")}</span>
+        </div>
+      </div>
+
+      <div style={{
+        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+        gap: "12px", marginBottom: "12px"
+      }}>
+        {/* Trend Prediction */}
+        <div style={{ padding: "12px 14px", background: "var(--bg-m)", borderRadius: "10px", border: "1px solid var(--bd)" }}>
+          <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase" }}>
+            {t("mi.expected_trend", "Expected Price Trend")}
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "6px", marginTop: "4px" }}>
+            <span style={{ fontSize: "18px", fontWeight: 900, color: trendColor, fontFamily: "var(--fd)" }}>
+              {isUp ? "▲" : isDown ? "▼" : "→"} {Math.abs(summary.price_change_percent ?? 0).toFixed(1)}%
+            </span>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: trendColor }}>
+              ({summary.direction})
+            </span>
+          </div>
+          <div style={{ fontSize: "10.5px", color: "var(--tx-m)", marginTop: "2px" }}>
+            Target: ₹{Math.round(summary.predicted_price ?? 0).toLocaleString("en-IN")}
+          </div>
+        </div>
+
+        {/* Rain Outlook */}
+        <div style={{ padding: "12px 14px", background: "var(--bg-m)", borderRadius: "10px", border: "1px solid var(--bd)" }}>
+          <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase" }}>
+            {t("mi.upcoming_rainfall", "Upcoming Rainfall")}
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "6px", marginTop: "4px" }}>
+            <span style={{ fontSize: "18px", fontWeight: 900, color: "#2563eb", fontFamily: "var(--fd)" }}>
+              {summary.total_upcoming_rain_mm ?? 0} mm
+            </span>
+            <span style={{ fontSize: "11px", color: "var(--tx-s)" }}>
+              ({summary.rainy_days_count ?? 0} rainy {summary.rainy_days_count === 1 ? "day" : "days"})
+            </span>
+          </div>
+          <div style={{ fontSize: "10.5px", color: "var(--tx-m)", marginTop: "2px" }}>
+            Open-Meteo Multi-Day Forecast
+          </div>
+        </div>
+      </div>
+
+      {/* Advisory Message */}
+      {summary.weather_risk_note && (
+        <div style={{
+          padding: "10px 14px", borderRadius: "10px",
+          background: riskBg, border: `1px solid ${riskBorder}`,
+          fontSize: "11.5px", color: "var(--tx)", lineHeight: 1.4,
+          display: "flex", alignItems: "flex-start", gap: "8px"
+        }}>
+          <span style={{ fontSize: "14px", flexShrink: 0 }}>💡</span>
+          <div>
+            <strong style={{ color: riskColor }}>{t("mi.advisory_note", "Market Advisory")}: </strong>
+            <span>{summary.weather_risk_note}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── SECTION 3: Today & Tomorrow Highlight ──────────────────────────────────────
 function TodayTomorrowCard({ todayTomorrow, ttLoading, arimaError, t }) {
   if (!todayTomorrow && !ttLoading && !arimaError) return null;
 
@@ -179,7 +338,7 @@ function TodayTomorrowCard({ todayTomorrow, ttLoading, arimaError, t }) {
       ) : (
         !ttLoading && arimaError && (
           <div style={{ fontSize: "12px", color: "var(--tx-m)" }}>
-            {t("mi.tt_unavailable", "Select a market and commodity to run the 3-part V3 AI forecast.")}
+            {t("mi.tt_unavailable", "Select a market and commodity to run the XGBoost weather forecast.")}
           </div>
         )
       )}
@@ -187,7 +346,7 @@ function TodayTomorrowCard({ todayTomorrow, ttLoading, arimaError, t }) {
   );
 }
 
-// ── SECTION 2: 7/14-Day Continuous Multi-Horizon Forecast ────────────────────
+// ── SECTION 4: 7/14-Day Continuous Multi-Horizon Forecast ────────────────────
 function ContinuousForecastCard({ arimaDays, setArimaDays, arimaData, arimaLoading, arimaError, selectedCities, commodity, onRunForecast, t }) {
   return (
     <div style={CARD}>
@@ -207,13 +366,13 @@ function ContinuousForecastCard({ arimaDays, setArimaDays, arimaData, arimaLoadi
               {t("mi.forecast_title", "Continuous Multi-Horizon Forecast")}
             </h3>
             <p style={{ fontSize: "12px", color: "var(--tx-m)", marginTop: "2px", margin: 0 }}>
-              {t("mi.forecast_desc", "One direct XGBoost model trained per day horizon — true daily dynamic trajectory.")}
+              {t("mi.forecast_desc", "One direct XGBoost model trained per day horizon with Open-Meteo weather features.")}
             </p>
           </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {/* Horizon toggle */}
+          {/* Horizon toggle: STRICTLY 7 and 14 Days */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".6px" }}>
               {t("mi.horizon", "Horizon:")}
@@ -263,7 +422,7 @@ function ContinuousForecastCard({ arimaDays, setArimaDays, arimaData, arimaLoadi
           <strong style={{ color: "var(--tx)" }}>{commodity || "None selected"}</strong>
         </div>
         <div style={{ fontSize: "11px", color: "var(--tx-s)" }}>
-          {arimaDays}-Day Direct Model Chain
+          {arimaDays}-Day Direct XGBoost Model Chain
         </div>
       </div>
 
@@ -314,9 +473,12 @@ function ContinuousForecastCard({ arimaDays, setArimaDays, arimaData, arimaLoadi
                 : arimaData.forecast[i - 1].price;
               const change = pt.price - prevPrice;
               const isUp   = change >= 0;
+              const rainMm = pt.expected_rain_mm != null ? pt.expected_rain_mm : null;
+              const rainProb = pt.rain_probability != null ? pt.rain_probability : null;
+
               return (
                 <div key={i} style={{
-                  minWidth: "125px", flexShrink: 0, background: "var(--bg-m)",
+                  minWidth: "135px", flexShrink: 0, background: "var(--bg-m)",
                   border: "1px solid var(--bd)",
                   borderTop: `4px solid ${isUp ? "#10B981" : "#EF4444"}`,
                   borderRadius: "12px", padding: "12px", textAlign: "center",
@@ -332,6 +494,18 @@ function ContinuousForecastCard({ arimaDays, setArimaDays, arimaData, arimaLoadi
                   <div style={{ fontSize: "10px", fontWeight: 800, marginBottom: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "2px", color: isUp ? "#10B981" : "#EF4444" }}>
                     {isUp ? "▲" : "▼"} ₹{Math.abs(Math.round(change)).toLocaleString("en-IN")}
                   </div>
+                  
+                  {/* Weather rain badge if available */}
+                  {(rainMm !== null || rainProb !== null) && (
+                    <div style={{
+                      fontSize: "9.5px", color: (rainProb > 40 || rainMm > 1) ? "#2563eb" : "var(--tx-s)",
+                      background: (rainProb > 40 || rainMm > 1) ? "rgba(37,99,235,0.08)" : "transparent",
+                      borderRadius: "6px", padding: "2px 4px", marginBottom: "6px", fontWeight: 600
+                    }}>
+                      💧 {rainProb ?? 0}% ({rainMm ?? 0}mm)
+                    </div>
+                  )}
+
                   <div style={{ fontSize: "10px", color: "var(--tx-m)", borderTop: "1px solid var(--bd)", paddingTop: "6px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: "4px", marginBottom: "2px" }}>
                       <span style={{ color: "var(--tx-s)" }}>Max:</span>
@@ -355,89 +529,10 @@ function ContinuousForecastCard({ arimaDays, setArimaDays, arimaData, arimaLoadi
               {t("mi.no_forecast", "No forecast active")}
             </p>
             <p style={{ fontSize: "12px", color: "var(--tx-s)" }}>
-              {t("mi.no_forecast_sub", "Select a city & commodity, choose horizon, and click Run Forecast.")}
+              {t("mi.no_forecast_sub", "Select a city & commodity, choose 7 or 14 days, and click Run Forecast.")}
             </p>
           </div>
         )
-      )}
-    </div>
-  );
-}
-
-// ── SECTION 3: 30/60-Day Binary Trend Signal ──────────────────────────────────
-function TrendSignalCard({ trendSignalData, trendSignalLoading, t }) {
-  if (!trendSignalData && !trendSignalLoading) return null;
-
-  return (
-    <div style={CARD}>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
-        <h3 style={{ fontSize: "15px", fontWeight: 800, color: "var(--tx)", margin: 0 }}>
-          📊 {t("mi.trend_signal_title", "30 & 60-Day Trend Signals")}
-        </h3>
-        {trendSignalLoading && <Spin />}
-        <span style={{ fontSize: "11px", color: "var(--tx-m)", marginLeft: "auto" }}>
-          Logistic Regression Classifier
-        </span>
-      </div>
-
-      {trendSignalData && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
-          {[
-            { key: "30_day", label: t("mi.trend_30d", "30-Day Trend Signal"), days: 30 },
-            { key: "60_day", label: t("mi.trend_60d", "60-Day Trend Signal"), days: 60 },
-          ].map(({ key, label }) => {
-            const sig   = trendSignalData[key];
-            if (!sig) return null;
-            const isUp  = sig.direction === "UP";
-            const color = isUp ? "#10B981" : sig.direction === "DOWN" ? "#EF4444" : "var(--tx-m)";
-            const pct   = Math.round((sig.probability_up ?? 0.5) * 100);
-            const conf  = sig.confidence || "medium";
-
-            return (
-              <div key={key} style={{
-                padding: "18px", borderRadius: "14px",
-                border: "1px solid var(--bd)", background: "var(--bg-m)"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".6px" }}>
-                    {label}
-                  </span>
-                  <span style={{
-                    fontSize: "10px", fontWeight: 700, textTransform: "uppercase",
-                    padding: "2px 8px", borderRadius: "12px",
-                    background: conf === "high" ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)",
-                    color: conf === "high" ? "#10B981" : "#F59E0B"
-                  }}>
-                    {conf} {t("mi.confidence", "Confidence")}
-                  </span>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-                  <span style={{
-                    fontSize: "13px", fontWeight: 900, padding: "5px 14px",
-                    borderRadius: "20px", background: color, color: "#ffffff"
-                  }}>
-                    {isUp ? "▲" : sig.direction === "DOWN" ? "▼" : "→"} {sig.direction}
-                  </span>
-                  <span style={{ fontSize: "12px", color: "var(--tx-m)" }}>
-                    {isUp ? "Price expected to rise" : "Price expected to fall"}
-                  </span>
-                </div>
-
-                {/* Animated probability bar */}
-                <div style={{ marginBottom: "6px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--tx-s)", marginBottom: "4px" }}>
-                    <span>{t("mi.probability_up", "Probability of Increase")}</span>
-                    <strong style={{ color: "var(--tx)" }}>{pct}%</strong>
-                  </div>
-                  <div style={{ height: "8px", borderRadius: "999px", background: "var(--bg-l)", overflow: "hidden", border: "1px solid var(--bd)" }}>
-                    <div style={{ height: "100%", width: `${pct}%`, background: color, transition: "width .4s ease-out" }} />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
       )}
     </div>
   );
@@ -454,8 +549,6 @@ export default function ForecastIntelligencePage({
   arimaError,
   todayTomorrow,
   ttLoading,
-  trendSignalData,
-  trendSignalLoading,
   onRunForecast,
 }) {
   const { t } = useTranslation();
@@ -464,13 +557,25 @@ export default function ForecastIntelligencePage({
     <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
       <EngineStatusBadge t={t} />
 
+      {/* Model Performance & Evaluation Card */}
+      {arimaData?.metrics && (
+        <ModelEvaluationCard metrics={arimaData.metrics} t={t} />
+      )}
+
+      {/* Weather Risk & Price Intelligence Card */}
+      {arimaData?.summary && (
+        <WeatherRiskSignalCard summary={arimaData.summary} t={t} />
+      )}
+
+      {/* Today & Tomorrow Highlight Card */}
       <TodayTomorrowCard
-        todayTomorrow={todayTomorrow}
+        todayTomorrow={todayTomorrow || arimaData?.today_tomorrow}
         ttLoading={ttLoading}
         arimaError={arimaError}
         t={t}
       />
 
+      {/* Continuous 7/14-Day Multi-Horizon Forecast Card */}
       <ContinuousForecastCard
         arimaDays={arimaDays}
         setArimaDays={setArimaDays}
@@ -480,12 +585,6 @@ export default function ForecastIntelligencePage({
         selectedCities={selectedCities}
         commodity={commodity}
         onRunForecast={onRunForecast}
-        t={t}
-      />
-
-      <TrendSignalCard
-        trendSignalData={trendSignalData}
-        trendSignalLoading={trendSignalLoading}
         t={t}
       />
 

@@ -1,0 +1,24 @@
+{
+  "id": "crop_sugarcane_icar_iisr_vsi",
+  "title": "Sugarcane Maturity Brix, Trash Mulching, Red Rot Risk & Mill Delivery",
+  "crop": "Sugarcane",
+  "category": "Cultivation, Harvest, Storage & Marketing",
+  "source": "ICAR - Indian Institute of Sugarcane Research (IISR), Lucknow & Vasantdada Sugar Institute (VSI), Pune",
+  "organization": "VSI Pune & ICAR-IISR Lucknow",
+  "location": "Maharashtra Sugarcane Belt (Kolhapur, Sangli, Pune, Solapur)",
+  "date": "2026-01-30",
+  "url_reference": "https://iisr.icar.gov.in/crop-advisory/sugarcane",
+  "topics": [
+    "sugarcane",
+    "ganna",
+    "oos",
+    "brix value",
+    "sucrose recovery",
+    "red rot",
+    "trash mulching",
+    "sugar mill",
+    "crushing season",
+    "frp"
+  ],
+  "content": "\n# ICAR-IISR & VSI Agricultural Advisory: Sugarcane (Saccharum officinarum)\n\n## 1. Climate Requirements & Growth Phases\n- **Temperature**: Tropical climate with 24°C–38°C during formative phase; dry sunny cool weather (12°C–20°C nights, 26°C–32°C days) during ripening phase for maximum sucrose accumulation.\n- **Water Requirement**: 1800–2200 mm water over lifecycle. Drip fertigation saves 40–50% water and boosts sucrose recovery.\n\n## 2. Weather Risks & Crop Protection\n- **Frost / Extreme Cold (<6°C)**: Halts vegetative elongation and induces bud necrosis.\n- **Excess Soil Waterlogging**: Prolonged water stagnation in heavy soils reduces root aeration and triggers Red Rot (Colletotrichum falcatum) and Wilt epidemics.\n- **Heat Stress & Drought**: Causes internode shortening and shoot borer (Chilo infuscatellus) outbreaks. Apply trash mulching (10–12 cm thick) to conserve soil moisture.\n\n## 3. Harvesting & Maturity Indicators\n- **Brix Value Index**: Use a hand refractometer. A hand refractometer Brix reading of 18–20% indicates peak commercial maturity.\n- **Cutting Method**: Cut cane flush with the ground level. The bottom 2–3 internodes contain the highest concentration of sucrose.\n- **Stale Cane Prevention**: Deliver cane to the sugar factory or jaggery (Gur) unit strictly within 24–48 hours of harvest. Every 24 hours of delay reduces sucrose recovery by 0.5–1.0% due to post-harvest invertase inversion.\n\n## 4. Market & Sugar Mill Dispatch Strategy\n- **Fair and Remunerative Price (FRP)**: State factories calculate payment based on factory recovery percentages.\n- **Jaggery (Gur) Production**: High jaggery spot prices in regional markets (e.g. Kolhapur Gur Market) offer attractive alternatives when open market jaggery rates exceed factory FRP equivalents.\n"
+}

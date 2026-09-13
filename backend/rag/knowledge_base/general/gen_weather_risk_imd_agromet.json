@@ -1,0 +1,22 @@
+{
+  "id": "gen_weather_risk_imd_agromet",
+  "title": "IMD Agromet Weather Risk Mitigation, Rainfall Thresholds & Disease Prophylaxis",
+  "crop": "General Crops",
+  "category": "Agrometeorology & Weather Risk Protection",
+  "source": "IMD - India Meteorological Department (Agromet Advisory Services)",
+  "organization": "IMD Agromet, New Delhi & Pune Division",
+  "location": "All India Weather Zones",
+  "date": "2026-02-01",
+  "url_reference": "https://imdagrimet.gov.in/weather-risk-rules",
+  "topics": [
+    "weather risk",
+    "rainfall thresholds",
+    "fungal proliferation",
+    "spray timing",
+    "heatwave",
+    "drainage",
+    "transit risk",
+    "agromet"
+  ],
+  "content": "\n# IMD Agromet Advisory: Weather Risk Mitigation & Operational Rules\n\n## 1. Rainfall Thresholds & Farm Operations\n- **Rainfall > 5 mm within 24–48 hours**:\n  - Immediately suspend foliar chemical sprays and fertilizer top-dressing (nutrients will leach or wash away).\n  - Postpone harvesting of open field vegetables, or harvest mature fruits at breaker stage before the rainfall event.\n  - Clear field drainage channels to prevent water stagnation in root zones.\n- **Rainfall > 20 mm (Heavy Rainfall Warning)**:\n  - High risk of flash flooding and root asphyxiation in low-lying plots.\n  - Never transport produce in open non-waterproof vehicles.\n  - Mandi arrivals typically drop by 40–80%, creating temporary price spikes for dry stored stock.\n\n## 2. Relative Humidity (>75%) & Fungal Pathogen Triggers\n- Sustained high humidity accompanied by moderate temperatures (18°C–26°C) creates critical infection windows for:\n  - Downy mildew, powdery mildew, early/late blight, anthracnose, and purple blotch.\n  - Apply prophylactic contact fungicides (Mancozeb @ 2.5 g/L or Copper Oxychloride @ 3.0 g/L) prior to the rain spell with a suitable wetting agent.\n\n## 3. Heatwave & High Temperature Thresholds (>35°C)\n- Apply light and frequent evening irrigations to maintain root-zone soil moisture.\n- Apply crop residue or straw mulching (8–10 cm) to reduce soil temperature and prevent evapotranspiration.\n"
+}
