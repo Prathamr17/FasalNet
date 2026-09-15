@@ -7,7 +7,7 @@
 //   5. Tab renamed: "ML Predict" → "Price Tools"
 //   6. Removed "Total Records", renamed "Latest DB Date" → "Latest Date", show cities list
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { marketAPI, mlAPI, weatherAPI, aiAPI } from "../../services/api";
 import WeatherSection from "../../components/farmer/WeatherSection";
@@ -30,6 +30,46 @@ function useDims(ref) {
     return () => ro.disconnect();
   }, []);
   return dims;
+}
+
+function useCountUp(targetVal, duration = 650) {
+  const [displayVal, setDisplayVal] = useState(targetVal);
+  const prevValRef = useRef(targetVal);
+
+  useEffect(() => {
+    if (targetVal == null || isNaN(targetVal)) {
+      setDisplayVal(targetVal);
+      return;
+    }
+    const startVal = prevValRef.current != null && !isNaN(prevValRef.current) ? prevValRef.current : 0;
+    prevValRef.current = targetVal;
+    if (startVal === targetVal) {
+      setDisplayVal(targetVal);
+      return;
+    }
+
+    const startTime = performance.now();
+    let animId;
+
+    const update = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(startVal + (targetVal - startVal) * ease);
+      setDisplayVal(current);
+
+      if (progress < 1) {
+        animId = requestAnimationFrame(update);
+      } else {
+        setDisplayVal(targetVal);
+      }
+    };
+
+    animId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(animId);
+  }, [targetVal, duration]);
+
+  return displayVal;
 }
 
 // ─── GEOGRAPHIC COORDINATES DATABASE & 30-40KM RADIUS FINDER ──────────────────
@@ -370,44 +410,191 @@ function findNearbyMarkets(userLat, userLon, allCities, maxRadiusKm = 40) {
   return matched;
 }
 
+// ─── HELPER: Clean and format APMC Market display names ─────────────────────
+function formatMarketDisplayName(name) {
+  if (!name) return "";
+  let s = String(name).trim();
+  s = s.replace(/^(AGRICULTURE|AGRICULTURAL)\s+PRODUCE\s+MARKET\s+COMMITTEE\s*[,:\-]?\s*/i, "");
+  s = s.replace(/^APMC\s*[,:\-]?\s*/i, "");
+  s = s.replace(/\s+APMC$/i, "");
+  s = s.trim();
+  return s || name;
+}
+
 // ─── SEARCHABLE CITY MULTI-SELECT ─────────────────────────────────────────────
 function CitySearchSelect({ cities, selectedCities, onToggle, onClearAll }) {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
-  const filtered = cities.filter(c => c.toLowerCase().includes(search.toLowerCase()));
+  const searchInputRef = useRef(null);
+  const filtered = (cities || []).filter(c => typeof c === "string" && c.toLowerCase().includes(search.toLowerCase()));
 
+  // Close on click outside
   useEffect(() => {
+    if (!open) return;
     const handler = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false);
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [open]);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" || e.key === "Esc") {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
+
+  // Focus search input on open
+  useEffect(() => {
+    if (open && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 40);
+    }
+  }, [open]);
+
+  const handleItemClick = (city) => {
+    onToggle(city);
+    setOpen(false);
+  };
+
+  const handleClearAll = (e) => {
+    if (e) e.stopPropagation();
+    if (onClearAll) onClearAll();
+    setSearch("");
+  };
 
   return (
-    <div ref={containerRef} style={{ position: "relative" }}>
-      <div onClick={() => setOpen(o => !o)} style={{
-        width: "100%", background: "var(--bg-l)", border: "1px solid var(--bd)",
-        color: "var(--tx)", fontFamily: "var(--fb)", fontSize: "12px",
-        padding: "8px 10px", borderRadius: "9px", cursor: "pointer",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-        boxSizing: "border-box", userSelect: "none",
-      }}>
-        <span style={{ color: selectedCities.length ? "var(--tx)" : "var(--tx-s)" }}>
-          {selectedCities.length === 0 ? t("mi.no_markets_selected", "No markets selected")
-            : selectedCities.length === 1 ? selectedCities[0]
-            : `${selectedCities.length} ${t("market.markets_available", "markets selected")}`}
-        </span>
-        <span style={{ fontSize: "10px", color: "var(--tx-s)" }}>{open ? "▲" : "▼"}</span>
+    <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
+      {/* Relative Anchor for Trigger & Floating Dropdown */}
+      <div style={{ position: "relative" }}>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setOpen(o => !o)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(o => !o); } }}
+          style={{
+            width: "100%", background: "var(--bg-l)",
+            border: open ? "1px solid var(--cp)" : "1px solid var(--bd)",
+            color: "var(--tx)", fontFamily: "var(--fb)", fontSize: "12px",
+            padding: "8px 10px", borderRadius: "9px", cursor: "pointer",
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            boxSizing: "border-box", userSelect: "none",
+            boxShadow: open ? "0 0 0 3px rgba(63,107,51,0.15)" : "none",
+            transition: "border-color 0.15s ease, box-shadow 0.15s ease"
+          }}
+        >
+          <span style={{ color: selectedCities.length ? "var(--tx)" : "var(--tx-s)", fontWeight: selectedCities.length ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {selectedCities.length === 0 ? t("mi.no_markets_selected", "No markets selected")
+              : selectedCities.length === 1 ? formatMarketDisplayName(selectedCities[0])
+              : `${selectedCities.length} ${t("market.markets_available", "markets selected")}`}
+          </span>
+          <span style={{ fontSize: "10px", color: "var(--tx-s)", marginLeft: "8px", flexShrink: 0 }}>{open ? "▲" : "▼"}</span>
+        </div>
+
+        {/* Dropdown Floating Layer (Anchored directly below trigger) */}
+        {open && (
+          <div className="anim-fadeup shadow-2xl" style={{
+            position: "absolute", top: "calc(100% + 5px)", left: 0, right: 0, zIndex: 50,
+            background: "var(--bg-m)", border: "1px solid var(--bd)", borderRadius: "10px",
+            boxShadow: "0 18px 40px -4px rgba(0,0,0,0.25), 0 8px 16px -2px rgba(0,0,0,0.12)",
+            overflow: "hidden"
+          }}>
+            <div style={{ padding: "8px", borderBottom: "1px solid var(--bd)", background: "var(--bg-l)" }}>
+              <input
+                ref={searchInputRef}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder={t("farmer.filter_city", "Type to search markets…")}
+                style={{
+                  width: "100%", background: "var(--bg-m)", border: "1px solid var(--bd)",
+                  color: "var(--tx)", fontFamily: "var(--fb)", fontSize: "12px",
+                  padding: "6px 10px", borderRadius: "7px", outline: "none", boxSizing: "border-box"
+                }}
+              />
+            </div>
+            <div style={{
+              display: "flex", gap: "8px", padding: "6px 10px",
+              borderBottom: "1px solid var(--bd)", alignItems: "center",
+              background: "var(--bg-m)", fontSize: "10px"
+            }}>
+              <button
+                type="button"
+                onClick={() => filtered.forEach(c => { if (!selectedCities.includes(c)) onToggle(c); })}
+                style={{ fontSize: "10px", color: "var(--cp)", background: "none", border: "none", cursor: "pointer", fontWeight: 700, padding: 0 }}
+              >
+                {t("common.select_all", "Select All")}
+              </button>
+              <span style={{ color: "var(--tx-s)" }}>·</span>
+              <button
+                type="button"
+                onClick={handleClearAll}
+                style={{ fontSize: "10px", color: "var(--danger)", background: "none", border: "none", cursor: "pointer", fontWeight: 700, padding: 0 }}
+              >
+                {t("common.clear_all", "Clear All")}
+              </button>
+              <span style={{ color: "var(--tx-s)", marginLeft: "auto" }}>{filtered.length} / {cities.length}</span>
+            </div>
+            <div style={{ maxHeight: "185px", overflowY: "auto", scrollbarGutter: "stable" }}>
+              {filtered.length === 0 ? (
+                <div style={{ padding: "16px", textAlign: "center", fontSize: "12px", color: "var(--tx-s)" }}>
+                  {t("mi.no_markets_match")} "{search}"
+                </div>
+              ) : filtered.map(city => {
+                const isSel = selectedCities.includes(city);
+                return (
+                  <div
+                    key={city}
+                    onClick={() => handleItemClick(city)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "8px",
+                      padding: "7px 12px", cursor: "pointer",
+                      background: isSel ? "var(--cp-pale)" : "transparent",
+                      transition: "background .12s ease",
+                    }}
+                    className="hover:bg-[var(--bg-l)]"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSel}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onToggle(city);
+                      }}
+                      style={{ accentColor: "var(--cp)", width: 14, height: 14, cursor: "pointer" }}
+                    />
+                    <span style={{
+                      fontSize: "12px",
+                      color: isSel ? "var(--cp)" : "var(--tx)",
+                      fontWeight: isSel ? 700 : 400,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap"
+                    }}>
+                      {city}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Selected Chips: Rendered cleanly beneath the trigger */}
       {selectedCities.length === 0 && (
         <div style={{
-          marginTop: "6px", padding: "8px 10px", background: "var(--bg-l)",
+          marginTop: "6px", padding: "6px 10px", background: "var(--bg-l)",
           border: "1px dashed var(--bd)", borderRadius: "8px",
-          fontSize: "11px", color: "var(--tx-s)", textAlign: "center"
+          fontSize: "10.5px", color: "var(--tx-s)", textAlign: "center"
         }}>
           {t("mi.no_markets_selected", "No markets selected")}
         </div>
@@ -416,62 +603,28 @@ function CitySearchSelect({ cities, selectedCities, onToggle, onClearAll }) {
       {selectedCities.length > 0 && (
         <div style={{
           display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "6px",
-          maxHeight: "150px", overflowY: "auto", scrollbarWidth: "thin", paddingRight: "2px"
+          maxHeight: "85px", overflowY: "auto", scrollbarWidth: "thin", paddingRight: "2px"
         }}>
           {selectedCities.map((city, idx) => (
-            <div key={`${city}-${idx}`} style={{
-              display: "flex", alignItems: "center", gap: "4px",
-              background: "var(--cp-pale)", border: "1px solid rgba(63,107,51,.3)",
-              borderRadius: "20px", padding: "2px 8px 2px 10px",
-              fontSize: "10px", color: "var(--cp)", fontWeight: 600,
-            }}>
-              {city}
-              <span onClick={(e) => { e.stopPropagation(); onToggle(city); }}
-                style={{ cursor: "pointer", fontSize: "13px", lineHeight: 1, color: "var(--cp)", fontWeight: 900, marginLeft: "2px" }}>×</span>
+            <div
+              key={`${city}-${idx}`}
+              style={{
+                display: "flex", alignItems: "center", gap: "4px",
+                background: "var(--cp-pale)", border: "1px solid rgba(63,107,51,.3)",
+                borderRadius: "20px", padding: "2px 8px 2px 10px",
+                fontSize: "10px", color: "var(--cp)", fontWeight: 600,
+              }}
+              className="transition-all duration-150"
+            >
+              <span className="truncate max-w-[140px]">{formatMarketDisplayName(city)}</span>
+              <span
+                onClick={(e) => { e.stopPropagation(); onToggle(city); }}
+                style={{ cursor: "pointer", fontSize: "13px", lineHeight: 1, color: "var(--cp)", fontWeight: 900, marginLeft: "2px" }}
+              >
+                ×
+              </span>
             </div>
           ))}
-        </div>
-      )}
-      {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 999,
-          background: "var(--bg-m)", border: "1px solid var(--bd)", borderRadius: "10px",
-          boxShadow: "0 8px 30px rgba(0,0,0,.3)", overflow: "hidden",
-        }}>
-          <div style={{ padding: "8px", borderBottom: "1px solid var(--bd)" }}>
-            <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
-              placeholder={t("farmer.filter_city", "Type to search markets…")}
-              style={{ width: "100%", background: "var(--bg-l)", border: "1px solid var(--bd)",
-                color: "var(--tx)", fontFamily: "var(--fb)", fontSize: "12px",
-                padding: "6px 10px", borderRadius: "7px", outline: "none", boxSizing: "border-box" }} />
-          </div>
-          <div style={{ display: "flex", gap: "8px", padding: "6px 10px", borderBottom: "1px solid var(--bd)", alignItems: "center" }}>
-            <button onClick={() => filtered.forEach(c => { if (!selectedCities.includes(c)) onToggle(c); })}
-              style={{ fontSize: "10px", color: "var(--cp)", background: "none", border: "none", cursor: "pointer", fontWeight: 700, padding: 0 }}>{t("common.select_all", "Select All")}</button>
-            <span style={{ color: "var(--tx-s)", fontSize: "10px" }}>·</span>
-            <button onClick={onClearAll || (() => [...selectedCities].forEach(c => onToggle(c)))}
-              style={{ fontSize: "10px", color: "var(--danger)", background: "none", border: "none", cursor: "pointer", fontWeight: 700, padding: 0 }}>{t("common.clear_all", "Clear All")}</button>
-            <span style={{ fontSize: "10px", color: "var(--tx-s)", marginLeft: "auto" }}>{filtered.length} / {cities.length}</span>
-          </div>
-          <div style={{ maxHeight: "200px", overflowY: "auto", scrollbarGutter: "stable" }}>
-            {filtered.length === 0 ? (
-              <div style={{ padding: "16px", textAlign: "center", fontSize: "12px", color: "var(--tx-s)" }}>{t("mi.no_markets_match")} "{search}"</div>
-            ) : filtered.map(city => {
-              const isSel = selectedCities.includes(city);
-              return (
-                <label key={city} style={{
-                  display: "flex", alignItems: "center", gap: "8px",
-                  padding: "7px 12px", cursor: "pointer",
-                  background: isSel ? "var(--cp-pale)" : "transparent",
-                  transition: "background .12s",
-                }}>
-                  <input type="checkbox" checked={isSel} onChange={() => onToggle(city)}
-                    style={{ accentColor: "var(--cp)", width: 14, height: 14, cursor: "pointer" }} />
-                  <span style={{ fontSize: "12px", color: isSel ? "var(--cp)" : "var(--tx)", fontWeight: isSel ? 700 : 400 }}>{city}</span>
-                </label>
-              );
-            })}
-          </div>
         </div>
       )}
     </div>
@@ -655,12 +808,12 @@ function LineChart({ series, forecastSeries = [] }) {
           if (!path) return null;
           return (
             <g key={`actual-${si}`}>
-              <path d={path} fill="none" stroke={s.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d={path} fill="none" stroke={s.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-300 ease-out" />
               {(() => {
                 const last = s.points[s.points.length - 1];
                 const idx  = last ? domainDates.indexOf(last.date) : -1;
                 return last && last.price != null && idx >= 0 ? (
-                  <circle cx={xScale(idx)} cy={yScale(last.price)} r="4" fill={s.color} stroke="var(--bg)" strokeWidth="2" />
+                  <circle cx={xScale(idx)} cy={yScale(last.price)} r="4" fill={s.color} stroke="var(--bg)" strokeWidth="2" className="transition-transform duration-200" />
                 ) : null;
               })()}
             </g>
@@ -675,14 +828,14 @@ function LineChart({ series, forecastSeries = [] }) {
             <g key={`fc-${si}`}>
               <path d={path} fill="none" stroke={s.color} strokeWidth="2.5"
                 strokeDasharray="6 4" strokeLinecap="round" strokeLinejoin="round"
-                opacity="0.85" />
+                opacity="0.85" className="anim-dash" />
               {(() => {
                 const last = s.points[s.points.length - 1];
                 const idx  = last ? domainDates.indexOf(last.date) : -1;
                 return last && last.price != null && idx >= 0 ? (
                   <circle cx={xScale(idx)} cy={yScale(last.price)} r="4"
                     fill={s.color} stroke="var(--bg)" strokeWidth="2"
-                    strokeDasharray="none" opacity="0.85" />
+                    strokeDasharray="none" opacity="0.85" className="transition-transform duration-200" />
                 ) : null;
               })()}
             </g>
@@ -1041,7 +1194,7 @@ function QuickMarketRec({ meta }) {
       </form>
       {result?.recommendations && (
         <div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "6px" }}>
-          {result.recommendations.slice(0, 5).map(m => (
+          {(Array.isArray(result.recommendations) ? result.recommendations : []).slice(0, 5).map(m => (
             <div key={m.market} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", background: "var(--bg-l)", borderRadius: "9px", border: "1px solid var(--bd)" }}>
               <div style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, background: m.rank === 1 ? "var(--cp)" : "var(--bg)", color: m.rank === 1 ? "var(--bg)" : "var(--tx-m)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 800, border: "1px solid var(--bd)" }}>{m.rank}</div>
               <div style={{ flex: 1, fontSize: "12px" }}>
@@ -1354,6 +1507,139 @@ export default function FarmerMarketIntelligencePage() {
           : arimaData.forecast
       }]
     : [];
+
+  // Manual refresh handler
+  const [syncing, setSyncing] = useState(false);
+  const handleManualRefresh = async () => {
+    setSyncing(true);
+    try {
+      await marketAPI.refresh();
+      const syncRes = await marketAPI.syncStatus();
+      if (syncRes.data) setSyncStatus(syncRes.data);
+      if (activeTab === 0) { fetchTrend(); handleArimaForecast(); }
+      if (activeTab === 1) fetchCompare();
+      if (activeTab === 2) fetchHeatmap();
+      handleWeatherRefresh();
+      showToast(t("mi.refresh_success", "Mandi feed & forecast data refreshed."));
+    } catch (e) {
+      if (activeTab === 0) fetchTrend();
+      showToast(t("mi.refresh_success", "Data refreshed."));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // Nearby Markets state & distance-based live price comparison
+  const nearbyMarkets = useMemo(() => {
+    const lat = userCoords?.lat || (selectedCities[0] && getMarketCoordinate(selectedCities[0])?.lat);
+    const lon = userCoords?.lon || (selectedCities[0] && getMarketCoordinate(selectedCities[0])?.lon);
+    if (!lat || !lon || !cities || !cities.length) return [];
+    return findNearbyMarkets(lat, lon, cities, 40);
+  }, [userCoords, selectedCities, cities]);
+
+  const [nearbyPrices, setNearbyPrices] = useState({});
+  const [nearbyLoading, setNearbyLoading] = useState(false);
+
+  useEffect(() => {
+    if (!nearbyMarkets.length || !commodity) return;
+    const nearbyNames = nearbyMarkets.map(m => m.market);
+    setNearbyLoading(true);
+    marketAPI.compare({
+      cities: nearbyNames.join(","),
+      commodity,
+      start: startDate,
+      end: endDate
+    }).then(res => {
+      const list = res.data?.data || [];
+      const pMap = {};
+      list.forEach(item => {
+        pMap[item.market] = item;
+      });
+      setNearbyPrices(pMap);
+    }).catch(err => {
+      console.warn("Failed to load nearby market prices:", err);
+    }).finally(() => {
+      setNearbyLoading(false);
+    });
+  }, [nearbyMarkets, commodity, startDate, endDate]);
+
+  // Primary price and KPI calculations
+  const primaryCity = selectedCities[0] || (cities && cities[0]) || "";
+  const primaryPrice = (lineSeries[0]?.points?.length && lineSeries[0].points[lineSeries[0].points.length - 1]?.price)
+    || (todayTomorrow?.today?.price)
+    || (nearbyPrices[primaryCity]?.avg_modal)
+    || (arimaData?.last_actual_price)
+    || null;
+
+  const targetPriceVal = (arimaData?.forecast?.length && arimaData.forecast[arimaData.forecast.length - 1]?.price)
+    || todayTomorrow?.tomorrow?.forecasted_price
+    || null;
+
+  const priceChangeVal = (targetPriceVal != null && primaryPrice != null)
+    ? Math.round(targetPriceVal - primaryPrice)
+    : (todayTomorrow?.tomorrow?.price_change != null)
+      ? Math.round(todayTomorrow.tomorrow.price_change)
+      : null;
+
+  // Smooth count-up animated values for live data
+  const animatedPrimaryPrice = useCountUp(primaryPrice != null ? Math.round(primaryPrice) : null);
+  const animatedTargetPrice  = useCountUp(targetPriceVal != null ? Math.round(targetPriceVal) : null);
+  const animatedPriceChange  = useCountUp(priceChangeVal != null ? Math.round(priceChangeVal) : null);
+
+  const currentModalPrice = animatedPrimaryPrice != null
+    ? `₹${animatedPrimaryPrice.toLocaleString("en-IN")}`
+    : "—";
+
+  const currentPriceDate = (lineSeries[0]?.points?.length && lineSeries[0].points[lineSeries[0].points.length - 1]?.date)
+    || todayTomorrow?.today?.date
+    || syncStatus?.newest
+    || "";
+
+  const forecastTargetPrice = animatedTargetPrice != null
+    ? `₹${animatedTargetPrice.toLocaleString("en-IN")}`
+    : "—";
+
+  const forecastTargetDate = (arimaData?.forecast?.length && arimaData.forecast[arimaData.forecast.length - 1]?.date)
+    || todayTomorrow?.tomorrow?.date
+    || "";
+
+  const priceChangePct = (primaryPrice && priceChangeVal != null)
+    ? ((priceChangeVal / primaryPrice) * 100).toFixed(1)
+    : (todayTomorrow?.tomorrow?.price_change_percent != null)
+      ? Math.abs(todayTomorrow.tomorrow.price_change_percent).toFixed(1)
+      : null;
+
+  const isPriceUp = priceChangeVal != null ? priceChangeVal >= 0 : true;
+
+  const bestNearby = useMemo(() => {
+    if (!nearbyMarkets.length) return null;
+    let best = null;
+    let maxP = -1;
+    nearbyMarkets.forEach(m => {
+      const p = nearbyPrices[m.market]?.avg_modal;
+      if (p && p > maxP) {
+        maxP = p;
+        best = { ...m, price: p, diff: primaryPrice ? Math.round(p - primaryPrice) : null };
+      }
+    });
+    if (best) return best;
+    return nearbyMarkets[0] ? { ...nearbyMarkets[0], price: nearbyPrices[nearbyMarkets[0].market]?.avg_modal } : null;
+  }, [nearbyMarkets, nearbyPrices, primaryPrice]);
+
+  const handleSelectNearbyMarket = (marketName) => {
+    setSelectedCities([marketName]);
+    setHeatCity(marketName);
+    setArimaCity(marketName);
+    showToast(`📍 ${t("mi.switch_market", "Switched market to")}: ${marketName.replace(/ APMC$/i, '')}`);
+  };
+
+  // Auto-run forecast on primary market / commodity / days change
+  useEffect(() => {
+    if (selectedCities.length > 0 && commodity) {
+      handleArimaForecast();
+    }
+  }, [selectedCities[0], commodity, arimaDays]);
+
   const dateLocale  = i18n.language === "mr" ? "mr-IN" : i18n.language === "hi" ? "hi-IN" : "en-IN";
   const todayFmt    = new Date().toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" });
   const tomorrowFmt = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" }); })();
@@ -1367,56 +1653,69 @@ export default function FarmerMarketIntelligencePage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="animate-[fadeup_0.4s_ease-out] mb-6">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+      {/* ── 1. MARKET HEADER ── */}
+      <div className="anim-fadeup mb-6" style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "14px" }}>
           <div>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--tx)", display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-              <span style={{ fontSize: "1.8rem" }}>📊</span> {t('mi.title', 'Market Intelligence')}
-            </h1>
-            <p style={{ fontSize: "13px", color: "var(--tx-m)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--tx)", display: "flex", alignItems: "center", gap: "10px", margin: 0 }}>
+                <span style={{ fontSize: "1.8rem" }}>📊</span> {t('mi.title', 'Market Intelligence')}
+              </h1>
+              <span style={{
+                fontSize: "11.5px", fontWeight: 700, color: "#10B981",
+                background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)",
+                padding: "3px 10px", borderRadius: "20px", display: "inline-flex", alignItems: "center", gap: "6px"
+              }}>
+                <span className="anim-pulse-glow" style={{ width: 7, height: 7, borderRadius: "50%", background: "#10B981", display: "inline-block" }} />
+                {t("mi.live_feed", "Live Mandi Feed")}
+              </span>
+            </div>
+            <p style={{ fontSize: "12.5px", color: "var(--tx-m)", margin: "4px 0 0 0" }}>
               {t('mi.subtitle', 'Live APMC price data · Maharashtra · Auto-updated daily')}
             </p>
           </div>
-          {syncStatus?.newest && (
-            <div style={{
-              fontSize: "12px", fontWeight: 600, color: "var(--cp)",
-              background: "var(--bg-m)", padding: "6px 16px", borderRadius: "20px",
-              border: "1px solid var(--bd)", boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
-              display: "flex", alignItems: "center", gap: "6px"
-            }}>
-              <span>🗓️</span> {t('mi.latest_date', 'Latest:')} <strong style={{ color: "var(--tx)" }}>{syncStatus.newest}</strong>
-            </div>
-          )}
+
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            {syncStatus?.newest && (
+              <div style={{
+                fontSize: "12px", fontWeight: 600, color: "var(--tx-m)",
+                background: "var(--bg-m)", padding: "7px 14px", borderRadius: "12px",
+                border: "1px solid var(--bd)", display: "flex", alignItems: "center", gap: "6px"
+              }}>
+                <span>🗓️</span> {t('mi.latest_date', 'Latest:')} <strong style={{ color: "var(--tx)" }}>{syncStatus.newest}</strong>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              disabled={syncing || loading}
+              style={{
+                ...SECONDARY_BTN,
+                display: "inline-flex", alignItems: "center", gap: "6px",
+                padding: "7px 14px", fontSize: "12px", borderRadius: "12px"
+              }}
+              title={t("mi.refresh_data", "Refresh Data")}
+            >
+              <span style={{ display: "inline-block", animation: syncing ? "spin 0.8s linear infinite" : "none" }}>🔄</span>
+              <span>{syncing ? t("market.syncing", "Syncing…") : t("mi.refresh_data", "Refresh Data")}</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Market Overview Cards */}
-      {syncStatus && (
-        <div style={{ marginBottom: "20px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px" }}>
-            <StatCard icon="🗓️" label={t('mi.latest_date', 'Latest Date')} value={syncStatus.newest || "—"} sub={syncStatus.oldest ? `from ${syncStatus.oldest}` : ""} />
-            <StatCard icon="📍" label={t('mi.cities_tracked', 'Cities Tracked')} value={cities.length || "—"} />
-            <StatCard icon="🌾" label={t('mi.commodities', 'Commodities')} value={commodities.length || "—"} />
-            <StatCard icon="⚡" label={t('market.live_apmc_data', 'Live APMC Data')} value={t('market.active', 'Active')} />
-          </div>
-        </div>
-      )}
-
-      {/* ── UNIFIED HORIZONTAL FILTER SECTION ── */}
-      <div style={{ ...CARD, marginBottom: "24px", padding: "18px 20px" }} className="shadow-sm">
+      {/* ── 2. FILTERS (Compact Unified Toolbar) ── */}
+      <div style={{ ...CARD, position: "relative", zIndex: 30, marginBottom: "24px", padding: "16px 20px" }} className="anim-fadeup stagger-1 hover-card-elevation shadow-sm">
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))",
-          gap: "20px",
+          gap: "18px",
           alignItems: "start"
         }}>
-          
-          {/* 1. MARKETS / CITIES */}
+          {/* 1. Markets & Cities */}
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
               <div style={LBL}>
-                📍 {t("market.markets_cities")}
+                📍 {t("market.markets_cities", "Markets / Cities")}
                 {selectedCities.length > 0 && (
                   <span style={{ color: "var(--cp)", marginLeft: "6px", fontWeight: 800, fontSize: "11px" }}>
                     ({selectedCities.length})
@@ -1432,12 +1731,10 @@ export default function FarmerMarketIntelligencePage() {
                     style={{
                       background: "var(--bg-l)", border: "1px solid var(--bd)", borderRadius: "7px",
                       padding: "3px 8px", fontSize: "10.5px", color: "var(--danger)", fontWeight: 700,
-                      cursor: "pointer", display: "flex", alignItems: "center", gap: "3px",
-                      transition: "all .15s"
+                      cursor: "pointer", display: "flex", alignItems: "center", gap: "3px"
                     }}
                   >
-                    <span>✕</span>
-                    {t("common.clear_all", "Clear All")}
+                    <span>✕</span> {t("common.clear_all", "Clear All")}
                   </button>
                 )}
                 <button
@@ -1448,8 +1745,7 @@ export default function FarmerMarketIntelligencePage() {
                   style={{
                     background: "var(--bg-l)", border: "1px solid var(--bd)", borderRadius: "7px",
                     padding: "3px 9px", fontSize: "10.5px", color: "var(--cp)", fontWeight: 700,
-                    cursor: "pointer", display: "flex", alignItems: "center", gap: "4px",
-                    transition: "all .15s"
+                    cursor: "pointer", display: "flex", alignItems: "center", gap: "4px"
                   }}
                 >
                   <span>📍</span>
@@ -1479,9 +1775,9 @@ export default function FarmerMarketIntelligencePage() {
               onClearAll={() => setSelectedCities([])}
             />
 
-            {/* Quick-pick popular Mandis when no city is selected */}
+            {/* Popular Mandi quick-pick pills */}
             {(selectedCities || []).length === 0 && (
-              <div style={{ marginTop: "4px", paddingTop: "6px", borderTop: "1px dashed var(--bd)" }}>
+              <div style={{ marginTop: "2px", paddingTop: "6px", borderTop: "1px dashed var(--bd)" }}>
                 <div style={{ fontSize: "10px", color: "var(--tx-s)", marginBottom: "4px", fontWeight: 600 }}>
                   {t("mi.quick_markets", "Popular Mandis:")}
                 </div>
@@ -1509,10 +1805,10 @@ export default function FarmerMarketIntelligencePage() {
             )}
           </div>
 
-          {/* 2. COMMODITY */}
+          {/* 2. Commodity */}
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <label style={LBL}>🌾 {t("market.commodity")}</label>
+              <label style={LBL}>🌾 {t("market.commodity", "Commodity")}</label>
               {commodity && (
                 <span style={{ fontSize: "10.5px", color: "var(--cp)", fontWeight: 800 }}>
                   {commodity}
@@ -1524,15 +1820,15 @@ export default function FarmerMarketIntelligencePage() {
               value={commodity || ""}
               onChange={e => setCommodity(e.target.value)}
             >
-              <option value="">— {t("market.all_commodities")} —</option>
+              <option value="">— {t("market.all_commodities", "All Commodities")} —</option>
               {(commodities || []).map(c => <option key={c} value={c}>{c}</option>)}
             </select>
 
             <div style={{
-              display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap", marginTop: "4px",
+              display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap", marginTop: "2px",
               padding: "6px 8px", background: "var(--bg-l)", borderRadius: "8px", border: "1px solid var(--bd)"
             }}>
-              <span style={{ fontSize: "10px", color: "var(--tx-s)", fontWeight: 600 }}>{t("market.popular_crops", "Popular:")}</span>
+              <span style={{ fontSize: "10px", color: "var(--tx-s)", fontWeight: 600 }}>{t("mi.popular_crops", "Popular:")}</span>
               {["Onion", "Tomato", "Wheat", "Soyabean", "Cotton", "Potato", "Gram"].map(crop => {
                 if (!commodities || !commodities.includes(crop)) return null;
                 const isSel = commodity === crop;
@@ -1543,7 +1839,7 @@ export default function FarmerMarketIntelligencePage() {
                     onClick={() => setCommodity(crop)}
                     style={{
                       background: isSel ? "var(--cp)" : "transparent",
-                      color: isSel ? "var(--cp-text)" : "var(--tx-m)",
+                      color: isSel ? "var(--cp-text, #fff)" : "var(--tx-m)",
                       border: "1px solid",
                       borderColor: isSel ? "var(--cp)" : "var(--bd)",
                       borderRadius: "10px", padding: "1px 7px", fontSize: "10px",
@@ -1557,10 +1853,10 @@ export default function FarmerMarketIntelligencePage() {
             </div>
           </div>
 
-          {/* 3. DATE RANGE & APPLY */}
+          {/* 3. Date Range & Horizon & Apply */}
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <label style={LBL}>📅 {t("market.date_range")}</label>
+              <label style={LBL}>📅 {t("market.date_range", "Date Range & Horizon")}</label>
               <div style={{ display: "flex", gap: "4px" }}>
                 {[{ label: "7d", d: 7 }, { label: "30d", d: 30 }, { label: "90d", d: 90 }, { label: "1yr", d: 365 }].map(({ label, d }) => (
                   <button
@@ -1582,194 +1878,345 @@ export default function FarmerMarketIntelligencePage() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
               <div>
-                <span style={{ fontSize: "9.5px", color: "var(--tx-s)", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: "2px" }}>{t("market.from")}</span>
-                <input type="date" style={{ ...INP, padding: "6px 8px", fontSize: "11.5px" }} value={startDate} onChange={e => setStartDate(e.target.value)} />
+                <span style={{ fontSize: "9.5px", color: "var(--tx-s)", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: "2px" }}>{t("market.from", "From")}</span>
+                <input type="date" style={{ ...INP, padding: "6px 8px", fontSize: "11px" }} value={startDate} onChange={e => setStartDate(e.target.value)} />
               </div>
               <div>
-                <span style={{ fontSize: "9.5px", color: "var(--tx-s)", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: "2px" }}>{t("market.to")}</span>
-                <input type="date" style={{ ...INP, padding: "6px 8px", fontSize: "11.5px" }} value={endDate} onChange={e => setEndDate(e.target.value)} />
+                <span style={{ fontSize: "9.5px", color: "var(--tx-s)", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: "2px" }}>{t("market.to", "To")}</span>
+                <input type="date" style={{ ...INP, padding: "6px 8px", fontSize: "11px" }} value={endDate} onChange={e => setEndDate(e.target.value)} />
               </div>
             </div>
 
             <div style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "2px" }}>
-              <div style={{ flex: 1, padding: "5px 8px", background: "rgba(43,69,112,.06)", border: "1px solid rgba(43,69,112,.15)", borderRadius: "7px", fontSize: "10px", lineHeight: 1.4 }}>
-                <span style={{ color: "#2B4570", fontWeight: 700 }}>● {t("mi.today")}:</span> {todayFmt} · <span style={{ color: "#B4741E", fontWeight: 700 }}>● {t("mi.tomorrow")}:</span> {tomorrowFmt}
+              {/* Horizon toggle: 7D vs 14D */}
+              <div style={{
+                display: "inline-flex", background: "var(--bg-l)",
+                padding: "2px", borderRadius: "8px", border: "1px solid var(--bd)"
+              }}>
+                {[7, 14].map(d => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setArimaDays(d)}
+                    style={{
+                      background: arimaDays === d ? "var(--cp)" : "transparent",
+                      color: arimaDays === d ? "var(--cp-text, #fff)" : "var(--tx-m)",
+                      border: "none", borderRadius: "6px",
+                      padding: "4px 8px", fontSize: "10.5px", fontWeight: 700,
+                      cursor: "pointer", transition: "all 0.15s ease"
+                    }}
+                  >
+                    {d}D {t("mi.horizon", "Horizon")}
+                  </button>
+                ))}
               </div>
+
               <button
                 type="button"
                 onClick={() => {
-                  if (activeTab === 0) fetchTrend();
+                  if (activeTab === 0) { fetchTrend(); handleArimaForecast(); }
                   if (activeTab === 1) fetchCompare();
                   if (activeTab === 2) fetchHeatmap();
                 }}
-                disabled={loading}
-                style={{ ...BTN, padding: "7px 16px", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}
+                disabled={loading || arimaLoading}
+                style={{ ...BTN, flex: 1, padding: "7px 14px", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
               >
-                {loading ? <><Spin /> {t("market.loading")}</> : `${t("market.apply", "Apply")} →`}
+                {(loading || arimaLoading) ? <><Spin /> {t("market.loading", "Loading…")}</> : `${t("market.apply", "Apply Filters")} →`}
               </button>
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* ── WEATHER & CLIMATE INTELLIGENCE (Open-Meteo) ── */}
-      <WeatherSection
-        coords={userCoords}
-        weatherData={weatherData}
-        loading={weatherLoading}
-        error={weatherError}
-        forecastDays={weatherDays}
-        setForecastDays={handleWeatherDaysChange}
-        onRefresh={handleWeatherRefresh}
-        onDetectLocation={() => detectUserLocation(citiesRef.current, true)}
-        locationStatus={locationStatus}
-      />
-
-      {/* ── PART 3: AI AGRICULTURAL ADVISOR (RAG + XGBoost + Open-Meteo + LLM) ── */}
-      <AIAgriculturalAdvisor
-        city={selectedCities[0] || (cities && cities[0]) || "Sangli"}
-        commodity={commodity || "Onion"}
-        days={arimaDays === 14 ? 14 : 7}
-        lat={userCoords?.lat}
-        lon={userCoords?.lon}
-      />
-
-
-      {/* ── FULL WIDTH MAIN CONTENT AREA ── */}
-      <div style={{ width: "100%" }}>
-        {/* Tabs */}
-        <div style={{ display: "flex", marginBottom: "18px", borderBottom: "2px solid var(--bd)", overflowX: "auto" }}>
-          {TABS.map((tab, i) => (
-            <button key={i} onClick={() => setActiveTab(i)} style={{
-              background: "transparent", border: "none",
-              borderBottom: activeTab === i ? "3px solid var(--cp)" : "3px solid transparent",
-              marginBottom: "-2px", padding: "8px 18px", cursor: "pointer",
-              fontFamily: "var(--fd)", fontWeight: activeTab === i ? 700 : 500,
-              fontSize: "13px", color: activeTab === i ? "var(--cp)" : "var(--tx-m)",
-              display: "flex", alignItems: "center", gap: "6px", transition: "all .18s", whiteSpace: "nowrap",
-            }}>{tab.icon} {tab.label}</button>
-          ))}
-        </div>
-
-          {/* TAB 0: Unified Trend + ARIMA chart, plus ARIMA side panel */}
-          {activeTab === 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-
-              {/* ── Single unified chart card ── */}
-              <div style={CARD}>
-                {/* Chart header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: "15px", color: "var(--tx)" }}>
-                      {t("market.price_trend")} — {commodity || t("market.all_commodities")}
-                    </div>
-                  </div>
-                  {(loading || arimaLoading) && <Spin />}
-                </div>
-
-                {/* The single chart — passes both actual + forecast series together */}
-                {lineSeries.length > 0 || arimaChartActual.length > 0
-                  ? <LineChart series={lineSeries} forecastSeries={arimaChartForecast} />
-                  : <div style={{ padding: "48px 20px", textAlign: "center", color: "var(--tx-s)" }}>
-                      <div style={{ fontSize: "36px", marginBottom: "10px" }}>📍</div>
-                      <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--tx)", marginBottom: "6px" }}>
-                        {t("mi.select_markets_prompt", "Select one or more markets to view live price trends & forecasts.")}
-                      </div>
-                      <div style={{ fontSize: "12px", color: "var(--tx-m)", maxWidth: "440px", margin: "0 auto 16px" }}>
-                        {locationStatus === "denied"
-                          ? t("mi.location_unavailable", "Location access unavailable. Please select your market manually from the left panel.")
-                          : t("mi.location_permission_needed", "Allow location access to auto-detect nearest APMC markets.")}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => detectUserLocation(citiesRef.current, true)}
-                        disabled={locating}
-                        style={{ ...BTN, display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 18px", fontSize: "12px", margin: "0 auto" }}
-                      >
-                        {locating ? <><Spin /> {t("mi.detecting_location", "Detecting…")}</> : <>📍 {t("mi.detect_location", "Auto-Detect Nearest Markets")}</>}
-                      </button>
-                    </div>}
-              </div>
-
-              {/* ── AI Forecast Panel — rendered by ForecastIntelligencePage ── */}
-              <ForecastIntelligencePage
-                selectedCities={selectedCities}
-                commodity={commodity}
-                arimaDays={arimaDays}
-                setArimaDays={setArimaDays}
-                arimaData={arimaData}
-                arimaLoading={arimaLoading}
-                arimaError={arimaError}
-                arimaChartForecast={arimaChartForecast}
-                todayTomorrow={todayTomorrow}
-                ttLoading={ttLoading}
-                trendSignalData={trendSignalData}
-                trendSignalLoading={trendSignalLoading}
-                onRunForecast={handleArimaForecast}
-              />
-
+      {/* ── 3. KPI SUMMARY ── */}
+      <div className="anim-fadeup stagger-2" style={{ position: "relative", zIndex: 10, marginBottom: "24px" }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 w-full">
+          {/* 1. Current Price */}
+          <div style={{ ...CARD, padding: "16px 18px" }} className="hover-card-elevation transition-all duration-200 min-w-0">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".5px" }}>
+                🏷️ {t("mi.kpi_current_price", "Current Modal Price")}
+              </span>
+              <span style={{ fontSize: "10px", color: "var(--cp)", fontWeight: 700, background: "rgba(63,107,51,0.1)", padding: "2px 6px", borderRadius: "6px", flexShrink: 0 }}>
+                Actual
+              </span>
             </div>
-          )}
+            <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "var(--tx)", fontFamily: "var(--fd)", lineHeight: 1.1 }}>
+              {currentModalPrice}
+              <span style={{ fontSize: "11.5px", fontWeight: 500, color: "var(--tx-s)", marginLeft: "4px" }}>/quintal</span>
+            </div>
+            <div style={{ fontSize: "11px", color: "var(--tx-m)", marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {currentPriceDate ? `${currentPriceDate} · ` : ""}{formatMarketDisplayName(primaryCity) || t("market.active", "Active")}
+            </div>
+          </div>
 
-          {/* TAB 1: Compare */}
-          {activeTab === 1 && (
-            <div style={CARD}>
-              <div style={{ fontWeight: 800, fontSize: "15px", color: "var(--tx)", marginBottom: "4px" }}>{t("market.tab_compare")}</div>
-              <div style={{ fontSize: "11px", color: "var(--tx-m)", marginBottom: "16px" }}>{t("market.avg_modal_per_market")} · {commodity || t("market.all_commodities")}</div>
-              {compareData?.length > 0 ? (
-                <>
-                  <BarChart data={compareData} valueKey="avg_modal" labelKey="market" color="var(--cp)" />
-                  <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                    {compareData.map((d, i) => (
-                      <div key={d.market} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 14px", background: "var(--bg-l)", borderRadius: "9px", border: "1px solid var(--bd)" }}>
-                        <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, background: i === 0 ? "var(--cp)" : "var(--bg)", color: i === 0 ? "var(--bg)" : "var(--tx-s)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 800, border: "1px solid var(--bd)" }}>{i + 1}</div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 700, fontSize: "13px", color: "var(--tx)" }}>{d.market}</div>
-                          <div style={{ fontSize: "11px", color: "var(--tx-s)" }}>{t("market.min")} ₹{Number(d.min_price).toLocaleString("en-IN")} · {t("market.max")} ₹{Number(d.max_price).toLocaleString("en-IN")}</div>
-                        </div>
-                        <div style={{ fontWeight: 900, fontFamily: "var(--fd)", fontSize: "16px", color: i === 0 ? "var(--cp)" : "var(--tx)" }}>₹{Number(d.avg_modal).toLocaleString("en-IN")}</div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div style={{ padding: "40px", textAlign: "center", color: "var(--tx-s)", fontSize: "13px" }}>{loading ? t("market.loading") : t("market.select_market_notice")}</div>
+          {/* 2. Forecast Target Price */}
+          <div style={{ ...CARD, padding: "16px 18px" }} className="hover-card-elevation transition-all duration-200 min-w-0">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".5px" }}>
+                🔮 {t("mi.kpi_forecast_target", { days: arimaDays, defaultValue: `${arimaDays}-Day Target Price` })}
+              </span>
+              <span style={{ fontSize: "10px", color: "#2563EB", fontWeight: 700, background: "rgba(37,99,235,0.1)", padding: "2px 6px", borderRadius: "6px", flexShrink: 0 }}>
+                XGBoost
+              </span>
+            </div>
+            <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "var(--cp)", fontFamily: "var(--fd)", lineHeight: 1.1 }}>
+              {forecastTargetPrice}
+              <span style={{ fontSize: "11.5px", fontWeight: 500, color: "var(--tx-s)", marginLeft: "4px" }}>/quintal</span>
+            </div>
+            <div style={{ fontSize: "11px", color: "var(--tx-m)", marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {forecastTargetDate ? `Target: ${forecastTargetDate}` : `${arimaDays}-Day Horizon ML`}
+            </div>
+          </div>
+
+          {/* 3. Expected Price Change */}
+          <div style={{ ...CARD, padding: "16px 18px" }} className="hover-card-elevation transition-all duration-200 min-w-0">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".5px" }}>
+                {isPriceUp ? "📈" : "📉"} {t("mi.kpi_price_change", "Expected Price Change")}
+              </span>
+              <span style={{
+                fontSize: "10px", fontWeight: 700,
+                color: isPriceUp ? "#10B981" : "#EF4444",
+                background: isPriceUp ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
+                padding: "2px 6px", borderRadius: "6px", flexShrink: 0
+              }}>
+                {isPriceUp ? "Bullish" : "Bearish"}
+              </span>
+            </div>
+            <div style={{ fontSize: "1.75rem", fontWeight: 900, color: isPriceUp ? "#10B981" : "#EF4444", fontFamily: "var(--fd)", lineHeight: 1.1 }}>
+              {animatedPriceChange != null ? `${isPriceUp ? '▲ +' : '▼ -'}₹${Math.abs(animatedPriceChange)}` : "—"}
+              {priceChangePct != null && (
+                <span style={{ fontSize: "12px", fontWeight: 700, marginLeft: "4px" }}>
+                  ({isPriceUp ? '+' : ''}{priceChangePct}%)
+                </span>
               )}
             </div>
-          )}
-
-          {/* TAB 2: Heatmap */}
-          {activeTab === 2 && (
-            <div style={CARD}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px", flexWrap: "wrap" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 800, fontSize: "15px", color: "var(--tx)" }}>{t("market.tab_heatmap")}</div>
-                  <div style={{ fontSize: "11px", color: "var(--tx-m)" }}>{t("market.heatmap_sub")}</div>
-                </div>
-                <div>
-                  <label style={LBL}>{t("market.city")}</label>
-                  <select style={{ ...INP, width: "160px" }} value={heatCity} onChange={e => setHeatCity(e.target.value)}>
-                    {cities.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
-              </div>
-              {heatData
-                ? <HeatmapGrid matrix={heatData.matrix} dates={heatData.dates} commodities={heatData.commodities} />
-                : <div style={{ padding: "40px", textAlign: "center", color: "var(--tx-s)", fontSize: "13px" }}>{t("market.select_city_notice")}</div>}
+            <div style={{ fontSize: "11px", color: "var(--tx-m)", marginTop: "4px" }}>
+              {isPriceUp ? t("mi.bullish_outlook", "Bullish price momentum") : t("mi.bearish_outlook", "Downside pressure detected")}
             </div>
-          )}
+          </div>
 
-          {/* TAB 3: Price Tools (was ML Predict) */}
-          {activeTab === 3 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <QuickPricePredict meta={mlMeta} />
-              <QuickMarketRec    meta={mlMeta} />
+          {/* 4. Best Nearby Market */}
+          <div style={{ ...CARD, padding: "16px 18px" }} className="hover-card-elevation transition-all duration-200 min-w-0">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".5px" }}>
+                📍 {t("mi.kpi_best_nearby", "Best Nearby Mandi")}
+              </span>
+              <span style={{ fontSize: "10px", color: "var(--cp)", fontWeight: 700, background: "rgba(63,107,51,0.1)", padding: "2px 6px", borderRadius: "6px", flexShrink: 0 }}>
+                ≤ 40 km
+              </span>
             </div>
-          )}
-
+            <div
+              title={bestNearby?.market || primaryCity || "Local APMC"}
+              style={{
+                fontSize: "1.35rem",
+                fontWeight: 900,
+                color: "var(--tx)",
+                fontFamily: "var(--fd)",
+                lineHeight: 1.2,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
+              }}
+            >
+              {formatMarketDisplayName(bestNearby ? bestNearby.market : primaryCity) || "Local APMC"}
+            </div>
+            <div style={{ fontSize: "11px", color: "var(--tx-m)", marginTop: "4px" }} className="truncate">
+              {bestNearby?.distanceKm ? `${bestNearby.distanceKm} km away` : t("mi.within_radius", "Within 40 km radius")}
+              {bestNearby?.diff != null && bestNearby.diff > 0 && (
+                <strong style={{ color: "#10B981", marginLeft: "4px" }}>+₹{bestNearby.diff}/q</strong>
+              )}
+            </div>
+          </div>
         </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
+
+      {/* ── 4. PRICE INTELLIGENCE (Main Visual Focus) ── */}
+      <div style={{ ...CARD, position: "relative", zIndex: 5, marginBottom: "28px" }} className="anim-fadeup stagger-3 hover-card-elevation">
+        {/* Section Header & Tabs */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "16px", borderBottom: "1px solid var(--bd)", paddingBottom: "12px" }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: "16px", color: "var(--tx)", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span>📊</span>
+              <span>{t("market.price_trend", "Price Intelligence")} — <span style={{ color: "var(--cp)" }}>{commodity || t("market.all_commodities", "All Commodities")}</span></span>
+            </div>
+            <div style={{ fontSize: "11.5px", color: "var(--tx-m)", marginTop: "2px" }}>
+              {selectedCities.length > 0 ? selectedCities.map(c => c.replace(/ APMC$/i, '')).join(', ') : t("mi.select_markets_prompt", "Select markets to analyze live price trends & multi-horizon forecasts.")}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "4px", overflowX: "auto" }}>
+            {TABS.map((tab, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveTab(i)}
+                style={{
+                  background: activeTab === i ? "var(--cp)" : "transparent",
+                  color: activeTab === i ? "var(--cp-text, #fff)" : "var(--tx-m)",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "6px 14px",
+                  cursor: "pointer",
+                  fontFamily: "var(--fd)",
+                  fontWeight: activeTab === i ? 700 : 500,
+                  fontSize: "12.5px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "all .15s ease",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* TAB 0: Price Trend & XGBoost Forecast */}
+        {activeTab === 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* Chart Area */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", flexWrap: "wrap", gap: "8px" }}>
+                <div style={{ fontSize: "11px", color: "var(--tx-s)", display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span>● Solid: Actual APMC Price</span>
+                  <span>╌╌ Dashed: XGBoost Forecast</span>
+                  <span>▒ Shaded: Min–Max Regression Band</span>
+                </div>
+                {(loading || arimaLoading) && <Spin />}
+              </div>
+
+              {lineSeries.length > 0 || arimaChartActual.length > 0 ? (
+                <LineChart series={lineSeries} forecastSeries={arimaChartForecast} />
+              ) : (
+                <div style={{ padding: "48px 20px", textAlign: "center", color: "var(--tx-s)", background: "var(--bg-l)", borderRadius: "12px", border: "1px dashed var(--bd)" }}>
+                  <div style={{ fontSize: "36px", marginBottom: "10px" }}>📍</div>
+                  <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--tx)", marginBottom: "6px" }}>
+                    {t("mi.select_markets_prompt", "Select one or more markets to view live price trends & forecasts.")}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--tx-m)", maxWidth: "440px", margin: "0 auto 16px" }}>
+                    {locationStatus === "denied"
+                      ? t("mi.location_unavailable", "Location access unavailable. Please select your market manually from the filters above.")
+                      : t("mi.location_permission_needed", "Allow location access to auto-detect nearest APMC markets.")}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => detectUserLocation(citiesRef.current, true)}
+                    disabled={locating}
+                    style={{ ...BTN, display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 18px", fontSize: "12px", margin: "0 auto" }}
+                  >
+                    {locating ? <><Spin /> {t("mi.detecting_location", "Detecting…")}</> : <>📍 {t("mi.detect_location", "Auto-Detect Nearest Markets")}</>}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* AI Multi-Horizon Forecast Panel */}
+            <ForecastIntelligencePage
+              selectedCities={selectedCities}
+              commodity={commodity}
+              arimaDays={arimaDays}
+              setArimaDays={setArimaDays}
+              arimaData={arimaData}
+              arimaLoading={arimaLoading}
+              arimaError={arimaError}
+              arimaChartForecast={arimaChartForecast}
+              todayTomorrow={todayTomorrow}
+              ttLoading={ttLoading}
+              trendSignalData={trendSignalData}
+              trendSignalLoading={trendSignalLoading}
+              onRunForecast={handleArimaForecast}
+            />
+          </div>
+        )}
+
+        {/* TAB 1: Market Comparison */}
+        {activeTab === 1 && (
+          <div>
+            <div style={{ fontWeight: 800, fontSize: "15px", color: "var(--tx)", marginBottom: "4px" }}>{t("market.tab_compare", "Compare Markets")}</div>
+            <div style={{ fontSize: "11px", color: "var(--tx-m)", marginBottom: "16px" }}>{t("market.avg_modal_per_market", "Average modal price per market")} · {commodity || t("market.all_commodities", "All Commodities")}</div>
+            {compareData?.length > 0 ? (
+              <>
+                <BarChart data={compareData} valueKey="avg_modal" labelKey="market" color="var(--cp)" />
+                <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {compareData.map((d, i) => (
+                    <div key={d.market} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 14px", background: "var(--bg-l)", borderRadius: "9px", border: "1px solid var(--bd)" }}>
+                      <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, background: i === 0 ? "var(--cp)" : "var(--bg)", color: i === 0 ? "var(--bg)" : "var(--tx-s)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 800, border: "1px solid var(--bd)" }}>{i + 1}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: "13px", color: "var(--tx)" }}>{d.market}</div>
+                        <div style={{ fontSize: "11px", color: "var(--tx-s)" }}>{t("market.min", "Min")} ₹{Number(d.min_price).toLocaleString("en-IN")} · {t("market.max", "Max")} ₹{Number(d.max_price).toLocaleString("en-IN")}</div>
+                      </div>
+                      <div style={{ fontWeight: 900, fontFamily: "var(--fd)", fontSize: "16px", color: i === 0 ? "var(--cp)" : "var(--tx)" }}>₹{Number(d.avg_modal).toLocaleString("en-IN")}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{ padding: "40px", textAlign: "center", color: "var(--tx-s)", fontSize: "13px" }}>{loading ? t("market.loading", "Loading…") : t("market.select_market_notice", "Select markets to compare prices.")}</div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: Price Heatmap */}
+        {activeTab === 2 && (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px", flexWrap: "wrap" }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: "15px", color: "var(--tx)" }}>{t("market.tab_heatmap", "Price Heatmap")}</div>
+                <div style={{ fontSize: "11px", color: "var(--tx-m)" }}>{t("market.heatmap_sub", "Date × Commodity matrix for selected city")}</div>
+              </div>
+              <div>
+                <label style={LBL}>{t("market.city", "City")}</label>
+                <select style={{ ...INP, width: "160px" }} value={heatCity} onChange={e => setHeatCity(e.target.value)}>
+                  {cities.map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+            {heatData
+              ? <HeatmapGrid matrix={heatData.matrix} dates={heatData.dates} commodities={heatData.commodities} />
+              : <div style={{ padding: "40px", textAlign: "center", color: "var(--tx-s)", fontSize: "13px" }}>{t("market.select_city_notice", "Select a city to view heatmap.")}</div>}
+          </div>
+        )}
+
+        {/* TAB 3: Price Tools */}
+        {activeTab === 3 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <QuickPricePredict meta={mlMeta} />
+            <QuickMarketRec meta={mlMeta} />
+          </div>
+        )}
+      </div>
+
+      {/* ── 5. WEATHER & CLIMATE INTELLIGENCE (Open-Meteo) ── */}
+      <div className="anim-fadeup stagger-4" style={{ position: "relative", zIndex: 4, marginBottom: "28px" }}>
+        <WeatherSection
+          coords={userCoords}
+          weatherData={weatherData}
+          loading={weatherLoading}
+          error={weatherError}
+          forecastDays={weatherDays}
+          setForecastDays={handleWeatherDaysChange}
+          onRefresh={handleWeatherRefresh}
+          onDetectLocation={() => detectUserLocation(citiesRef.current, true)}
+          locationStatus={locationStatus}
+        />
+      </div>
+
+      {/* ── 6. AI AGRICULTURAL & MARKET ADVISOR (Gemini Free Tier) ── */}
+      <div className="anim-fadeup stagger-5" style={{ position: "relative", zIndex: 3, marginBottom: "36px" }}>
+        <AIAgriculturalAdvisor
+          city={selectedCities[0] || (cities && cities[0]) || "Sangli"}
+          commodity={commodity || "Onion"}
+          days={arimaDays === 14 ? 14 : 7}
+          lat={userCoords?.lat}
+          lon={userCoords?.lon}
+        />
+      </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
   );
 }

@@ -16,8 +16,17 @@ export default function WeatherSection({
   const { t } = useTranslation();
 
   const current = weatherData?.current;
-  const forecast = weatherData?.forecast || [];
-  const advisories = weatherData?.advisories || [];
+  const forecast = Array.isArray(weatherData?.forecast) ? weatherData.forecast : [];
+  const advisoriesList = Array.isArray(weatherData?.advisories)
+    ? weatherData.advisories
+    : typeof weatherData?.advisories === "object" && weatherData?.advisories !== null
+      ? Object.entries(weatherData.advisories).map(([k, v]) => ({
+          icon: k === "irrigation" ? "💧" : k === "spraying" ? "🌱" : "🌾",
+          title: typeof k === "string" ? k.charAt(0).toUpperCase() + k.slice(1) : "Advisory",
+          status: v?.status === "Good" || v?.status === "Optimal" || v?.status === "Normal" ? "favorable" : "warning",
+          message: v?.action || v?.message || (typeof v === "string" ? v : "")
+        }))
+      : [];
   const locName = coords?.label || weatherData?.location?.timezone?.replace("_", " ") || "Maharashtra";
 
   return (
@@ -31,7 +40,7 @@ export default function WeatherSection({
         marginBottom: "24px",
         transition: "all 0.25s ease"
       }}
-      className="weather-section-container"
+      className="weather-section-container hover-card-elevation"
     >
       {/* ── HEADER & CONTROLS ── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "18px" }}>
@@ -172,10 +181,10 @@ export default function WeatherSection({
             borderRadius: "12px",
             padding: "16px",
             border: "1px solid var(--bd)"
-          }}>
+          }} className="hover-card-elevation transition-all duration-200">
             {/* Left: Temp & Condition */}
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <div style={{ fontSize: "3rem", lineHeight: 1, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))" }}>
+              <div className="anim-float" style={{ fontSize: "3rem", lineHeight: 1, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))" }}>
                 {current.icon || "🌤️"}
               </div>
               <div>
@@ -198,7 +207,7 @@ export default function WeatherSection({
 
             {/* Right: Agricultural Suitability Badges */}
             <div style={{ display: "flex", flexDirection: "column", gap: "6px", justifyContent: "center" }}>
-              {advisories.slice(0, 2).map((adv, idx) => {
+              {advisoriesList.slice(0, 2).map((adv, idx) => {
                 const isGood = adv.status === "favorable";
                 const isWarn = adv.status === "warning" || adv.status === "unfavorable";
                 const bg = isGood ? "rgba(63,107,51,0.1)" : isWarn ? "rgba(220,38,38,0.1)" : "rgba(234,88,12,0.1)";
@@ -285,7 +294,7 @@ export default function WeatherSection({
                   textAlign: "center",
                   transition: "all 0.18s ease"
                 }}
-                className="hover:-translate-y-0.5"
+                className={`hover-card-elevation anim-fadeup stagger-${(i % 6) + 1}`}
               >
                 <div style={{ fontSize: "14px", marginBottom: "2px" }}>{m.icon}</div>
                 <div style={{ fontSize: "9.5px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -344,7 +353,7 @@ export default function WeatherSection({
                         gap: "4px",
                         transition: "all 0.18s ease"
                       }}
-                      className="hover:-translate-y-1 shadow-sm"
+                      className="hover-card-elevation shadow-sm"
                     >
                       {/* Day Name */}
                       <div style={{

@@ -324,7 +324,7 @@ export default function AIAgriculturalAdvisor({
       <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 text-white px-6 py-5">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="relative p-2.5 bg-white/10 rounded-xl backdrop-blur-md border border-white/20 shadow-inner">
+            <div className="relative p-2.5 bg-white/10 rounded-xl backdrop-blur-md border border-white/20 shadow-inner anim-float">
               <SparklesIcon className="w-6 h-6 text-amber-300 animate-pulse motion-reduce:animate-none" />
               <span className="absolute -top-1 -right-1 flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 motion-reduce:animate-none"></span>
@@ -341,7 +341,7 @@ export default function AIAgriculturalAdvisor({
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse motion-reduce:animate-none"></span>
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 anim-pulse-glow"></span>
                 <span className="text-emerald-100 text-xs font-medium">
                   {chatLoading || loading ? t("ai_advisor.status_analyzing", "Analyzing...") : t("ai_advisor.status_ready", "Online & Grounded")}
                 </span>
@@ -444,7 +444,7 @@ export default function AIAgriculturalAdvisor({
                 chatMessages.map((msg, idx) => (
                   <div
                     key={idx}
-                    className={`flex items-end gap-2.5 ${msg.sender === "user" ? "justify-end" : "justify-start"} animate-fadeIn`}
+                    className={`flex items-end gap-2.5 ${msg.sender === "user" ? "justify-end" : "justify-start"} anim-fadeup`}
                   >
                     {/* AI Avatar */}
                     {msg.sender === "ai" && (
@@ -527,15 +527,15 @@ export default function AIAgriculturalAdvisor({
 
               {/* Thinking / Typing Animated State */}
               {chatLoading && (
-                <div className="flex items-end gap-2.5 justify-start">
-                  <div className="w-8 h-8 rounded-full bg-emerald-700 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-700/20">
+                <div className="flex items-end gap-2.5 justify-start anim-fadeup">
+                  <div className="w-8 h-8 rounded-full bg-emerald-700 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-700/20 anim-float">
                     <BotIcon className="w-4 h-4 text-amber-300" />
                   </div>
                   <div className="bg-emerald-50/80 dark:bg-gray-700/90 rounded-2xl rounded-tl-none px-4 py-3 border border-emerald-100 dark:border-gray-600 shadow-sm flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce"></span>
-                      <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce [animation-delay:0.2s]"></span>
-                      <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce [animation-delay:0.4s]"></span>
+                    <div className="flex items-center gap-1.5 py-0.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600 animate-[bounceWave_1.2s_infinite_ease-in-out]"></span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-600 animate-[bounceWave_1.2s_infinite_ease-in-out] [animation-delay:160ms]"></span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-600 animate-[bounceWave_1.2s_infinite_ease-in-out] [animation-delay:320ms]"></span>
                     </div>
                     <span className="text-xs font-medium text-emerald-800 dark:text-emerald-300">
                       {t("ai_advisor.thinking_message", "FasalNet AI is analyzing with Google Gemini, XGBoost & Weather data...")}
@@ -640,7 +640,7 @@ export default function AIAgriculturalAdvisor({
             </div>
 
             {/* 1. Recommendation Highlight Banner */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50 via-teal-50/40 to-white dark:from-emerald-950/30 dark:via-gray-800 dark:to-gray-800 border border-emerald-200 dark:border-emerald-800/60 shadow-sm">
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50 via-teal-50/40 to-white dark:from-emerald-950/30 dark:via-gray-800 dark:to-gray-800 border border-emerald-200 dark:border-emerald-800/60 shadow-sm hover-card-elevation transition-all duration-200 anim-fadeup">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2">
                   <span className="flex h-3 w-3 relative">
@@ -683,7 +683,7 @@ export default function AIAgriculturalAdvisor({
             {/* 2. Multi-Signal Intelligence Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* XGBoost Price Forecast Card */}
-              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700">
+              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 hover-card-elevation transition-all duration-200 anim-fadeup stagger-1">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                     <TrendingUpIcon className="w-3.5 h-3.5 text-blue-500" />
@@ -719,7 +719,7 @@ export default function AIAgriculturalAdvisor({
               </div>
 
               {/* Weather & Climate Impact Card */}
-              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700">
+              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 hover-card-elevation transition-all duration-200 anim-fadeup stagger-2">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                     <CloudRainIcon className="w-3.5 h-3.5 text-cyan-500" />
@@ -744,7 +744,7 @@ export default function AIAgriculturalAdvisor({
               </div>
 
               {/* Nearby Market Arbitrage Card */}
-              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700">
+              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 hover-card-elevation transition-all duration-200 anim-fadeup stagger-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                     <MapPinIcon className="w-3.5 h-3.5 text-amber-500" />
@@ -762,7 +762,7 @@ export default function AIAgriculturalAdvisor({
 
             {/* 3. Agronomic Guidance (RAG Grounded) & Suggested Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/40">
+              <div className="p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/40 hover-card-elevation transition-all duration-200 anim-fadeup stagger-4">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
                   <BookOpenIcon className="w-3.5 h-3.5 text-emerald-600" />
                   {t("ai_advisor.crop_guidance_title", "ICAR Agronomic & Post-Harvest Advice")}
@@ -772,7 +772,7 @@ export default function AIAgriculturalAdvisor({
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-800/40">
+              <div className="p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-800/40 hover-card-elevation transition-all duration-200 anim-fadeup stagger-5">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-1.5">
                   <CheckCircleIcon className="w-3.5 h-3.5 text-blue-600" />
                   {t("ai_advisor.suggested_actions_title", "Suggested Step-by-Step Actions")}

@@ -330,18 +330,34 @@ h1,h2,h3,h4 {
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
 /* ═══ ANIMATIONS ═══════════════════════════════════════════ */
-@keyframes fadeIn    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
-@keyframes fadeInUp  { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
-@keyframes slideIn   { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:none} }
-@keyframes popIn     { from{opacity:0;transform:scale(.94)} to{opacity:1;transform:scale(1)} }
-@keyframes toastIn   { from{opacity:0;transform:translateY(20px) scale(.95)} to{opacity:1;transform:none} }
-@keyframes spin      { to{transform:rotate(360deg)} }
+@keyframes fadeIn      { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+@keyframes fadeInUp    { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+@keyframes slideIn     { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:none} }
+@keyframes popIn       { from{opacity:0;transform:scale(.94)} to{opacity:1;transform:scale(1)} }
+@keyframes toastIn     { from{opacity:0;transform:translateY(20px) scale(.95)} to{opacity:1;transform:none} }
+@keyframes spin        { to{transform:rotate(360deg)} }
+@keyframes pulseGlow   { 0%,100%{box-shadow:0 0 0 0 rgba(63,107,51,.25)} 50%{box-shadow:0 0 0 8px rgba(63,107,51,0)} }
+@keyframes pulseGlowBlue { 0%,100%{box-shadow:0 0 0 0 rgba(37,99,235,.25)} 50%{box-shadow:0 0 0 8px rgba(37,99,235,0)} }
+@keyframes organicFloat{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+@keyframes bounceWave  { 0%,100%{transform:translateY(0);opacity:.5} 50%{transform:translateY(-5px);opacity:1} }
+@keyframes dashSlide   { to{stroke-dashoffset:-20} }
+@keyframes numberHighlight { 0%{color:var(--cp);transform:scale(1.04)} 100%{transform:scale(1)} }
 
-.anim-fade    { animation: fadeIn   .3s ease both; }
-.anim-fadeup  { animation: fadeInUp .4s ease both; }
-.anim-slide   { animation: slideIn  .35s ease both; }
-.anim-pop     { animation: popIn    .25s cubic-bezier(.34,1.56,.64,1) both; }
-.anim-spin    { animation: spin 1s linear infinite; }
+.anim-fade      { animation: fadeIn   .35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.anim-fadeup    { animation: fadeInUp .45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.anim-slide     { animation: slideIn  .35s ease both; }
+.anim-pop       { animation: popIn    .25s cubic-bezier(.34,1.56,.64,1) both; }
+.anim-spin      { animation: spin 1s linear infinite; }
+.anim-pulse-glow{ animation: pulseGlow 2.5s infinite; }
+.anim-float     { animation: organicFloat 3s ease-in-out infinite; }
+.anim-dash      { stroke-dasharray: 6 4; animation: dashSlide 1.5s linear infinite; }
+
+.stagger-1 { animation-delay: .06s }
+.stagger-2 { animation-delay: .12s }
+.stagger-3 { animation-delay: .18s }
+.stagger-4 { animation-delay: .24s }
+.stagger-5 { animation-delay: .30s }
+.stagger-6 { animation-delay: .36s }
 
 .d1 { animation-delay: .04s }
 .d2 { animation-delay: .08s }
@@ -465,3 +481,143 @@ h1,h2,h3,h4 {
 /* ═══ UTILITY ══════════════════════════════════════════════ */
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .aspin    { animation: spin .8s linear infinite; border-radius: 50%; }
+
+/* ═══ MARKET INTELLIGENCE ANIMATION SYSTEM ════════════════ */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes pulseGlowBlue {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(37, 99, 235, 0);
+  }
+}
+
+@keyframes organicFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(1.5deg);
+  }
+}
+
+@keyframes bounceWave {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes dashSlide {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+@keyframes numberHighlight {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.04);
+    color: var(--cp);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.anim-fadeup {
+  animation: fadeUp 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-fade {
+  animation: fadeIn 0.3s ease-out both;
+}
+
+.anim-float {
+  animation: organicFloat 3.8s ease-in-out infinite;
+}
+
+.anim-pulse-glow {
+  animation: pulseGlow 2.4s infinite ease-in-out;
+}
+
+.anim-pulse-glow-blue {
+  animation: pulseGlowBlue 2.4s infinite ease-in-out;
+}
+
+.anim-dash {
+  animation: dashSlide 1.2s linear infinite;
+}
+
+.anim-number-change {
+  animation: numberHighlight 0.45s ease-out;
+}
+
+/* Stagger entrance delays */
+.stagger-1 { animation-delay: 40ms; }
+.stagger-2 { animation-delay: 90ms; }
+.stagger-3 { animation-delay: 140ms; }
+.stagger-4 { animation-delay: 190ms; }
+.stagger-5 { animation-delay: 240ms; }
+.stagger-6 { animation-delay: 290ms; }
+
+/* Interactive micro-interaction hover helpers */
+.hover-card-elevation {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+.hover-card-elevation:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+}
+
+/* Respect user's accessibility motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .anim-fadeup,
+  .anim-fade,
+  .anim-float,
+  .anim-pulse-glow,
+  .anim-pulse-glow-blue,
+  .anim-dash,
+  .anim-number-change {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+

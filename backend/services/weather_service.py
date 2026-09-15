@@ -277,11 +277,11 @@ def _build_fallback_weather(lat: float, lon: float, days: int) -> dict:
             "badge": "bg-amber-100 text-amber-800",
         },
         "forecast": daily_forecast,
-        "advisories": {
-            "irrigation": {"status": "Normal", "action": "Standard irrigation as scheduled."},
-            "spraying": {"status": "Good", "action": "Favorable conditions for pesticide application."},
-            "harvesting": {"status": "Optimal", "action": "Safe for harvesting and post-harvest drying."}
-        },
+        "advisories": [
+            {"status": "favorable", "title": "Irrigation", "message": "Standard irrigation as scheduled.", "icon": "💧"},
+            {"status": "favorable", "title": "Crop Spraying", "message": "Favorable conditions for pesticide and fertilizer application.", "icon": "🌱"},
+            {"status": "favorable", "title": "Harvesting", "message": "Safe for harvesting and post-harvest drying.", "icon": "🌾"}
+        ],
         "timestamp": now.isoformat()
     }
 

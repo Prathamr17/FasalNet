@@ -84,7 +84,7 @@ def call_gemini_llm(
     max_tokens: int = 1500,
     temperature: float = 0.3,
     json_mode: bool = False,
-    timeout_sec: int = 8,
+    timeout_sec: int = 25,
     request_id: Optional[str] = None
 ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
