@@ -645,7 +645,7 @@ function LineChart({ series, forecastSeries = [] }) {
             fontSize={isToday || isTomorrow ? "9" : "10"}
             fontWeight={isToday || isTomorrow ? "700" : "400"}
             fill={isToday ? "#2B4570" : isTomorrow ? "#B4741E" : "var(--tx-s)"}>
-            {isToday ? t("mi.today") : isTomorrow ? t("mi.tomorrow") : date.slice(5)}
+            {isToday ? t("mi.today") : isTomorrow ? t("mi.tomorrow") : String(date || "").slice(5)}
           </text>
         ))}
 
@@ -824,8 +824,8 @@ function HeatmapGrid({ matrix, dates, commodities }) {
   const allVals = commodities.flatMap(c => dates.map(d => matrix?.[c]?.[d] || 0).filter(Boolean));
   const maxV    = Math.max(...allVals, 1);
   const toColor = (v) => `rgba(63,107,51,${Math.min(1, (v / maxV) * 0.9 + 0.1).toFixed(2)})`;
-  const shown      = commodities.slice(0, 20);
-  const shownDates = dates.filter((_, i) => i % Math.max(1, Math.floor(dates.length / 15)) === 0 || i === dates.length - 1);
+  const shown      = (commodities || []).slice(0, 20);
+  const shownDates = (dates || []).filter((_, i) => i % Math.max(1, Math.floor((dates || []).length / 15)) === 0 || i === (dates || []).length - 1);
   return (
     <div style={{ overflowX: "auto" }}>
       <table style={{ borderCollapse: "collapse", fontSize: "10px", minWidth: "100%" }}>
@@ -833,8 +833,8 @@ function HeatmapGrid({ matrix, dates, commodities }) {
           <tr>
             <th style={{ padding: "4px 8px", color: "var(--tx-s)", textAlign: "left", fontWeight: 600, minWidth: "120px" }}>{t("market.commodity")}</th>
             {shownDates.map(d => (
-              <th key={d} style={{ padding: "4px 4px", color: "var(--tx-s)", fontWeight: 500, minWidth: "32px",
-                transform: "rotate(-30deg)", transformOrigin: "bottom left", whiteSpace: "nowrap" }}>{d.slice(5)}</th>
+              <th key={String(d)} style={{ padding: "4px 4px", color: "var(--tx-s)", fontWeight: 500, minWidth: "32px",
+                transform: "rotate(-30deg)", transformOrigin: "bottom left", whiteSpace: "nowrap" }}>{String(d || "").slice(5)}</th>
             ))}
           </tr>
         </thead>

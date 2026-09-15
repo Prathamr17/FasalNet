@@ -486,7 +486,7 @@ function ContinuousForecastCard({ arimaDays, setArimaDays, arimaData, arimaLoadi
                 }}>
                   <div style={{ fontSize: "10px", fontWeight: 800, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: "4px" }}>
                     {t("mi.day", "Day")} {i + 1}
-                    <span style={{ display: "block", fontSize: "9px", fontWeight: 500, color: "var(--tx-m)", marginTop: "2px" }}>{pt.date.slice(5)}</span>
+                    <span style={{ display: "block", fontSize: "9px", fontWeight: 500, color: "var(--tx-m)", marginTop: "2px" }}>{String(pt?.date || "").slice(5)}</span>
                   </div>
                   <div style={{ fontWeight: 900, fontSize: "15px", color: "var(--tx)", fontFamily: "var(--fd)", marginBottom: "4px" }}>
                     ₹{pt.price.toLocaleString("en-IN")}
