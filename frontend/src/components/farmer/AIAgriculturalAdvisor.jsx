@@ -2,10 +2,22 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { aiAPI } from "../../services/api";
 
-// ── Clean Zero-Dependency Lightweight SVG Icons ─────────────────────────────
+// ── Clean Lightweight Zero-Dependency SVG Icons ─────────────────────────────
 const SparklesIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+  </svg>
+);
+
+const BotIcon = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+  </svg>
+);
+
+const UserIcon = ({ className = "w-4 h-4" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
   </svg>
 );
 
@@ -92,6 +104,7 @@ export default function AIAgriculturalAdvisor({
   const [chatMessages, setChatMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
+  const [lastQuery, setLastQuery] = useState("");
   const chatEndRef = useRef(null);
 
   const loadingStages = [
@@ -110,7 +123,7 @@ export default function AIAgriculturalAdvisor({
 
     const interval = setInterval(() => {
       setLoadingStage((prev) => (prev < loadingStages.length - 1 ? prev + 1 : prev));
-    }, 400);
+    }, 350);
 
     try {
       const res = await aiAPI.getMarketAdvice({
@@ -143,35 +156,11 @@ export default function AIAgriculturalAdvisor({
     fetchAdvice();
   }, [fetchAdvice]);
 
-  // Initial greeting in chat when opening chat tab
-  useEffect(() => {
-    if (chatMessages.length === 0 && advice) {
-      const currentPrice = advice.market_context?.current_price;
-      const targetPrice = advice.market_context?.target_price;
-      const pct = advice.market_context?.forecast_pct_change;
-
-      let defaultGreeting = `Namaste! I am your FasalNet AI Agricultural Advisor. I am currently analyzing **${commodity}** at **${city} APMC** (Current Modal: ₹${currentPrice ? currentPrice.toLocaleString() : '—'}/q, XGBoost ${days}D Target: ₹${targetPrice ? targetPrice.toLocaleString() : '—'}/q [${pct ? (pct > 0 ? '+' : '') + pct + '%' : '—'}]).\n\nAsk me any question about selling timing, harvest precautions, weather risks, storage, or nearby mandi comparisons!`;
-      
-      if (currentLang === "mr") {
-        defaultGreeting = `नमस्ते! मी तुमचा फसलनेट (FasalNet) कृषी सल्लागार आहे. मी सध्या **${city} बाजार समितीतील** **${commodity}** पिकाचे विश्लेषण करत आहे (सध्याचा दर: ₹${currentPrice ? currentPrice.toLocaleString() : '—'}/क्विंटल, XGBoost ${days} दिवसांचा अंदाज: ₹${targetPrice ? targetPrice.toLocaleString() : '—'}/क्विंटल).\n\nविक्रीची योग्य वेळ, हवामानाचा धोका, कांदा चाळ साठवणूक किंवा इतर बाजार समित्यांच्या भावाबाबत कोणताही प्रश्न विचारा!`;
-      } else if (currentLang === "hi") {
-        defaultGreeting = `नमस्ते! मैं आपका फसलनेट (FasalNet) कृषि सलाहकार हूँ। मैं वर्तमान में **${city} मंडी** में **${commodity}** का विश्लेषण कर रहा हूँ (वर्तमान भाव: ₹${currentPrice ? currentPrice.toLocaleString() : '—'}/क्विंटल, XGBoost ${days} दिनों का पूर्वानुमान: ₹${targetPrice ? targetPrice.toLocaleString() : '—'}/क्विंटल)।\n\nबिक्री का सही समय, मौसम जोखिम, भंडारण या नजदीकी मंडियों की तुलना से जुड़ा कोई भी प्रश्न पूछें!`;
-      }
-
-      setChatMessages([
-        {
-          sender: "ai",
-          text: defaultGreeting,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        }
-      ]);
-    }
-  }, [advice, commodity, city, days, currentLang, chatMessages.length]);
-
   const handleSendQuery = async (queryText) => {
     const query = (queryText || userInput || "").trim();
     if (!query || chatLoading) return;
 
+    setLastQuery(query);
     const userMsg = {
       sender: "user",
       text: query,
@@ -184,7 +173,7 @@ export default function AIAgriculturalAdvisor({
 
     // Format previous chat history turns for Gemini conversation memory
     const formattedHistory = chatMessages
-      .filter((m) => m.sender === "user" || m.sender === "ai")
+      .filter((m) => (m.sender === "user" || m.sender === "ai") && !m.is_error)
       .slice(-6)
       .map((m) => ({
         role: m.sender === "user" ? "user" : "assistant",
@@ -210,33 +199,35 @@ export default function AIAgriculturalAdvisor({
         }
         const aiMsg = {
           sender: "ai",
-          text: res.data.reply,
+          text: res.data.reply || res.data.answer,
           sources: res.data.sources || [],
-          ai_engine: res.data.ai_engine || "Google Gemini + RAG",
+          ai_engine: res.data.ai_engine || "Google Gemini (gemini-flash)",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         };
         setChatMessages((prev) => [...prev, aiMsg]);
       } else {
+        // Backend returned a handled error (e.g. AI_SERVICE_UNAVAILABLE)
         setChatMessages((prev) => [
           ...prev,
           {
             sender: "ai",
-            text: res?.data?.error || "I could not process your query at this moment.",
+            is_error: true,
+            text: t("ai_advisor.service_unavailable", "AI Assistant is temporarily unavailable. Please try again in a moment."),
+            retryQuery: query,
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
           }
         ]);
       }
     } catch (err) {
       console.error("Chat error:", err);
-      const errMsg =
-        err?.response?.data?.error ||
-        err?.response?.data?.message ||
-        "Network error connecting to AI Chat. Please check your connection and try again.";
+      // Clean friendly message without raw error strings, HTTP status codes, or provider JSON
       setChatMessages((prev) => [
         ...prev,
         {
           sender: "ai",
-          text: errMsg,
+          is_error: true,
+          text: t("ai_advisor.service_unavailable", "AI Assistant is temporarily unavailable. Please try again in a moment."),
+          retryQuery: query,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         }
       ]);
@@ -244,6 +235,10 @@ export default function AIAgriculturalAdvisor({
       setChatLoading(false);
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     }
+  };
+
+  const handleRetry = (queryToRetry) => {
+    handleSendQuery(queryToRetry || lastQuery);
   };
 
   const getRiskBadge = (risk, score) => {
@@ -295,21 +290,32 @@ export default function AIAgriculturalAdvisor({
     }
   };
 
-  const quickQuestions = currentLang === "mr" ? [
-    `मी ${commodity} आज विकावा की ${days} दिवस थांबावे?`,
-    `पुढील हवामानाचा ${commodity} पिकावर काय परिणाम होईल?`,
-    `${commodity} साठी सर्वात चांगला भाव कोणत्या बाजार समितीत आहे?`,
-    `${commodity} साठवणूक व चाळ व्यवस्थापनाचे ICAR नियम काय आहेत?`
-  ] : currentLang === "hi" ? [
-    `क्या मुझे ${commodity} आज बेचना चाहिए या ${days} दिन रुकना चाहिए?`,
-    `आगामी मौसम का ${commodity} की फसल पर क्या असर पड़ेगा?`,
-    `${commodity} के लिए सबसे अच्छा भाव किस मंडी में मिल रहा है?`,
-    `${commodity} भंडारण के लिए ICAR के क्या दिशा-निर्देश हैं?`
-  ] : [
-    `Should I sell ${commodity} today or hold for ${days} days?`,
-    `How will upcoming weather affect my ${commodity} harvest?`,
-    `Which nearby APMC has the best price for ${commodity}?`,
-    `What are the ICAR post-harvest storage guidelines for ${commodity}?`
+  // Dynamic quick questions based on currently selected commodity & city
+  const quickQuestions = [
+    {
+      icon: "💰",
+      text: t("ai_advisor.quick_q1", { commodity, city, defaultValue: `What is the 7-day price forecast for ${commodity} in ${city}?` })
+    },
+    {
+      icon: "⏳",
+      text: t("ai_advisor.quick_q2", { commodity, city, defaultValue: `Should I sell ${commodity} today or hold for 14 days?` })
+    },
+    {
+      icon: "🌧️",
+      text: t("ai_advisor.quick_q3", { commodity, city, defaultValue: `How will upcoming weather and rain affect ${commodity} harvesting?` })
+    },
+    {
+      icon: "🏛️",
+      text: t("ai_advisor.quick_q4", { commodity, city, defaultValue: `Compare ${city} mandi rates for ${commodity} with nearby markets` })
+    },
+    {
+      icon: "📦",
+      text: t("ai_advisor.quick_q5", { commodity, city, defaultValue: `What are the ICAR post-harvest storage guidelines for ${commodity}?` })
+    },
+    {
+      icon: "⚠️",
+      text: t("ai_advisor.quick_q6", { commodity, city, defaultValue: `What is the risk level for storing ${commodity} this week?` })
+    }
   ];
 
   return (
@@ -318,43 +324,54 @@ export default function AIAgriculturalAdvisor({
       <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 text-white px-6 py-5">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-md border border-white/20 shadow-inner">
-              <SparklesIcon className="w-6 h-6 text-amber-300 animate-pulse" />
+            <div className="relative p-2.5 bg-white/10 rounded-xl backdrop-blur-md border border-white/20 shadow-inner">
+              <SparklesIcon className="w-6 h-6 text-amber-300 animate-pulse motion-reduce:animate-none" />
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 motion-reduce:animate-none"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400 border-2 border-emerald-800"></span>
+              </span>
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-xl font-bold tracking-tight">
                   {t("ai_advisor.title", "AI Agricultural & Market Advisor")}
                 </h2>
-                <span className="bg-emerald-500/30 text-emerald-100 border border-emerald-400/30 text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  RAG + XGBoost
+                <span className="bg-emerald-500/30 text-emerald-100 border border-emerald-400/30 text-[11px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                  Google Gemini + RAG
                 </span>
               </div>
-              <p className="text-emerald-100 text-xs mt-0.5">
-                {t("ai_advisor.subtitle", "Grounded recommendations combining Real GPS, Open-Meteo Weather, XGBoost Forecasts & ICAR Agricultural Knowledge")}
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse motion-reduce:animate-none"></span>
+                <span className="text-emerald-100 text-xs font-medium">
+                  {chatLoading || loading ? t("ai_advisor.status_analyzing", "Analyzing...") : t("ai_advisor.status_ready", "Online & Grounded")}
+                </span>
+                <span className="text-emerald-300/60">•</span>
+                <span className="text-emerald-100/90 text-xs">
+                  {commodity} @ {city} ({days}D)
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Tab Navigation & Refresh */}
           <div className="flex items-center gap-2 self-end md:self-auto">
-            <div className="bg-emerald-900/40 p-1 rounded-xl border border-white/10 flex items-center gap-1">
+            <div className="bg-emerald-900/40 p-1 rounded-xl border border-white/10 flex items-center gap-1 shadow-inner">
               <button
                 onClick={() => setActiveTab("advisory")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                   activeTab === "advisory"
-                    ? "bg-white text-emerald-900 shadow-sm font-semibold"
-                    : "text-emerald-100 hover:text-white"
+                    ? "bg-white text-emerald-900 shadow-sm font-semibold scale-100"
+                    : "text-emerald-100 hover:text-white hover:bg-white/5"
                 }`}
               >
                 {t("ai_advisor.tab_advisory", "Recommendation")}
               </button>
               <button
                 onClick={() => setActiveTab("chat")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all duration-200 ${
                   activeTab === "chat"
-                    ? "bg-white text-emerald-900 shadow-sm font-semibold"
-                    : "text-emerald-100 hover:text-white"
+                    ? "bg-white text-emerald-900 shadow-sm font-semibold scale-100"
+                    : "text-emerald-100 hover:text-white hover:bg-white/5"
                 }`}
               >
                 <MessageSquareIcon className="w-3.5 h-3.5" />
@@ -365,7 +382,7 @@ export default function AIAgriculturalAdvisor({
             <button
               onClick={fetchAdvice}
               disabled={loading}
-              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-medium flex items-center gap-1.5 transition-all disabled:opacity-50"
+              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-medium flex items-center gap-1.5 transition-all duration-200 disabled:opacity-50 active:scale-95 shadow-sm"
               title={t("ai_advisor.refresh", "Refresh AI Analysis")}
             >
               <RefreshIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
@@ -377,10 +394,208 @@ export default function AIAgriculturalAdvisor({
 
       {/* ── Main Content Body ─────────────────────────────────────── */}
       <div className="p-6">
-        {loading && !advice ? (
+        {activeTab === "chat" ? (
+          /* ── Modern Redesigned Conversational AI Chat View ──────────────── */
+          <div className="flex flex-col h-[520px]">
+            {/* Scrollable Messages / Welcome Area */}
+            <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-3">
+              {chatMessages.length === 0 ? (
+                /* Empty / Welcome State */
+                <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-lg mb-3 shadow-emerald-500/20">
+                    <SparklesIcon className="w-8 h-8 text-amber-300 animate-pulse motion-reduce:animate-none" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    {t("ai_advisor.welcome_title", "FasalNet AI Agricultural Advisor")}
+                  </h3>
+                  <div className="inline-flex items-center gap-1.5 mt-1 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold border border-emerald-200 dark:border-emerald-800">
+                    <span>⚡</span>
+                    <span>{t("ai_advisor.welcome_badge", "Google Gemini + XGBoost + RAG")}</span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-2 max-w-md leading-relaxed">
+                    {t("ai_advisor.welcome_desc", "Ask anything about live mandi prices, 7 & 14-day XGBoost price forecasts, Open-Meteo weather risks, and ICAR crop storage guidelines.")}
+                  </p>
+
+                  {/* 6 Contextual Quick Question Chips */}
+                  <div className="w-full max-w-xl mt-6">
+                    <div className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 text-left flex items-center gap-1.5">
+                      <SparklesIcon className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{t("ai_advisor.quick_questions_title", { commodity, city, defaultValue: `Suggested Questions for ${commodity} in ${city}:` })}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {quickQuestions.map((q, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => handleSendQuery(q.text)}
+                          disabled={chatLoading}
+                          className="group p-2.5 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/90 dark:bg-gray-700/60 dark:hover:bg-gray-700 border border-emerald-100 dark:border-gray-600 text-left transition-all duration-200 transform hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow text-xs flex items-start gap-2 disabled:opacity-50"
+                        >
+                          <span className="text-base shrink-0 group-hover:scale-110 transition-transform">{q.icon}</span>
+                          <span className="text-emerald-900 dark:text-emerald-200 font-medium leading-snug">
+                            {q.text}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Chat Messages Stream */
+                chatMessages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-end gap-2.5 ${msg.sender === "user" ? "justify-end" : "justify-start"} animate-fadeIn`}
+                  >
+                    {/* AI Avatar */}
+                    {msg.sender === "ai" && (
+                      <div className="w-8 h-8 rounded-full bg-emerald-700 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-700/20">
+                        <BotIcon className="w-4 h-4 text-amber-300" />
+                      </div>
+                    )}
+
+                    <div
+                      className={`max-w-[85%] sm:max-w-[78%] rounded-2xl px-4 py-3.5 text-xs leading-relaxed transition-all ${
+                        msg.sender === "user"
+                          ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-tr-none shadow-md shadow-emerald-600/10"
+                          : msg.is_error
+                          ? "bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 rounded-tl-none border border-amber-200 dark:border-amber-800 shadow-sm"
+                          : "bg-emerald-50/60 dark:bg-gray-700/90 text-gray-800 dark:text-gray-100 rounded-tl-none border border-emerald-100 dark:border-gray-600 shadow-sm"
+                      }`}
+                    >
+                      {/* Message Content */}
+                      {msg.is_error ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
+                            <ShieldAlertIcon className="w-4 h-4 text-amber-600" />
+                            <span>{msg.text}</span>
+                          </div>
+                          <button
+                            onClick={() => handleRetry(msg.retryQuery)}
+                            disabled={chatLoading}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                          >
+                            <RefreshIcon className="w-3 h-3" />
+                            <span>{t("ai_advisor.retry_btn", "Retry")}</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="whitespace-pre-line font-normal space-y-1">
+                          {msg.text}
+                        </div>
+                      )}
+
+                      {/* Cited Sources Pill Badges */}
+                      {msg.sources && msg.sources.length > 0 && (
+                        <div className="mt-2.5 pt-2 border-t border-emerald-200/60 dark:border-gray-600/60 flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300">
+                            Grounded Sources:
+                          </span>
+                          {msg.sources.map((s, sIdx) => (
+                            <span
+                              key={sIdx}
+                              className="text-[9px] px-2 py-0.5 rounded-md bg-white/80 dark:bg-gray-800 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-gray-600 font-medium"
+                            >
+                              📚 {s.source || s.institution || s.title}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Footer: Model & Timestamp */}
+                      <div className="mt-1.5 flex items-center justify-between text-[10px] opacity-80 pt-0.5">
+                        {msg.sender === "ai" && !msg.is_error && (
+                          <span className="text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-1">
+                            <span>⚡</span>
+                            <span>{msg.ai_engine || "Google Gemini (gemini-flash)"}</span>
+                          </span>
+                        )}
+                        <span className={msg.sender === "user" ? "text-emerald-100 ml-auto" : "text-gray-400 dark:text-gray-400"}>
+                          {msg.timestamp}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* User Avatar */}
+                    {msg.sender === "user" && (
+                      <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                        <UserIcon className="w-4 h-4" />
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+
+              {/* Thinking / Typing Animated State */}
+              {chatLoading && (
+                <div className="flex items-end gap-2.5 justify-start">
+                  <div className="w-8 h-8 rounded-full bg-emerald-700 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-700/20">
+                    <BotIcon className="w-4 h-4 text-amber-300" />
+                  </div>
+                  <div className="bg-emerald-50/80 dark:bg-gray-700/90 rounded-2xl rounded-tl-none px-4 py-3 border border-emerald-100 dark:border-gray-600 shadow-sm flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce"></span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce [animation-delay:0.2s]"></span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce [animation-delay:0.4s]"></span>
+                    </div>
+                    <span className="text-xs font-medium text-emerald-800 dark:text-emerald-300">
+                      {t("ai_advisor.thinking_message", "FasalNet AI is analyzing with Google Gemini, XGBoost & Weather data...")}
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Quick Prompt Bar (when conversation is ongoing) */}
+            {chatMessages.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-none">
+                {quickQuestions.slice(0, 4).map((q, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSendQuery(q.text)}
+                    disabled={chatLoading}
+                    className="shrink-0 text-[11px] px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all duration-200 disabled:opacity-50 active:scale-95"
+                  >
+                    {q.icon} {q.text}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Chat Input Bar */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendQuery();
+              }}
+              className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700"
+            >
+              <input
+                type="text"
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder={t(
+                  "ai_advisor.chat_placeholder",
+                  `Ask anything about ${commodity} in ${city} (e.g., 'Should I sell now or wait?', 'How does rain affect storage?')`
+                )}
+                disabled={chatLoading}
+                className="flex-1 px-4 py-2.5 text-xs rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white transition-all"
+              />
+              <button
+                type="submit"
+                disabled={chatLoading || !userInput.trim()}
+                className="p-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-emerald-600/20 active:scale-95 flex items-center justify-center"
+                title={t("ai_advisor.send_btn", "Send")}
+              >
+                <SendIcon className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        ) : loading && !advice ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="relative mb-4">
-              <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+              <SparklesIcon className="w-5 h-5 text-emerald-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
             </div>
             <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200">
               {loadingStages[loadingStage] || t("ai_advisor.synthesizing", "Synthesizing AI Agricultural Intelligence...")}
@@ -390,7 +605,7 @@ export default function AIAgriculturalAdvisor({
             </p>
           </div>
         ) : error && !advice ? (
-          <div className="p-5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 flex items-start gap-3">
+          <div className="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 flex items-start gap-3 shadow-sm">
             <ShieldAlertIcon className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
               <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
@@ -399,7 +614,7 @@ export default function AIAgriculturalAdvisor({
               <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">{error}</p>
             </div>
           </div>
-        ) : activeTab === "advisory" && advice ? (
+        ) : advice ? (
           <div className="space-y-6">
             {/* Timestamp & Provenance Bar */}
             <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-gray-500 dark:text-gray-400 pb-1 border-b border-gray-100 dark:border-gray-700/60">
@@ -601,98 +816,6 @@ export default function AIAgriculturalAdvisor({
                 )}
               </div>
             )}
-          </div>
-        ) : activeTab === "chat" ? (
-          /* ── Interactive Conversational AI Chat Tab ──────────────── */
-          <div className="flex flex-col h-[460px]">
-            {/* Quick Prompt Chips */}
-            <div className="flex flex-wrap items-center gap-1.5 pb-3 mb-2 border-b border-gray-100 dark:border-gray-700">
-              <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mr-1">Quick Questions:</span>
-              {quickQuestions.map((q, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSendQuery(q)}
-                  disabled={chatLoading}
-                  className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all text-left disabled:opacity-50"
-                >
-                  💡 {q}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4">
-              {chatMessages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${
-                      msg.sender === "user"
-                        ? "bg-emerald-600 text-white rounded-br-none shadow-sm"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-200 dark:border-gray-600 shadow-sm"
-                    }`}
-                  >
-                    <div className="whitespace-pre-line font-normal">
-                      {msg.text}
-                    </div>
-
-                    {msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-[10px] text-gray-500 dark:text-gray-400">
-                        <span className="font-semibold">Sources: </span>
-                        {msg.sources.map((s) => s.source || s.institution).join(", ")}
-                      </div>
-                    )}
-
-                    <div className="mt-1 flex items-center justify-between text-[9px]">
-                      {msg.sender === "ai" && msg.ai_engine ? (
-                        <span className="text-emerald-700 dark:text-emerald-300 font-medium">
-                          ⚡ {msg.ai_engine}
-                        </span>
-                      ) : (
-                        <span></span>
-                      )}
-                      <span className={msg.sender === "user" ? "text-emerald-100" : "text-gray-400"}>
-                        {msg.timestamp}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {chatLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-none px-4 py-3 border border-gray-200 dark:border-gray-600 flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      FasalNet AI is analyzing with Gemini, XGBoost & RAG...
-                    </span>
-                  </div>
-                </div>
-              )}
-              <div ref={chatEndRef} />
-            </div>
-
-            {/* Chat Input Box */}
-            <form onSubmit={(e) => { e.preventDefault(); handleSendQuery(); }} className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-              <input
-                type="text"
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                placeholder={t(
-                  "ai_advisor.chat_placeholder",
-                  `Ask anything about ${commodity} in ${city} (e.g., 'Should I sell now or wait?', 'How does rain affect storage?')`
-                )}
-                disabled={chatLoading}
-                className="flex-1 px-4 py-2.5 text-xs rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white"
-              />
-              <button
-                type="submit"
-                disabled={chatLoading || !userInput.trim()}
-                className="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-              >
-                <SendIcon className="w-4 h-4" />
-              </button>
-            </form>
           </div>
         ) : null}
       </div>

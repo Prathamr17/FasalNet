@@ -7,7 +7,7 @@ import logging
 import urllib.request
 import urllib.error
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 log = logging.getLogger(__name__)
 
@@ -140,12 +140,24 @@ def compute_agricultural_advisories(current: dict, daily: dict) -> list[dict]:
     return advisories
 
 
+_WEATHER_CACHE = {}
+
 def fetch_open_meteo_weather(lat: float, lon: float, days: int = 14) -> dict:
     """
-    Query Open-Meteo for real-time weather and daily forecast.
+    Query Open-Meteo for real-time weather and daily forecast with in-memory caching.
     Days can range from 1 to 16 (default 14).
     """
     days = max(1, min(16, int(days)))
+    cache_key = (round(float(lat), 2), round(float(lon), 2))
+    now_dt = datetime.now()
+    if cache_key in _WEATHER_CACHE:
+        cached_time, cached_val = _WEATHER_CACHE[cache_key]
+        if now_dt - cached_time < timedelta(minutes=30):
+            # Return sliced daily forecast according to requested days
+            res_copy = dict(cached_val)
+            if "daily_forecast" in res_copy:
+                res_copy["daily_forecast"] = res_copy["daily_forecast"][:days]
+            return res_copy
     
     current_fields = [
         "temperature_2m",
@@ -180,11 +192,11 @@ def fetch_open_meteo_weather(lat: float, lon: float, days: int = 14) -> dict:
         f"current={','.join(current_fields)}",
         f"daily={','.join(daily_fields)}",
         "timezone=auto",
-        f"forecast_days={days}"
+        "forecast_days=14"
     ]
     
     url = f"{OPEN_METEO_BASE_URL}?{'&'.join(params)}"
-    log.info("Fetching weather from Open-Meteo: lat=%s, lon=%s, days=%s", lat, lon, days)
+    log.info("Fetching weather from Open-Meteo: lat=%s, lon=%s, days=14", lat, lon)
     
     req = urllib.request.Request(
         url,
@@ -192,14 +204,24 @@ def fetch_open_meteo_weather(lat: float, lon: float, days: int = 14) -> dict:
     )
     
     try:
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=3) as response:
             if response.status != 200:
                 raise ValueError(f"Open-Meteo returned HTTP {response.status}")
             raw_data = json.loads(response.read().decode("utf-8"))
-        return parse_weather_response(lat, lon, raw_data)
+        res = parse_weather_response(lat, lon, raw_data)
+        _WEATHER_CACHE[cache_key] = (now_dt, res)
+        res_copy = dict(res)
+        if "daily_forecast" in res_copy:
+            res_copy["daily_forecast"] = res_copy["daily_forecast"][:days]
+        return res_copy
     except Exception as e:
         log.warning(f"Open-Meteo request failed: {e}. Using seasonal fallback weather.")
-        return _build_fallback_weather(lat, lon, days)
+        fallback = _build_fallback_weather(lat, lon, 14)
+        _WEATHER_CACHE[cache_key] = (now_dt, fallback)
+        res_copy = dict(fallback)
+        if "daily_forecast" in res_copy:
+            res_copy["daily_forecast"] = res_copy["daily_forecast"][:days]
+        return res_copy
 
 
 def _build_fallback_weather(lat: float, lon: float, days: int) -> dict:

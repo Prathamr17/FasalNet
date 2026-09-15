@@ -3,20 +3,35 @@ FasalNet AI Advisor Blueprint
 Endpoints:
   - GET/POST /api/ai/market-advice : Structured multi-signal recommendation (XGBoost + Weather + RAG + LLM)
   - POST     /api/ai/chat          : Interactive natural-language agricultural advisor
+  - GET/POST /api/ai/grok-test     : Isolated minimal Grok API connection health test
   - GET      /api/ai/sources       : List of verified ICAR / SAU knowledge sources in RAG
   - GET      /api/ai/health        : Health check of RAG + AI pipeline
 """
 
+import uuid
 import logging
 from flask import Blueprint, request, jsonify
 from services.ai_recommendation_service import (
     get_agricultural_market_advice,
     ask_ai_farmer_chat
 )
+from services.gemini_service import test_gemini_connection
 from rag.vector_store import get_vector_store
 
 logger = logging.getLogger("fasalnet.routes.ai_advisor")
 ai_bp = Blueprint("ai_advisor", __name__, url_prefix="/api/ai")
+
+
+@ai_bp.route("/gemini-test", methods=["GET", "POST"])
+@ai_bp.route("/grok-test", methods=["GET", "POST"])
+def gemini_test():
+    """
+    Isolated minimal Gemini API connection test without RAG/XGBoost/weather overhead.
+    """
+    req_id = str(uuid.uuid4())[:8]
+    result = test_gemini_connection(request_id=req_id)
+    status_code = 200 if result.get("success") else 503
+    return jsonify(result), status_code
 
 
 @ai_bp.route("/market-advice", methods=["GET", "POST"])
@@ -26,6 +41,7 @@ def market_advice():
     Generate grounded AI agricultural recommendation combining:
     GPS/Nearby Markets -> Open-Meteo Weather -> XGBoost 7/14d Forecast -> RAG Knowledge -> LLM Advisory.
     """
+    req_id = str(uuid.uuid4())[:8]
     try:
         if request.method == "POST":
             data = request.get_json(silent=True) or {}
@@ -59,15 +75,23 @@ def market_advice():
         )
 
         if result.get("status") == "error":
-            return jsonify(result), 422
+            error_code = result.get("error_code")
+            status_code = 503 if error_code == "AI_SERVICE_UNAVAILABLE" else 422
+            return jsonify(result), status_code
 
+        result["request_id"] = req_id
         return jsonify(result), 200
 
     except Exception as e:
-        logger.error(f"Error in /api/ai/market-advice: {e}", exc_info=True)
+        logger.error(f"[Req {req_id}] Error in /api/ai/market-advice: {e}", exc_info=True)
         return jsonify({
+            "success": False,
             "status": "error",
-            "error": f"Internal error generating AI agricultural advice: {str(e)}"
+            "code": "INTERNAL_ERROR",
+            "error_code": "INTERNAL_ERROR",
+            "message": "AI Advisor is temporarily unavailable. Please try again in a moment.",
+            "error": "AI Advisor is temporarily unavailable. Please try again in a moment.",
+            "request_id": req_id
         }), 500
 
 
@@ -78,13 +102,19 @@ def ai_chat():
     Answers natural-language agricultural questions grounded strictly in
     known market data, XGBoost predictions, Open-Meteo weather, and ICAR guidelines.
     """
+    req_id = str(uuid.uuid4())[:8]
     try:
         data = request.get_json(silent=True) or {}
         message = data.get("message") or data.get("query") or ""
         if not message.strip():
             return jsonify({
+                "success": False,
                 "status": "error",
-                "error": "Query message is required."
+                "code": "EMPTY_QUERY",
+                "error_code": "EMPTY_QUERY",
+                "message": "Query message is required.",
+                "error": "Query message is required.",
+                "request_id": req_id
             }), 400
 
         city = data.get("city") or data.get("market") or "Sangli"
@@ -98,6 +128,8 @@ def ai_chat():
 
         days = 14 if int(days) == 14 else 7
 
+        logger.info(f"[Req {req_id}] Incoming AI Chat: commodity='{commodity}', city='{city}', days={days}, lang='{language}', message='{message[:80]}'")
+
         response = ask_ai_farmer_chat(
             message=message,
             city=city,
@@ -110,16 +142,25 @@ def ai_chat():
             language=language
         )
 
-        if response.get("status") == "error":
-            return jsonify(response), 422
+        response["request_id"] = req_id
+
+        if response.get("status") == "error" or not response.get("success", True):
+            error_code = response.get("error_code") or response.get("code")
+            status_code = 503 if error_code == "AI_SERVICE_UNAVAILABLE" else 422
+            return jsonify(response), status_code
 
         return jsonify(response), 200
 
     except Exception as e:
-        logger.error(f"Error in /api/ai/chat: {e}", exc_info=True)
+        logger.error(f"[Req {req_id}] Error in /api/ai/chat: {e}", exc_info=True)
         return jsonify({
+            "success": False,
             "status": "error",
-            "error": f"Internal error in AI chat: {str(e)}"
+            "code": "INTERNAL_ERROR",
+            "error_code": "INTERNAL_ERROR",
+            "message": "AI Assistant is temporarily unavailable. Please try again in a moment.",
+            "error": "AI Assistant is temporarily unavailable. Please try again in a moment.",
+            "request_id": req_id
         }), 500
 
 
