@@ -33,7 +33,7 @@ from typing import Dict, Any, List, Optional, Tuple
 import requests
 from dotenv import load_dotenv
 
-from utils.db import get_db
+from utils.db import get_db, query
 from services.xgboost_forecast_service import (
     generate_xgboost_weather_forecast,
     resolve_market_coordinates,
@@ -911,82 +911,7 @@ def synthesize_dynamic_chat_reply(
         return "\n".join(sections)
 
 
-# ── LLM / GENAI ENHANCER (GOOGLE GEMINI WITH DETERMINISTIC FALLBACK) ─────────
-def _call_gemini_llm(
-    prompt: str,
-    system_instruction: str,
-    max_tokens: int = 2048,
-    json_mode: bool = False
-) -> Tuple[Optional[str], Optional[str]]:
-    """
-    Call Google Gemini API using active Gemini 3 / 2.5 models.
-    Returns (generated_text, error_message).
-    """
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-    if not api_key:
-        return None, "GEMINI_API_KEY is not configured in backend/.env"
-
-    models_to_try = [
-        "gemini-3-flash-preview",
-        "gemini-3.1-flash-lite",
-        "gemini-3.7-flash",
-        "gemini-2.5-flash"
-    ]
-
-    gen_config: Dict[str, Any] = {
-        "temperature": 0.2 if json_mode else 0.4,
-        "topP": 0.85,
-        "maxOutputTokens": max_tokens
-    }
-    if json_mode:
-        gen_config["responseMimeType"] = "application/json"
-
-    last_err = None
-    for model_name in models_to_try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-        payload = {
-            "contents": [
-                {
-                    "parts": [
-                        {"text": prompt}
-                    ]
-                }
-            ],
-            "systemInstruction": {
-                "parts": [
-                    {"text": system_instruction}
-                ]
-            },
-            "generationConfig": gen_config
-        }
-
-        try:
-            resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=18)
-            if resp.status_code == 200:
-                data = resp.json()
-                candidates = data.get("candidates", [])
-                if candidates:
-                    parts = candidates[0].get("content", {}).get("parts", [])
-                    if parts and "text" in parts[0]:
-                        return parts[0]["text"], None
-            elif resp.status_code == 429:
-                last_err = f"Gemini API rate limit/quota reached on {model_name} (HTTP 429)"
-                logger.warning(last_err)
-            elif resp.status_code in (400, 403):
-                err_data = resp.json().get("error", {})
-                last_err = f"Gemini API authentication/bad request ({resp.status_code}): {err_data.get('message', resp.text[:120])}"
-                logger.warning(last_err)
-            else:
-                last_err = f"Gemini model {model_name} returned status {resp.status_code}: {resp.text[:120]}"
-                logger.warning(last_err)
-        except requests.exceptions.Timeout:
-            last_err = f"Gemini API request timed out on {model_name}"
-            logger.warning(last_err)
-        except Exception as e:
-            last_err = f"Error calling Gemini model {model_name}: {str(e)}"
-            logger.warning(last_err)
-
-    return None, last_err
+from services.gemini_service import call_gemini_llm
 
 
 # ── MAIN ADVISORY SERVICE ENTRY POINT ────────────────────────────────────────
@@ -1000,7 +925,7 @@ def get_agricultural_market_advice(
     language: str = "en"
 ) -> Dict[str, Any]:
     """
-    Main entry point for generating dynamic AI Agricultural Recommendations.
+    Main entry point for generating dynamic AI Agricultural Recommendations using Google Gemini.
     """
     city = (city or "Sangli").strip()
     commodity = (commodity or "Onion").strip()
@@ -1025,7 +950,7 @@ def get_agricultural_market_advice(
     if grounded_result.get("status") == "error":
         return grounded_result
 
-    # LLM Reasoning Enhancement (if Google Gemini API is available)
+    # LLM Reasoning Enhancement using Google Gemini
     lang_instruction = "Respond in English."
     if language == "mr":
         lang_instruction = "Respond entirely in Marathi (मराठी)."
@@ -1033,7 +958,7 @@ def get_agricultural_market_advice(
         lang_instruction = "Respond entirely in Hindi (हिन्दी)."
 
     system_instruction = (
-        f"You are FasalNet AI Agricultural Advisor. You provide actionable, grounded agricultural market advice for Indian farmers.\n"
+        f"You are FasalNet AI Agricultural Advisor powered by Google Gemini. You provide actionable, grounded agricultural market advice for Indian farmers.\n"
         f"Language Requirement: {lang_instruction}\n"
         "STRICT GUARDRAILS:\n"
         "1. Never invent future prices, market names, or weather values.\n"
@@ -1067,7 +992,13 @@ USER QUESTION / FOCUS:
 Generate a concise, high-impact JSON response adhering strictly to the above facts.
 """
 
-    llm_response_text, gemini_err = _call_gemini_llm(llm_prompt, system_instruction, max_tokens=2048, json_mode=True)
+    llm_response_text, model_used, gemini_err = call_gemini_llm(
+        prompt=llm_prompt,
+        system_instruction=system_instruction,
+        max_tokens=1500,
+        json_mode=True
+    )
+
     if llm_response_text:
         try:
             # Extract JSON substring
@@ -1085,18 +1016,109 @@ Generate a concise, high-impact JSON response adhering strictly to the above fac
             grounded_result["risk_level"] = parsed.get("risk_level", grounded_result["risk_level"])
             grounded_result["confidence"] = parsed.get("confidence", grounded_result["confidence"])
             grounded_result["suggested_action"] = parsed.get("suggested_action", grounded_result["suggested_action"])
-            grounded_result["ai_engine"] = "Google Gemini 3 (Grounded)"
-            logger.info("Successfully enhanced recommendation with Gemini LLM.")
+            grounded_result["ai_engine"] = f"Google Gemini ({model_used or 'gemini-flash'})"
+            logger.info(f"Successfully enhanced recommendation with Google Gemini ({model_used}).")
         except Exception as e:
-            logger.warning(f"Failed to parse LLM JSON response, using deterministic engine: {e}")
+            logger.warning(f"Failed to parse Gemini JSON response, using deterministic engine: {e}")
             grounded_result["ai_engine"] = "FasalNet Grounded Engine"
     else:
         grounded_result["ai_engine"] = "FasalNet Grounded Engine"
-        if gemini_err:
-            grounded_result["ai_notice"] = gemini_err
 
     _set_cached_advice(cache_key, grounded_result)
     return grounded_result
+
+
+def _synthesize_grounded_farmer_chat_reply(
+    message: str,
+    commodity: str,
+    city: str,
+    days: int,
+    advice: Dict[str, Any],
+    language: str
+) -> str:
+    """
+    Synthesize a fully grounded, dynamic, data-driven conversational answer
+    using the computed XGBoost forecast, Open-Meteo weather, and ICAR RAG data
+    whenever external LLM APIs are offline or credit-limited.
+    """
+    m_lower = message.lower()
+    m_ctx = advice.get("market_context", {})
+    curr_price = m_ctx.get("current_price", 0)
+    target_price = m_ctx.get("target_price", 0)
+    pct_change = m_ctx.get("forecast_pct_change", 0)
+    direction = m_ctx.get("direction", "STABLE")
+    temp = m_ctx.get("temperature_c", 28)
+    humidity = m_ctx.get("humidity_percent", 65)
+    rain_mm = m_ctx.get("rainfall_sum_mm", 0)
+    weather_risk = m_ctx.get("weather_risk", "Low")
+    crop_advice = advice.get("crop_advice", "")
+    suggested_action = advice.get("suggested_action", "")
+    recommendation = advice.get("recommendation", "")
+    reason = advice.get("reason", "")
+    market_analysis = advice.get("market_analysis", "")
+
+    is_greeting = any(g in m_lower for g in ["hi", "hello", "hey", "namaste", "who are you", "greeting", "नमस्कार", "नमस्ते"])
+    is_weather = any(w in m_lower for w in ["weather", "rain", "temperature", "humidity", "monsoon", "climate", "paus", "varsha", "हवामान", "पाऊस", "तापमान"])
+    is_price_forecast = any(p in m_lower for p in ["forecast", "price", "bhav", "rate", "target", "trend", "xgboost", "modal", "sell", "hold", "vikava", "bechna", "भाव", "अंदाज", "किंमत", "बेचना", "विकावे"])
+    is_nearby = any(n in m_lower for n in ["compare", "nearby", "mandi", "market", "kolhapur", "sangli", "pune", "apmc", "arbitrage", "तुलना", "जवळपास"])
+    is_storage = any(s in m_lower for s in ["storage", "icar", "rot", "cure", "disease", "sprout", "pest", "guidelines", "protect", "साठवणूक", "बुरशी", "भंडारण"])
+
+    if language == "mr":
+        if is_greeting and not (is_price_forecast or is_weather):
+            return f"नमस्कार! मी फसलनेट (FasalNet) AI शेती व बाजार सल्लागार आहे. मी तुम्हाला {city} बाजार समितीतील {commodity} चे भाव, {days} दिवसांचा XGBoost अंदाज, हवामान आणि ICAR मार्गदर्शक तत्त्वे सांगू शकतो. मी तुम्हाला कशी मदत करू?"
+        if is_weather and not is_price_forecast:
+            return f"**{city} परिसरातील हवामान अंदाज:**\n- **तापमान:** {temp}°C | **हवेतील आर्द्रता:** {humidity}%\n- **पावसाचा अंदाज:** पुढील दिवसांत ~{rain_mm:.1f} मिमी पाऊस अपेक्षित आहे (हवामान जोखीम: **{weather_risk}**).\n- **कृषी सल्ला:** {advice.get('weather_impact', 'काढणी केलेले पीक सुरक्षित व कोरड्या जागी साठवावे.')}"
+        if is_storage:
+            return f"**{commodity} साठी ICAR व कृषी विद्यापीठांचा साठवणूक सल्ला:**\n{crop_advice}\n\n**शिफारस केलेली कृती:**\n{suggested_action}"
+        if is_nearby:
+            return f"**{commodity} बाजारभाव तुलना व विश्लेषण:**\n{market_analysis}\n\n- **{city} APMC सध्याचा दर:** ₹{curr_price:,.2f}/क्विंटल\n- **{days} दिवसांचा अंदाज:** ₹{target_price:,.2f}/क्विंटल ({pct_change:+.2f}% {direction})\n\n**सल्ला:** {suggested_action}"
+        
+        action_title = "HOLD (थांबणे फायदेशीर)" if direction == "UP" and pct_change >= 4.0 else ("SELL (तात्काळ विक्री करा)" if direction == "DOWN" and pct_change <= -4.0 else "नियमित विक्री करा")
+        return (
+            f"**{city} APMC - {commodity} बाजार सल्ला ({days} दिवस):**\n\n"
+            f"• **शिफारस:** **{action_title}** — {recommendation}\n"
+            f"• **XGBoost भाव अंदाज:** सध्याचा दर **₹{curr_price:,.2f}/क्विंटल** असून {days} दिवसांत **₹{target_price:,.2f}/क्विंटल** ({pct_change:+.2f}% कल) जाण्याची शक्यता आहे.\n"
+            f"• **हवामान घटक (Open-Meteo):** तापमान {temp}°C, आर्द्रता {humidity}%, पाऊस ~{rain_mm:.1f} मिमी (जोखीम: {weather_risk}).\n"
+            f"• **कृती योजना:**\n{suggested_action}"
+        )
+
+    elif language == "hi":
+        if is_greeting and not (is_price_forecast or is_weather):
+            return f"नमस्ते! मैं फसलनेट (FasalNet) AI कृषि एवं मंडी सलाहकार हूँ। मैं आपको {city} मंडी में {commodity} के भाव, {days} दिनों के XGBoost पूर्वानुमान और मौसम अनुसार सटीक सलाह दे सकता हूँ।"
+        if is_weather and not is_price_forecast:
+            return f"**{city} मंडी क्षेत्र में मौसम की स्थिति:**\n- **तापमान:** {temp}°C | **आर्द्रता:** {humidity}%\n- **बारिश का अनुमान:** अगले दिनों में ~{rain_mm:.1f} मिमी बारिश की संभावना (मौसम जोखिम: **{weather_risk}**)।\n- **कृषि सलाह:** {advice.get('weather_impact', 'फसल को सुरक्षित और सूखे स्थान पर रखें।')}"
+        if is_storage:
+            return f"**{commodity} के लिए ICAR कृषि एवं भंडारण सलाह:**\n{crop_advice}\n\n**सुझाई गई कार्रवाई:**\n{suggested_action}"
+        if is_nearby:
+            return f"**{commodity} मंडी भाव तुलना एवं विश्लेषण:**\n{market_analysis}\n\n- **{city} मंडी वर्तमान दर:** ₹{curr_price:,.2f}/क्विंटल\n- **{days} दिनों का पूर्वानुमान:** ₹{target_price:,.2f}/क्विंटल ({pct_change:+.2f}% {direction})\n\n**सिफारिश:** {suggested_action}"
+        
+        action_title = "HOLD (रोककर रखें)" if direction == "UP" and pct_change >= 4.0 else ("SELL (तुरंत बेचें)" if direction == "DOWN" and pct_change <= -4.0 else "सामान्य बिक्री बनाए रखें")
+        return (
+            f"**{city} मंडी - {commodity} बाजार सलाह ({days} दिन):**\n\n"
+            f"• **मुख्य सिफारिश:** **{action_title}** — {recommendation}\n"
+            f"• **XGBoost मूल्य विश्लेषण:** वर्तमान मॉडल दर **₹{curr_price:,.2f}/क्विंटल** है, तथा {days} दिनों में **₹{target_price:,.2f}/क्विंटल** ({pct_change:+.2f}% रुझान) संभावित है।\n"
+            f"• **मौसम प्रभाव (Open-Meteo):** तापमान {temp}°C, आर्द्रता {humidity}%, वर्षा ~{rain_mm:.1f} मिमी (जोखिम: {weather_risk})।\n"
+            f"• **कार्रवाई योजना:**\n{suggested_action}"
+        )
+
+    else:
+        if is_greeting and not (is_price_forecast or is_weather):
+            return f"Hello! I am FasalNet AI, your agricultural and market intelligence assistant. I analyze live APMC mandi prices, XGBoost machine learning price trends, and Open-Meteo weather for **{commodity}** in **{city} APMC**. How can I help you today?"
+        if is_weather and not is_price_forecast:
+            return f"**Live Weather Advisory for {city}:**\n\n- **Current Conditions:** {temp}°C, {humidity}% Relative Humidity\n- **Precipitation Outlook:** ~{rain_mm:.1f} mm rain expected (Weather Risk: **{weather_risk}**)\n- **Agronomic Impact:** {advice.get('weather_impact', 'Ensure harvested crops are stored safely in covered, well-ventilated structures.')}"
+        if is_storage:
+            return f"**ICAR & University Agronomic Advisory for {commodity}:**\n\n{crop_advice}\n\n**Recommended Action Plan:**\n{suggested_action}"
+        if is_nearby:
+            return f"**Mandi Comparison & Spatial Arbitrage for {commodity}:**\n\n{market_analysis}\n\n- **{city} APMC Modal Rate:** ₹{curr_price:,.2f}/quintal\n- **{days}-Day Forecast Target:** ₹{target_price:,.2f}/quintal ({pct_change:+.2f}% {direction})\n\n**Action Plan:**\n{suggested_action}"
+
+        action_title = "HOLD FOR TARGET REALIZATION" if direction == "UP" and pct_change >= 4.0 else ("SELL IMMEDIATELY" if direction == "DOWN" and pct_change <= -4.0 else "MAINTAIN REGULAR HARVEST & DISPATCH")
+        return (
+            f"**FasalNet Market Recommendation for {commodity} @ {city} APMC ({days}-Day Horizon):**\n\n"
+            f"• **Recommendation:** **{action_title}** — {recommendation}\n\n"
+            f"• **Price Intelligence (XGBoost Regressor):** Current modal rate is **₹{curr_price:,.2f}/q** with a projected {days}-day target of **₹{target_price:,.2f}/q** ({pct_change:+.2f}% trajectory).\n\n"
+            f"• **Weather & Crop Risk (Open-Meteo):** Current {temp}°C ({humidity}% humidity) with ~{rain_mm:.1f} mm rain expected (Risk: **{weather_risk}**).\n\n"
+            f"• **Action Plan:**\n{suggested_action}"
+        )
 
 
 # ── CONVERSATIONAL AI CHAT SERVICE WITH CONVERSATION MEMORY ──────────────────
@@ -1113,7 +1135,7 @@ def ask_ai_farmer_chat(
 ) -> Dict[str, Any]:
     """
     Handles conversational natural language farmer queries with conversation session tracking,
-    coreference resolution, and multilingual generation using Google Gemini.
+    coreference resolution, and dynamic multilingual generation using xAI Grok.
     """
     conv_id, session = _get_or_create_session(conversation_id)
     language = (language or "en").lower().strip()
@@ -1156,7 +1178,13 @@ def ask_ai_farmer_chat(
         "garlic": ["garlic", "lahsun", "लसूण", "लहसुन"],
         "pomegranate": ["pomegranate", "anar", "डाळिंब", "अनार"],
         "banana": ["banana", "kela", "केळी", "केला"],
-        "grape": ["grape", "draksha", "द्राक्षे", "अंगूर"]
+        "grape": ["grape", "draksha", "द्राक्षे", "अंगूर"],
+        "apple": ["apple", "seb", "सफरचंद", "सेब"],
+        "mango": ["mango", "aam", "amba", "हापूस", "आंबा", "आम"],
+        "orange": ["orange", "santra", "santre", "संत्रे", "संतरा"],
+        "chilli": ["chilli", "chili", "mirchi", "मिरची", "मिर्च"],
+        "ginger": ["ginger", "adrak", "ale", "आले", "अदरक"],
+        "rice": ["rice", "paddy", "chawal", "dhan", "तांदूळ", "चावल", "धान"]
     }
 
     # Detect if user mentioned a new crop in message
@@ -1174,29 +1202,25 @@ def ask_ai_farmer_chat(
     if session.get("last_context", {}).get("city") and not any(known_c.lower() in msg_lower for known_c in all_known_cities if len(known_c) > 3):
         city = session["last_context"]["city"]
 
-    advice = get_agricultural_market_advice(
+    advice = build_ai_context(
         city=city,
         commodity=commodity,
         days=days,
         lat=lat,
         lon=lon,
-        user_query=message,
-        language=language
+        user_query=message
     )
 
     if advice.get("status") == "error":
-        err_msg = advice.get('error')
-        if language == "mr":
-            reply_err = f"सध्या {city} मधील {commodity} साठी सल्ला तयार करता आला नाही: {err_msg}"
-        elif language == "hi":
-            reply_err = f"वर्तमान में {city} में {commodity} के लिए सलाह उपलब्ध नहीं हो सकी: {err_msg}"
-        else:
-            reply_err = f"I cannot provide advice for {commodity} in {city} right now because: {err_msg}"
-
         return {
+            "success": False,
             "status": "error",
+            "code": "DATA_UNAVAILABLE",
+            "error_code": "DATA_UNAVAILABLE",
             "conversation_id": conv_id,
-            "reply": reply_err,
+            "message": "Unable to retrieve current market data for this crop and location. Please try again.",
+            "error": "Unable to retrieve current market data for this crop and location. Please try again.",
+            "retryable": True,
             "sources": []
         }
 
@@ -1255,28 +1279,53 @@ LIVE FASALNET CONTEXT & EMPIRICAL DATA:
 Answer the farmer's specific question directly, thoroughly, and helpfully in the requested language.
 """
 
-    llm_reply, gemini_err = _call_gemini_llm(prompt, system_instruction, max_tokens=1000)
+    llm_reply, model_used, gemini_err = call_gemini_llm(
+        prompt=prompt,
+        system_instruction=system_instruction,
+        max_tokens=1500
+    )
 
-    ai_engine = "Google Gemini 3 (Real-time)"
     if not llm_reply:
-        # Dynamic Intent-Aware Grounded Synthesizer
-        llm_reply = synthesize_dynamic_chat_reply(
-            user_query=message,
-            advice=advice,
-            session=session,
-            language=language
-        )
-        ai_engine = "FasalNet Grounded Engine"
+        logger.warning(f"[Ask AI Chat] Gemini LLM unavailable (Error: {gemini_err}). Returning AI_SERVICE_UNAVAILABLE.")
+        return {
+            "success": False,
+            "status": "error",
+            "code": "AI_SERVICE_UNAVAILABLE",
+            "error_code": "AI_SERVICE_UNAVAILABLE",
+            "conversation_id": conv_id,
+            "message": "AI Assistant is temporarily unavailable. Please try again later.",
+            "error": "AI Assistant is temporarily unavailable. Please try again later.",
+            "retryable": True,
+            "sources": advice.get("sources", [])
+        }
+
+    ai_engine = f"Google Gemini ({model_used or 'gemini-flash'})"
 
     # Save to session history
     session["history"].append({"role": "user", "content": message})
     session["history"].append({"role": "assistant", "content": llm_reply})
 
     return {
+        "success": True,
         "status": "success",
-        "conversation_id": conv_id,
+        "answer": llm_reply.strip(),
         "reply": llm_reply.strip(),
         "ai_engine": ai_engine,
+        "conversation_id": conv_id,
+        "sources": advice.get("sources", []),
+        "contextUsed": {
+            "commodity": commodity,
+            "city": city,
+            "days": days,
+            "current_price": advice.get("market_context", {}).get("current_price"),
+            "target_price": advice.get("market_context", {}).get("target_price"),
+            "direction": advice.get("market_context", {}).get("direction"),
+            "forecast_pct_change": advice.get("market_context", {}).get("forecast_pct_change"),
+            "temperature_c": advice.get("market_context", {}).get("temperature_c"),
+            "humidity_percent": advice.get("market_context", {}).get("humidity_percent"),
+            "rainfall_sum_mm": advice.get("market_context", {}).get("rainfall_sum_mm"),
+            "weather_risk": advice.get("market_context", {}).get("weather_risk")
+        },
         "recommendation_summary": advice.get("recommendation"),
         "risk_level": advice.get("risk_level"),
         "risk_score": advice.get("risk_score"),
@@ -1284,7 +1333,6 @@ Answer the farmer's specific question directly, thoroughly, and helpfully in the
         "confidence": advice.get("confidence"),
         "confidence_score": advice.get("confidence_score"),
         "confidence_breakdown": advice.get("confidence_breakdown", {}),
-        "sources": advice.get("sources", []),
         "actual_data": advice.get("actual_data", {}),
         "forecast": advice.get("forecast", {}),
         "weather": advice.get("weather", {}),

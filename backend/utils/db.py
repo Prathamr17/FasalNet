@@ -26,12 +26,15 @@ def get_pool() -> psycopg2.pool.ThreadedConnectionPool:
 
 def get_db():
     """
-    Return a DB connection bound to the current Flask request context.
-    The connection is automatically returned to the pool after the request.
+    Return a DB connection bound to the current Flask request context if available,
+    otherwise borrow a connection directly from the pool.
     """
-    if "db_conn" not in g:
-        g.db_conn = get_pool().getconn()
-    return g.db_conn
+    from flask import has_app_context
+    if has_app_context():
+        if "db_conn" not in g:
+            g.db_conn = get_pool().getconn()
+        return g.db_conn
+    return get_pool().getconn()
 
 
 def close_db(error=None):
@@ -56,24 +59,33 @@ def query(sql: str, params=None, fetchone=False, fetchall=False, commit=False):
         commit    → lastrowid (for INSERT RETURNING id)
         default   → None
     """
+    from flask import has_app_context
+    in_ctx = has_app_context()
     conn = get_db()
-    with conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql, params or ())
-        if commit:
-            conn.commit()
-            # Attempt to return the inserted id if query had RETURNING
-            try:
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(sql, params or ())
+            if commit:
+                conn.commit()
+                # Attempt to return the inserted id if query had RETURNING
+                try:
+                    row = cur.fetchone()
+                    return dict(row) if row else None
+                except Exception:
+                    return None
+            if fetchone:
                 row = cur.fetchone()
                 return dict(row) if row else None
+            if fetchall:
+                rows = cur.fetchall()
+                return [dict(r) for r in rows]
+        return None
+    finally:
+        if not in_ctx and _pool is not None:
+            try:
+                _pool.putconn(conn)
             except Exception:
-                return None
-        if fetchone:
-            row = cur.fetchone()
-            return dict(row) if row else None
-        if fetchall:
-            rows = cur.fetchall()
-            return [dict(r) for r in rows]
-    return None
+                pass
 
 
 def init_app(app):
