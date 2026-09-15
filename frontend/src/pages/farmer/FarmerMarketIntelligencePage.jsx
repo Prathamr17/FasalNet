@@ -1473,21 +1473,21 @@ export default function FarmerMarketIntelligencePage() {
             )}
 
             <CitySearchSelect
-              cities={cities}
-              selectedCities={selectedCities}
+              cities={cities || []}
+              selectedCities={selectedCities || []}
               onToggle={toggleCity}
               onClearAll={() => setSelectedCities([])}
             />
 
             {/* Quick-pick popular Mandis when no city is selected */}
-            {selectedCities.length === 0 && (
+            {(selectedCities || []).length === 0 && (
               <div style={{ marginTop: "4px", paddingTop: "6px", borderTop: "1px dashed var(--bd)" }}>
                 <div style={{ fontSize: "10px", color: "var(--tx-s)", marginBottom: "4px", fontWeight: 600 }}>
                   {t("mi.quick_markets", "Popular Mandis:")}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                   {["Pune", "Nashik", "Nagpur", "Mumbai", "Chhatrapati Sambhajinagar", "Kolhapur", "Solapur", "Jalgaon"].map(hub => {
-                    const match = cities.find(c => c.toLowerCase() === hub.toLowerCase() || c.toLowerCase().startsWith(hub.toLowerCase()));
+                    const match = (cities || []).find(c => typeof c === "string" && (c.toLowerCase() === hub.toLowerCase() || c.toLowerCase().startsWith(hub.toLowerCase())));
                     if (!match) return null;
                     return (
                       <button
@@ -1521,11 +1521,11 @@ export default function FarmerMarketIntelligencePage() {
             </div>
             <select
               style={{ ...INP, cursor: "pointer" }}
-              value={commodity}
+              value={commodity || ""}
               onChange={e => setCommodity(e.target.value)}
             >
               <option value="">— {t("market.all_commodities")} —</option>
-              {commodities.map(c => <option key={c} value={c}>{c}</option>)}
+              {(commodities || []).map(c => <option key={c} value={c}>{c}</option>)}
             </select>
 
             <div style={{
@@ -1534,7 +1534,7 @@ export default function FarmerMarketIntelligencePage() {
             }}>
               <span style={{ fontSize: "10px", color: "var(--tx-s)", fontWeight: 600 }}>{t("market.popular_crops", "Popular:")}</span>
               {["Onion", "Tomato", "Wheat", "Soyabean", "Cotton", "Potato", "Gram"].map(crop => {
-                if (!commodities.includes(crop)) return null;
+                if (!commodities || !commodities.includes(crop)) return null;
                 const isSel = commodity === crop;
                 return (
                   <button

@@ -1,7 +1,4 @@
-// src/App.js — v10
-// New routes: /market → FarmerMarketIntelligencePage (ARIMA primary)
-// /ml-predict → MLPredictionsPage (Price + Market Rec only, Spoilage moved to /discover)
-
+import React, { Component } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider }         from "./context/ThemeContext";
@@ -21,6 +18,49 @@ import SettingsPage                  from "./pages/settings/SettingsPage";
 import FarmerOrders                  from "./pages/farmer/FarmerOrders";
 import MLPredictionsPage             from "./pages/farmer/MLPredictionsPage";       // Price + Market Rec
 import FarmerMarketIntelligencePage  from "./pages/farmer/FarmerMarketIntelligencePage"; // ARIMA + live DB
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("FasalNet Page Error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: "60vh", display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", padding: "40px 20px",
+          textAlign: "center", fontFamily: "var(--fd)"
+        }}>
+          <div style={{ fontSize: "42px", marginBottom: "12px" }}>🌾</div>
+          <h2 style={{ fontSize: "20px", fontWeight: 800, color: "var(--tx)", marginBottom: "8px" }}>
+            Something went wrong loading this page
+          </h2>
+          <p style={{ fontSize: "13px", color: "var(--tx-m)", maxWidth: "460px", marginBottom: "20px" }}>
+            {this.state.error?.message || "An unexpected rendering error occurred. Please refresh or try again."}
+          </p>
+          <button
+            onClick={() => { this.setState({ hasError: false }); window.location.reload(); }}
+            style={{
+              background: "var(--cp)", color: "var(--cp-text, #fff)", border: "none",
+              borderRadius: "10px", padding: "10px 24px", fontSize: "13px", fontWeight: 700,
+              cursor: "pointer", boxShadow: "0 2px 10px rgba(63,107,51,0.2)"
+            }}
+          >
+            🔄 Refresh Page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function PrivateRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -46,51 +86,50 @@ function AppInner() {
       background:"var(--bg)", color:"var(--tx)" }}>
       <Navbar />
       <main style={{ flex:1 }}>
-        <Routes>
-          {/* Public */}
-          <Route path="/"                element={<HomePage />} />
-          <Route path="/login"           element={<LoginPage />} />
-          <Route path="/signup"          element={<SignupPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <ErrorBoundary>
+          <Routes>
+            {/* Public */}
+            <Route path="/"                element={<HomePage />} />
+            <Route path="/login"           element={<LoginPage />} />
+            <Route path="/signup"          element={<SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-          {/* Farmer */}
-          <Route path="/discover"
-            element={<PrivateRoute roles={["farmer","admin"]}>
-              <DiscoverPage />                  {/* Cold storage + Spoilage Risk → optimal route */}
-            </PrivateRoute>} />
+            {/* Market Intelligence (Open to all visitors and farmers) */}
+            <Route path="/market"          element={<FarmerMarketIntelligencePage />} />
 
-          <Route path="/bookings"
-            element={<PrivateRoute roles={["farmer","admin"]}>
-              <BookingsPage />
-            </PrivateRoute>} />
+            {/* Farmer Private Routes */}
+            <Route path="/discover"
+              element={<PrivateRoute roles={["farmer","admin"]}>
+                <DiscoverPage />                  {/* Cold storage + Spoilage Risk → optimal route */}
+              </PrivateRoute>} />
 
-          <Route path="/farmer-orders"
-            element={<PrivateRoute roles={["farmer","admin"]}>
-              <FarmerOrders />
-            </PrivateRoute>} />
+            <Route path="/bookings"
+              element={<PrivateRoute roles={["farmer","admin"]}>
+                <BookingsPage />
+              </PrivateRoute>} />
 
-          {/* Market Intelligence (ARIMA primary, ML secondary) — v10 */}
-          <Route path="/market"
-            element={<PrivateRoute roles={["farmer","admin"]}>
-              <FarmerMarketIntelligencePage />
-            </PrivateRoute>} />
+            <Route path="/farmer-orders"
+              element={<PrivateRoute roles={["farmer","admin"]}>
+                <FarmerOrders />
+              </PrivateRoute>} />
 
-          {/* ML Predictions — Price + Market Rec only (Spoilage moved to /discover) */}
-          <Route path="/ml-predict"
-            element={<PrivateRoute roles={["farmer","admin"]}>
-              <MLPredictionsPage />
-            </PrivateRoute>} />
+            {/* ML Predictions — Price + Market Rec only (Spoilage moved to /discover) */}
+            <Route path="/ml-predict"
+              element={<PrivateRoute roles={["farmer","admin"]}>
+                <MLPredictionsPage />
+              </PrivateRoute>} />
 
-          {/* Operator */}
-          <Route path="/operator"
-            element={<PrivateRoute roles={["operator","admin"]}>
-              <OperatorPage />
-            </PrivateRoute>} />
+            {/* Operator */}
+            <Route path="/operator"
+              element={<PrivateRoute roles={["operator","admin"]}>
+                <OperatorPage />
+              </PrivateRoute>} />
 
-          {/* Shared */}
-          <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
-          <Route path="*"         element={<NotFoundPage />} />
-        </Routes>
+            {/* Shared */}
+            <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+            <Route path="*"         element={<NotFoundPage />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
       <Footer />
     </div>
@@ -108,3 +147,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+
