@@ -1,10 +1,16 @@
-// components/common/Navbar.js — v11: Full localization & responsive design
+// components/common/Navbar.js — v12: redesigned with Tailwind + Framer Motion,
+// all v11 logic (role-based links, auth, theme, language, mobile drawer,
+// rate-board ticker) preserved exactly — only the presentation layer changed.
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth }  from "../../context/AuthContext";
+import { AnimatePresence, motion } from "framer-motion";
+import { Moon, Sun, ChevronDown, Menu, X, Settings, LogOut } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import i18n from "../../i18n";
+import { cn } from "../../lib/utils";
+import Button from "../ui/Button";
 
 const LANGUAGES = [
   { code: "en", label: "EN" },
@@ -13,145 +19,151 @@ const LANGUAGES = [
 ];
 
 export default function Navbar() {
-  const { t }            = useTranslation();
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [mobileOpen,   setMobileOpen]   = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const menuRef = useRef(null);
 
-  // ── Nav link definitions per role ──────────────────────────────
+  // ── Nav link definitions per role (unchanged) ──────────────────
   const NAV_LINKS = {
     farmer: [
-      { to: "/discover",   label: t("nav.discover")     },
-      { to: "/market",     label: t("nav.market")       },
+      { to: "/discover", label: t("nav.discover") },
+      { to: "/market", label: t("nav.market") },
       { to: "/ml-predict", label: t("nav.crop_advisor") },
-      { to: "/bookings",   label: t("nav.bookings")     },
+      { to: "/bookings", label: t("nav.bookings") },
     ],
-    operator: [
-      { to: "/operator",   label: t("nav.dashboard")    },
-    ],
+    operator: [{ to: "/operator", label: t("nav.dashboard") }],
     admin: [
-      { to: "/discover",   label: t("nav.discover")     },
-      { to: "/market",     label: t("nav.market")       },
-      { to: "/operator",   label: t("nav.dashboard")    },
+      { to: "/discover", label: t("nav.discover") },
+      { to: "/market", label: t("nav.market") },
+      { to: "/operator", label: t("nav.dashboard") },
     ],
     customer: [
       { to: "/marketplace", label: t("nav.marketplace") },
-      { to: "/customer/map", label: t("nav.map")        },
-      { to: "/my-orders",   label: t("nav.orders")      },
+      { to: "/customer/map", label: t("nav.map") },
+      { to: "/my-orders", label: t("nav.orders") },
     ],
-    delivery_boy: [
-      { to: "/delivery",    label: t("nav.dashboard")   },
-    ],
+    delivery_boy: [{ to: "/delivery", label: t("nav.dashboard") }],
   };
 
   const ROLE_COLORS = {
-    farmer:       { bg: "var(--cp-pale)", color: "var(--cp)" },
-    operator:     { bg: "var(--info-bg)", color: "var(--info)" },
-    admin:        { bg: "var(--danger-bg)", color: "var(--danger)" },
-    customer:     { bg: "var(--warn-bg)", color: "var(--warn)" },
+    farmer: { bg: "var(--cp-pale)", color: "var(--cp)" },
+    operator: { bg: "var(--info-bg)", color: "var(--info)" },
+    admin: { bg: "var(--danger-bg)", color: "var(--danger)" },
+    customer: { bg: "var(--warn-bg)", color: "var(--warn)" },
     delivery_boy: { bg: "var(--cp-pale)", color: "var(--cp)" },
   };
 
   // Close user-menu on outside click
   useEffect(() => {
-    const h = e => {
-      if (menuRef.current && !menuRef.current.contains(e.target))
-        setUserMenuOpen(false);
+    const h = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setUserMenuOpen(false);
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
   // Close mobile drawer on route change
-  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
-  const handleLang   = code => {
+  // Sticky-scroll elevation
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const handleLang = (code) => {
     i18n.changeLanguage(code);
     localStorage.setItem("fasalnet_lang", code);
   };
-  const handleLogout = () => { logout(); navigate("/login"); setMobileOpen(false); setUserMenuOpen(false); };
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+    setMobileOpen(false);
+    setUserMenuOpen(false);
+  };
 
-  const links    = NAV_LINKS[user?.role] || [];
-  const isActive = path => location.pathname === path || location.pathname.startsWith(path + "/");
-  const roleClr  = ROLE_COLORS[user?.role] || {};
+  const links = NAV_LINKS[user?.role] || [];
+  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + "/");
+  const roleClr = ROLE_COLORS[user?.role] || {};
 
   const dateLocale = i18n.language === "hi" ? "hi-IN" : i18n.language === "mr" ? "mr-IN" : "en-IN";
-  const dateFormatted = new Date().toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
+  const dateFormatted = new Date()
+    .toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" })
+    .toUpperCase();
 
   return (
     <>
       {/* ── Top bar ────────────────────────────────────────────── */}
-      <nav style={{
-        position: "sticky", top: 0, zIndex: 200,
-        background: "var(--bg-l)",
-        borderBottom: "1.5px solid var(--bd)",
-        boxShadow: "0 1px 4px rgba(0,0,0,.05)",
-      }}>
-        <div style={{
-          maxWidth: "1280px", margin: "0 auto", padding: "0 20px",
-          height: "56px", display: "flex", alignItems: "center", gap: "12px",
-        }}>
-
+      <nav
+        className={cn(
+          "sticky top-0 z-[200] bg-surface-light/90 backdrop-blur-md border-b-[1.5px] border-line transition-shadow duration-200",
+          scrolled && "shadow-subtle"
+        )}
+      >
+        <div className="mx-auto flex h-14 max-w-container items-center gap-3 px-4 sm:px-6">
           {/* Logo */}
-          <Link to="/" style={{ display: "flex", alignItems: "center", gap: "8px",
-            textDecoration: "none", flexShrink: 0 }}>
-            <img src="/logo.png" alt="FasalNet" style={{ width: 34, height: 34, objectFit: "contain", borderRadius: 6 }} />
-            <span style={{ fontFamily: "var(--fd)", fontWeight: 700, fontSize: 18,
-              color: "var(--tx)", letterSpacing: "-.2px" }}>
+          <Link to="/" className="flex shrink-0 items-center gap-2 no-underline">
+            <img src="/logo.png" alt="FasalNet" className="h-[34px] w-[34px] rounded-md object-contain" />
+            <span className="font-display text-lg font-bold tracking-tight text-ink">
               {t("app_name")}
             </span>
           </Link>
 
-          {/* Divider — desktop only */}
-          <div className="fnav-desktop-only"
-            style={{ width: 1, height: 20, background: "var(--bd)", flexShrink: 0 }} />
+          <div className="hidden h-5 w-px shrink-0 bg-line sm:block" />
 
           {/* Desktop nav links */}
-          <div className="fnav-desktop-only"
-            style={{ display: "flex", gap: 2, alignItems: "center", flex: 1 }}>
+          <div className="hidden flex-1 items-center gap-1 sm:flex">
             {links.map(({ to, label }) => (
-              <Link key={to} to={to} style={{
-                padding: "6px 12px", borderRadius: 8, textDecoration: "none",
-                fontSize: 13, fontWeight: isActive(to) ? 700 : 500,
-                color:      isActive(to) ? "var(--cp)"      : "var(--tx-m)",
-                background: isActive(to) ? "var(--cp-pale)" : "transparent",
-                transition: "all .15s",
-              }}>
+              <Link
+                key={to}
+                to={to}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-[13px] font-medium no-underline transition-colors duration-150",
+                  isActive(to)
+                    ? "bg-accent-pale font-bold text-accent"
+                    : "text-ink-muted hover:bg-surface-muted hover:text-ink"
+                )}
+              >
                 {label}
               </Link>
             ))}
           </div>
 
           {/* Right controls */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
-
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
             {/* Theme toggle */}
-            <button onClick={toggleTheme}
+            <button
+              onClick={toggleTheme}
               title={theme === "light" ? t("common.theme_dark") : t("common.theme_light")}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                width: 34, height: 34, borderRadius: 8,
-                background: "var(--bg-m)", border: "1.5px solid var(--bd)",
-                fontSize: 16, cursor: "pointer", flexShrink: 0,
-              }}>
-              {theme === "light" ? "🌙" : "☀️"}
+              className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border-[1.5px] border-line bg-surface-muted text-ink-muted transition-colors hover:text-accent"
+            >
+              {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
             </button>
 
             {/* Language switcher — desktop only */}
-            <div className="fnav-desktop-only" style={{ display: "flex", gap: 2 }}>
+            <div className="hidden items-center gap-0.5 sm:flex">
               {LANGUAGES.map(({ code, label }) => (
-                <button key={code} onClick={() => handleLang(code)} style={{
-                  background: i18n.language === code ? "var(--cp-pale)" : "transparent",
-                  border: i18n.language === code ? "1px solid var(--cp)" : "none",
-                  borderRadius: 6, padding: "4px 8px",
-                  fontSize: 12, fontWeight: 700, cursor: "pointer",
-                  color: i18n.language === code ? "var(--cp)" : "var(--tx-s)",
-                }}>
+                <button
+                  key={code}
+                  onClick={() => handleLang(code)}
+                  className={cn(
+                    "rounded-md px-2 py-1 text-xs font-bold transition-colors",
+                    i18n.language === code
+                      ? "border border-accent bg-accent-pale text-accent"
+                      : "border border-transparent text-ink-soft hover:text-ink-muted"
+                  )}
+                >
                   {label}
                 </button>
               ))}
@@ -159,70 +171,70 @@ export default function Navbar() {
 
             {/* User menu */}
             {user ? (
-              <div ref={menuRef} style={{ position: "relative" }}>
-                <button onClick={() => setUserMenuOpen(v => !v)} style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  background: "var(--bg-m)", border: "1.5px solid var(--bd)",
-                  borderRadius: 9, padding: "5px 10px", cursor: "pointer",
-                }}>
-                  <div style={{
-                    width: 24, height: 24, borderRadius: "50%",
-                    background: roleClr.bg || "var(--cp-pale)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 11, fontWeight: 800, color: roleClr.color || "var(--cp)",
-                  }}>
+              <div ref={menuRef} className="relative">
+                <button
+                  onClick={() => setUserMenuOpen((v) => !v)}
+                  className="flex items-center gap-2 rounded-lg border-[1.5px] border-line bg-surface-muted px-2.5 py-[5px]"
+                >
+                  <div
+                    className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-extrabold"
+                    style={{ background: roleClr.bg || "var(--cp-pale)", color: roleClr.color || "var(--cp)" }}
+                  >
                     {user.name?.charAt(0)?.toUpperCase() || "U"}
                   </div>
-                  <div className="fnav-desktop-only"
-                    style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--tx)", lineHeight: 1.2 }}>
+                  <div className="hidden flex-col items-start sm:flex">
+                    <span className="text-xs font-bold leading-tight text-ink">
                       {user.name?.split(" ")[0]}
                     </span>
-                    <span style={{ fontSize: 10, color: "var(--tx-m)" }}>
-                      {t(`auth.${user.role}`, user.role)}
-                    </span>
+                    <span className="text-[10px] text-ink-muted">{t(`auth.${user.role}`, user.role)}</span>
                   </div>
-                  <span style={{ color: "var(--tx-s)", fontSize: 9 }}>▼</span>
+                  <ChevronDown size={12} className="text-ink-soft" />
                 </button>
 
-                {userMenuOpen && (
-                  <div className="card" style={{
-                    position: "absolute", right: 0, top: "calc(100% + 6px)",
-                    width: 170, padding: 6, zIndex: 999,
-                    boxShadow: "var(--sh3)",
-                  }}>
-                    <Link to="/settings" onClick={() => setUserMenuOpen(false)} style={{
-                      display: "block", padding: "8px 12px", borderRadius: 7,
-                      fontSize: 13, color: "var(--tx)", textDecoration: "none", fontWeight: 500,
-                    }}>
-                      ⚙️ {t("nav.settings")}
-                    </Link>
-                    <button onClick={handleLogout} style={{
-                      width: "100%", padding: "8px 12px", borderRadius: 7,
-                      fontSize: 13, color: "var(--danger)", background: "transparent",
-                      border: "none", cursor: "pointer", textAlign: "left", fontWeight: 500,
-                    }}>
-                      ↪ {t("nav.sign_out")}
-                    </button>
-                  </div>
-                )}
+                <AnimatePresence>
+                  {userMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-[calc(100%+6px)] z-[999] w-[180px] rounded-panel border border-line bg-surface-card p-1.5 shadow-lifted"
+                    >
+                      <Link
+                        to="/settings"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 rounded-md px-3 py-2 text-[13px] font-medium text-ink no-underline hover:bg-surface-muted"
+                      >
+                        <Settings size={14} /> {t("nav.settings")}
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-[13px] font-medium text-danger hover:bg-danger-bg"
+                      >
+                        <LogOut size={14} /> {t("nav.sign_out")}
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ) : (
-              <div style={{ display: "flex", gap: 6 }}>
-                <Link to="/login"  className="btn btn-ghost"   style={{ fontSize: 12, padding: "6px 14px" }}>{t("auth.sign_in")}</Link>
-                <Link to="/signup" className="btn btn-primary" style={{ fontSize: 12, padding: "6px 14px" }}>{t("auth.sign_up")}</Link>
+              <div className="flex items-center gap-1.5">
+                <Button as={Link} to="/login" variant="ghost" size="sm">
+                  {t("auth.sign_in")}
+                </Button>
+                <Button as={Link} to="/signup" variant="primary" size="sm">
+                  {t("auth.sign_up")}
+                </Button>
               </div>
             )}
 
             {/* Hamburger — mobile only */}
-            <button onClick={() => setMobileOpen(v => !v)}
-              className="fnav-mobile-only"
-              style={{
-                background: "var(--bg-m)", border: "1.5px solid var(--bd)",
-                borderRadius: 8, padding: "6px 9px", cursor: "pointer",
-                fontSize: 15, color: "var(--tx)",
-              }}>
-              {mobileOpen ? "✕" : "☰"}
+            <button
+              onClick={() => setMobileOpen((v) => !v)}
+              className="flex h-[34px] w-[34px] items-center justify-center rounded-md border-[1.5px] border-line bg-surface-muted text-ink sm:hidden"
+              aria-label={mobileOpen ? t("common.close", "Close") : t("common.menu", "Menu")}
+            >
+              {mobileOpen ? <X size={16} /> : <Menu size={16} />}
             </button>
           </div>
         </div>
@@ -234,69 +246,63 @@ export default function Navbar() {
           <span className="fn-ticker-dot" />
           <span>{t(`auth.${user.role}`, user.role)?.toString().toUpperCase()}</span>
           <span className="fn-ticker-sep">·</span>
-          <span>{t("app_name")?.toString().toUpperCase()} {t("nav.coordination_board")}</span>
+          <span>
+            {t("app_name")?.toString().toUpperCase()} {t("nav.coordination_board")}
+          </span>
           <span className="fn-ticker-sep">·</span>
           <span>{dateFormatted}</span>
         </div>
       )}
 
-      {/* ── Mobile drawer (only mounts when open) ──────────────── */}
-      {mobileOpen && (
-        <div className="card" style={{
-          position: "fixed", top: 57, left: 0, right: 0, zIndex: 199,
-          borderTop: 0, borderRadius: 0, borderLeft: "none", borderRight: "none",
-          padding: "8px 16px 16px",
-          boxShadow: "0 8px 24px rgba(0,0,0,.08)",
-        }}>
-          {links.map(({ to, label }) => (
-            <Link key={to} to={to} style={{
-              display: "block", padding: "10px 12px", borderRadius: 8,
-              fontSize: 14, fontWeight: isActive(to) ? 700 : 500,
-              color:      isActive(to) ? "var(--cp)"      : "var(--tx)",
-              background: isActive(to) ? "var(--cp-pale)" : "transparent",
-              textDecoration: "none", marginBottom: 2,
-            }}>
-              {label}
-            </Link>
-          ))}
-          <div style={{ display: "flex", gap: 6, padding: "10px 12px 4px" }}>
-            {LANGUAGES.map(({ code, label }) => (
-              <button key={code} onClick={() => handleLang(code)} style={{
-                background: i18n.language === code ? "var(--cp-pale)" : "var(--bg-m)",
-                border: `1.5px solid ${i18n.language === code ? "var(--cp)" : "var(--bd)"}`,
-                borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600,
-                cursor: "pointer", color: i18n.language === code ? "var(--cp)" : "var(--tx-m)",
-              }}>
+      {/* ── Mobile drawer ───────────────────────────────────────── */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="fixed left-0 right-0 top-14 z-[199] border-t border-line bg-surface-card px-4 pb-4 pt-2 shadow-card sm:hidden"
+          >
+            {links.map(({ to, label }) => (
+              <Link
+                key={to}
+                to={to}
+                className={cn(
+                  "mb-0.5 block rounded-md px-3 py-2.5 text-sm font-medium no-underline",
+                  isActive(to) ? "bg-accent-pale font-bold text-accent" : "text-ink"
+                )}
+              >
                 {label}
-              </button>
+              </Link>
             ))}
-          </div>
-          {user && (
-            <button onClick={handleLogout} style={{
-              width: "100%", textAlign: "left", padding: "10px 12px", borderRadius: 8,
-              fontSize: 14, color: "var(--danger)", background: "transparent",
-              border: "none", cursor: "pointer", marginTop: 4,
-            }}>
-              ↪ {t("nav.sign_out")}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/*
-        CSS strategy: use unique class names (fnav-*) to avoid conflicts
-        with any global .hidden-mobile / .show-mobile rules in index.css
-      */}
-      <style>{`
-        @media (max-width: 640px) {
-          .fnav-desktop-only { display: none !important; }
-          .fnav-mobile-only  { display: flex !important; }
-        }
-        @media (min-width: 641px) {
-          .fnav-desktop-only { display: flex !important; }
-          .fnav-mobile-only  { display: none !important; }
-        }
-      `}</style>
+            <div className="flex gap-1.5 px-3 pb-1 pt-2.5">
+              {LANGUAGES.map(({ code, label }) => (
+                <button
+                  key={code}
+                  onClick={() => handleLang(code)}
+                  className={cn(
+                    "rounded-md border-[1.5px] px-2.5 py-1 text-[11px] font-semibold",
+                    i18n.language === code
+                      ? "border-accent bg-accent-pale text-accent"
+                      : "border-line bg-surface-muted text-ink-muted"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {user && (
+              <button
+                onClick={handleLogout}
+                className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-left text-sm font-medium text-danger"
+              >
+                <LogOut size={14} /> {t("nav.sign_out")}
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

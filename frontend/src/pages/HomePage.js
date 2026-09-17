@@ -1,178 +1,450 @@
-// pages/HomePage.js — Fully localized farmer-first landing page
+// pages/HomePage.js — Premium AI + Agriculture SaaS landing page.
+// All existing i18n keys (home.*) are reused as-is; new copy lives under
+// the "landing" namespace in en/hi/mr so every visible string stays
+// translated and layout-safe across languages. No backend/auth logic was
+// changed — only presentation.
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
+import {
+  Sprout,
+  Bot,
+  TrendingUp,
+  CloudSun,
+  Warehouse,
+  ShieldCheck,
+  Languages,
+  MapPin,
+  ArrowRight,
+  Quote,
+  CheckCircle2,
+  Sparkles,
+  Radar,
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import Button from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { Container, Eyebrow, SectionHeading } from "../components/ui/Container";
+import Reveal from "../components/ui/Reveal";
+import { RevealGroup, RevealItem } from "../components/ui/RevealGroup";
 
 export default function HomePage() {
   const { t } = useTranslation();
   const { user } = useAuth();
 
   const STATS = [
-    { num: t("home.stat_1_num"), label: t("home.stat_1_lbl"), sub: t("home.stat_1_sub"), emoji: "💰" },
-    { num: t("home.stat_2_num"), label: t("home.stat_2_lbl"), sub: t("home.stat_2_sub"), emoji: "🏭" },
-    { num: t("home.stat_3_num"), label: t("home.stat_3_lbl"), sub: t("home.stat_3_sub"), emoji: "⚡" },
-    { num: t("home.stat_4_num"), label: t("home.stat_4_lbl"), sub: t("home.stat_4_sub"), emoji: "🌐" },
-  ];
-
-  const STEPS = [
-    { n: "01", emoji: "🌾", title: t("home.step_1_title"), desc: t("home.step_1_desc") },
-    { n: "02", emoji: "🤖", title: t("home.step_2_title"), desc: t("home.step_2_desc") },
-    { n: "03", emoji: "🗺",  title: t("home.step_3_title"), desc: t("home.step_3_desc") },
-    { n: "04", emoji: "✅", title: t("home.step_4_title"), desc: t("home.step_4_desc") },
-  ];
-
-  const ROLES = [
-    { emoji: "🌾", label: t("auth.farmer"),   color: "var(--cp)", bg: "var(--cp-pale)", desc: t("home.role_farmer_desc") },
-    { emoji: "🏭", label: t("auth.operator"), color: "var(--info)", bg: "var(--info-bg)", desc: t("home.role_operator_desc") },
-    { emoji: "🛒", label: t("auth.customer"), color: "var(--warn)", bg: "var(--warn-bg)", desc: t("home.role_customer_desc") },
+    { num: t("home.stat_1_num"), label: t("home.stat_1_lbl"), sub: t("home.stat_1_sub"), Icon: TrendingUp },
+    { num: t("home.stat_2_num"), label: t("home.stat_2_lbl"), sub: t("home.stat_2_sub"), Icon: Warehouse },
+    { num: t("home.stat_3_num"), label: t("home.stat_3_lbl"), sub: t("home.stat_3_sub"), Icon: Sparkles },
+    { num: t("home.stat_4_num"), label: t("home.stat_4_lbl"), sub: t("home.stat_4_sub"), Icon: Languages },
   ];
 
   const FEATURES = [
-    t("home.feature_1"),
-    t("home.feature_2"),
-    t("home.feature_3"),
-    t("home.feature_4"),
+    { Icon: Bot, title: t("landing.feature_ai_title"), desc: t("landing.feature_ai_desc") },
+    { Icon: TrendingUp, title: t("landing.feature_market_title"), desc: t("landing.feature_market_desc") },
+    { Icon: CloudSun, title: t("landing.feature_weather_title"), desc: t("landing.feature_weather_desc") },
+    { Icon: Warehouse, title: t("landing.feature_storage_title"), desc: t("landing.feature_storage_desc") },
+    { Icon: ShieldCheck, title: t("landing.feature_risk_title"), desc: t("landing.feature_risk_desc") },
+    { Icon: Languages, title: t("landing.feature_lang_title"), desc: t("landing.feature_lang_desc") },
   ];
 
+  const STEPS = [
+    { n: "01", Icon: Sprout, title: t("home.step_1_title"), desc: t("home.step_1_desc") },
+    { n: "02", Icon: Bot, title: t("home.step_2_title"), desc: t("home.step_2_desc") },
+    { n: "03", Icon: MapPin, title: t("home.step_3_title"), desc: t("home.step_3_desc") },
+    { n: "04", Icon: CheckCircle2, title: t("home.step_4_title"), desc: t("home.step_4_desc") },
+  ];
+
+  const BENEFITS = [
+    { title: t("landing.benefit_1_title"), desc: t("landing.benefit_1_desc") },
+    { title: t("landing.benefit_2_title"), desc: t("landing.benefit_2_desc") },
+    { title: t("landing.benefit_3_title"), desc: t("landing.benefit_3_desc") },
+  ];
+
+  const TESTIMONIALS = [1, 2, 3].map((i) => ({
+    quote: t(`landing.testimonial_${i}_quote`),
+    name: t(`landing.testimonial_${i}_name`),
+    role: t(`landing.testimonial_${i}_role`),
+  }));
+
+  const heroCta = user
+    ? {
+        to: user.role === "farmer" ? "/discover" : user.role === "operator" ? "/operator" : "/marketplace",
+        label:
+          user.role === "farmer"
+            ? t("home.go_to_discover")
+            : user.role === "operator"
+            ? t("home.go_to_dashboard")
+            : t("home.go_to_marketplace"),
+      }
+    : null;
+
   return (
-    <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "40px 20px" }}>
+    <div className="overflow-x-hidden">
+      {/* ══════════════════════ HERO ══════════════════════ */}
+      <section className="relative border-b border-line bg-gradient-to-b from-accent-pale/50 via-surface to-surface pt-16 pb-20 sm:pt-24 sm:pb-28">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.35]"
+          style={{
+            backgroundImage: "linear-gradient(var(--bd) 1px, transparent 1px)",
+            backgroundSize: "100% 34px",
+          }}
+        />
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-16 top-16 hidden h-64 w-64 rounded-full bg-accent/10 blur-3xl sm:block"
+          animate={{ y: [0, -14, 0] }}
+          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-10 bottom-0 hidden h-56 w-56 rounded-full bg-brand-harvest/10 blur-3xl sm:block"
+          animate={{ y: [0, 12, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+        />
 
-      {/* Hero */}
-      <section style={{ textAlign: "center", marginBottom: "64px" }} className="anim-fadeup">
-        <div style={{
-          display: "inline-block", fontSize: "11px", fontWeight: 700,
-          textTransform: "uppercase", letterSpacing: "3px",
-          background: "var(--cp-pale)", color: "var(--cp)",
-          padding: "5px 16px", borderRadius: "99px", marginBottom: "20px",
-          border: "1px solid rgba(63,107,51,.2)"
-        }}>
-          {t("home.badge")}
-        </div>
+        <Container className="relative flex flex-col items-center text-center">
+          <Reveal>
+            <span className="inline-flex items-center gap-2 rounded-pill border border-accent/20 bg-accent-pale px-4 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-accent">
+              <Sparkles size={13} />
+              {t("home.badge")}
+            </span>
+          </Reveal>
 
-        <h1 style={{
-          fontFamily: "var(--fd)", fontWeight: 800,
-          fontSize: "clamp(2rem,5vw,3.2rem)", lineHeight: 1.15,
-          marginBottom: "16px", color: "var(--tx)",
-        }}>
-          {t("home.hero_title_1")}<br/>
-          <span style={{ color: "var(--cp)" }}>{t("home.hero_title_2")}</span>{" "}
-          <span style={{ color: "var(--tx-m)", fontWeight: 600 }}>{t("home.hero_title_3")}</span>
-        </h1>
+          <Reveal delay={0.08}>
+            <h1 className="mt-6 max-w-3xl font-display text-[2.1rem] font-extrabold leading-[1.12] text-ink sm:text-5xl lg:text-6xl">
+              {t("home.hero_title_1")}
+              <br />
+              <span className="text-accent">{t("home.hero_title_2")}</span>{" "}
+              <span className="font-semibold text-ink-muted">{t("home.hero_title_3")}</span>
+            </h1>
+          </Reveal>
 
-        <p style={{ color: "var(--tx-m)", fontSize: "1rem", maxWidth: "520px",
-          margin: "0 auto 28px", lineHeight: 1.7 }}>
-          {t("home.hero_sub")}
-        </p>
+          <Reveal delay={0.16}>
+            <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
+              {t("home.hero_sub")}
+            </p>
+          </Reveal>
 
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "10px" }}>
-          {user ? (
-            <Link to={user.role === "farmer" ? "/discover" : user.role === "operator" ? "/operator" : "/marketplace"}
-              className="btn btn-primary" style={{ fontSize: "15px", padding: "12px 28px" }}>
-              {user.role === "farmer" ? t("home.go_to_discover") : user.role === "operator" ? t("home.go_to_dashboard") : t("home.go_to_marketplace")}
-            </Link>
-          ) : (
-            <>
-              <Link to="/signup" className="btn btn-primary" style={{ fontSize: "15px", padding: "12px 28px" }}>
-                {t("home.get_started_free")}
-              </Link>
-              <Link to="/login" className="btn btn-ghost" style={{ fontSize: "15px", padding: "12px 24px" }}>
-                {t("auth.sign_in")}
-              </Link>
-            </>
-          )}
-        </div>
+          <Reveal delay={0.24} className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            {heroCta ? (
+              <Button as={Link} to={heroCta.to} size="lg">
+                {heroCta.label} <ArrowRight size={16} />
+              </Button>
+            ) : (
+              <>
+                <Button as={Link} to="/signup" size="lg">
+                  {t("home.get_started_free")} <ArrowRight size={16} />
+                </Button>
+                <Button as={Link} to="/login" variant="outline" size="lg">
+                  {t("auth.sign_in")}
+                </Button>
+              </>
+            )}
+          </Reveal>
 
-        <div style={{ display: "flex", justifyContent: "center", gap: "20px",
-          marginTop: "16px", flexWrap: "wrap" }}>
-          {FEATURES.map((f, i) => (
-            <span key={i} style={{ fontSize: "12px", color: "var(--tx-m)", fontWeight: 500 }}>{f}</span>
-          ))}
-        </div>
+          <Reveal delay={0.32} className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            {[t("home.feature_1"), t("home.feature_2"), t("home.feature_3"), t("home.feature_4")].map(
+              (f, i) => (
+                <span key={i} className="text-xs font-medium text-ink-muted">
+                  {f}
+                </span>
+              )
+            )}
+          </Reveal>
+        </Container>
       </section>
 
-      {/* Stats */}
-      <section style={{ marginBottom: "56px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: "14px" }}>
-          {STATS.map((s, i) => (
-            <div key={i} className="card anim-fadeup" style={{ padding: "20px 16px",
-              textAlign: "center", animationDelay: `${i * 0.08}s` }}>
-              <div style={{ fontSize: "2rem", marginBottom: "8px" }}>{s.emoji}</div>
-              <div style={{ fontFamily: "var(--fm)", fontWeight: 800, fontSize: "1.9rem",
-                color: "var(--cp)", lineHeight: 1 }}>{s.num}</div>
-              <div style={{ fontWeight: 700, fontSize: "13px", color: "var(--tx)",
-                marginTop: "5px" }}>{s.label}</div>
-              <div style={{ fontSize: "11px", color: "var(--tx-m)", marginTop: "3px" }}>{s.sub}</div>
-            </div>
-          ))}
-        </div>
+      {/* ══════════════════════ STATS ══════════════════════ */}
+      <section className="py-14 sm:py-16">
+        <Container>
+          <RevealGroup className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {STATS.map(({ num, label, sub, Icon }, i) => (
+              <RevealItem key={i}>
+                <Card className="flex h-full flex-col items-center gap-2 px-5 py-7 text-center">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-md bg-accent-pale text-accent">
+                    <Icon size={18} />
+                  </span>
+                  <div className="font-mono text-2xl font-extrabold leading-none text-accent sm:text-[2rem]">
+                    {num}
+                  </div>
+                  <div className="text-sm font-bold text-ink">{label}</div>
+                  <div className="text-xs text-ink-muted">{sub}</div>
+                </Card>
+              </RevealItem>
+            ))}
+          </RevealGroup>
+        </Container>
       </section>
 
-      {/* Roles */}
-      <section style={{ marginBottom: "56px" }}>
-        <h2 style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.6rem",
-          textAlign: "center", marginBottom: "24px", color: "var(--tx)" }}>
-          {t("home.roles_title")}
-        </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: "14px" }}>
-          {ROLES.map((r, i) => (
-            <div key={i} className="card anim-fadeup" style={{ padding: "20px",
-              borderTop: `3px solid ${r.color}`, animationDelay: `${i * 0.1}s` }}>
-              <div style={{ width: "44px", height: "44px", borderRadius: "12px",
-                background: r.bg, display: "flex", alignItems: "center",
-                justifyContent: "center", fontSize: "22px", marginBottom: "12px" }}>
-                {r.emoji}
+      {/* ══════════════════════ FEATURES ══════════════════════ */}
+      <section className="border-y border-line bg-surface-light py-20">
+        <Container>
+          <SectionHeading
+            align="center"
+            className="mx-auto mb-12"
+            eyebrow={t("landing.features_eyebrow")}
+            title={t("landing.features_title")}
+            description={t("landing.features_sub")}
+          />
+          <RevealGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3" stagger={0.06}>
+            {FEATURES.map(({ Icon, title, desc }, i) => (
+              <RevealItem key={i}>
+                <Card hover className="h-full p-6">
+                  <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-md bg-accent-pale text-accent">
+                    <Icon size={20} />
+                  </span>
+                  <h3 className="mb-1.5 font-display text-base font-semibold text-ink">{title}</h3>
+                  <p className="text-sm leading-relaxed text-ink-muted">{desc}</p>
+                </Card>
+              </RevealItem>
+            ))}
+          </RevealGroup>
+        </Container>
+      </section>
+
+      {/* ══════════════════ AI ADVISOR SPOTLIGHT ══════════════════ */}
+      <section className="py-20">
+        <Container className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+          <Reveal variant="slideInLeft">
+            <Eyebrow>{t("landing.ai_eyebrow")}</Eyebrow>
+            <h2 className="mt-3 font-display text-3xl font-semibold leading-tight text-ink sm:text-4xl">
+              {t("landing.ai_title")}
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-ink-muted">{t("landing.ai_desc")}</p>
+            <ul className="mt-6 flex flex-col gap-3">
+              {[t("landing.ai_point_1"), t("landing.ai_point_2"), t("landing.ai_point_3")].map((p, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-ink">
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-accent" />
+                  {p}
+                </li>
+              ))}
+            </ul>
+            <Button as={Link} to="/ml-predict" variant="secondary" className="mt-7">
+              {t("landing.ai_cta")} <ArrowRight size={15} />
+            </Button>
+          </Reveal>
+
+          <Reveal variant="slideInRight" delay={0.1}>
+            <Card className="relative overflow-hidden p-6">
+              <div className="mb-4 flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-md bg-accent text-accent-fg">
+                  <Bot size={17} />
+                </span>
+                <div>
+                  <div className="text-sm font-bold text-ink">{t("landing.ai_eyebrow")}</div>
+                  <div className="text-[11px] text-ink-soft">{t("ai_advisor.subtitle")}</div>
+                </div>
               </div>
-              <div style={{ fontWeight: 700, fontSize: "15px", color: r.color, marginBottom: "7px" }}>
-                {r.label}
+              <div className="flex flex-col gap-2.5">
+                {[
+                  t("ai_advisor.stage_db"),
+                  t("ai_advisor.stage_weather"),
+                  t("ai_advisor.stage_xgboost"),
+                  t("ai_advisor.stage_rag"),
+                ].map((line, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 rounded-md border border-line bg-surface-light px-3 py-2 text-xs text-ink-muted"
+                  >
+                    <Radar size={13} className="shrink-0 text-accent" />
+                    {line}
+                  </div>
+                ))}
               </div>
-              <div style={{ fontSize: "13px", color: "var(--tx-m)", lineHeight: 1.6 }}>{r.desc}</div>
-            </div>
-          ))}
-        </div>
+            </Card>
+          </Reveal>
+        </Container>
       </section>
 
-      {/* How it works */}
-      <section style={{ marginBottom: "56px" }}>
-        <h2 style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.6rem",
-          textAlign: "center", marginBottom: "24px", color: "var(--tx)" }}>
-          {t("home.how_title")}
-        </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: "14px" }}>
-          {STEPS.map((s, i) => (
-            <div key={i} className="card anim-fadeup" style={{
-              padding: "18px", position: "relative", overflow: "hidden",
-              animationDelay: `${i * 0.09}s` }}>
-              <div style={{ position: "absolute", top: "-8px", right: "4px",
-                fontFamily: "var(--fm)", fontWeight: 900, fontSize: "3.5rem",
-                color: "var(--bg-d)", lineHeight: 1, userSelect: "none" }}>{s.n}</div>
-              <span style={{ fontSize: "1.8rem", display: "block", marginBottom: "10px" }}>{s.emoji}</span>
-              <div style={{ fontWeight: 700, fontSize: "13px", color: "var(--tx)",
-                marginBottom: "5px" }}>{s.title}</div>
-              <div style={{ fontSize: "12px", color: "var(--tx-m)", lineHeight: 1.6 }}>{s.desc}</div>
-            </div>
-          ))}
-        </div>
+      {/* ═══════════════ MARKET + WEATHER SPOTLIGHTS ═══════════════ */}
+      <section className="border-y border-line bg-surface-light py-20">
+        <Container className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Reveal>
+            <Card className="flex h-full flex-col p-7">
+              <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-md bg-info-bg text-info">
+                <TrendingUp size={20} />
+              </span>
+              <Eyebrow>{t("landing.market_eyebrow")}</Eyebrow>
+              <h3 className="mt-2 font-display text-xl font-semibold text-ink">{t("landing.market_title")}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-ink-muted">{t("landing.market_desc")}</p>
+              <ul className="mt-5 flex flex-col gap-2.5">
+                {[t("landing.market_point_1"), t("landing.market_point_2"), t("landing.market_point_3")].map(
+                  (p, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-ink">
+                      <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-info" />
+                      {p}
+                    </li>
+                  )
+                )}
+              </ul>
+              <Button as={Link} to="/market" variant="outline" className="mt-6 self-start">
+                {t("landing.market_cta")} <ArrowRight size={15} />
+              </Button>
+            </Card>
+          </Reveal>
+
+          <Reveal delay={0.08}>
+            <Card className="flex h-full flex-col p-7">
+              <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-md bg-warn-bg text-warn">
+                <CloudSun size={20} />
+              </span>
+              <Eyebrow>{t("landing.weather_eyebrow")}</Eyebrow>
+              <h3 className="mt-2 font-display text-xl font-semibold text-ink">{t("landing.weather_title")}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-ink-muted">{t("landing.weather_desc")}</p>
+              <ul className="mt-5 flex flex-col gap-2.5">
+                {[t("landing.weather_point_1"), t("landing.weather_point_2"), t("landing.weather_point_3")].map(
+                  (p, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-ink">
+                      <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-warn" />
+                      {p}
+                    </li>
+                  )
+                )}
+              </ul>
+            </Card>
+          </Reveal>
+        </Container>
       </section>
 
-      {/* CTA */}
-      <section>
-        <div className="card" style={{
-          padding: "40px 32px", textAlign: "center",
-          background: "linear-gradient(135deg,var(--cp-pale),var(--bg-l))",
-          border: "1.5px solid rgba(63,107,51,.2)",
-        }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🚀</div>
-          <h2 style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.6rem",
-            marginBottom: "8px", color: "var(--tx)" }}>
-            {t("home.cta_title")}
-          </h2>
-          <p style={{ color: "var(--tx-m)", fontSize: "13px", marginBottom: "20px" }}>
-            {t("home.cta_sub")}
-          </p>
-          <Link to="/signup" className="btn btn-primary" style={{ fontSize: "14px", padding: "12px 28px" }}>
-            {t("home.cta_btn")}
-          </Link>
-        </div>
+      {/* ══════════════════════ MAP SECTION ══════════════════════ */}
+      <section className="py-20">
+        <Container className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+          <Reveal variant="slideInLeft" className="order-2 lg:order-1">
+            <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-panel border border-line bg-surface-muted">
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 opacity-40"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(var(--bd) 1px, transparent 1px), linear-gradient(90deg, var(--bd) 1px, transparent 1px)",
+                  backgroundSize: "28px 28px",
+                }}
+              />
+              {[
+                { top: "30%", left: "35%", delay: 0 },
+                { top: "55%", left: "60%", delay: 0.6 },
+                { top: "42%", left: "72%", delay: 1.1 },
+                { top: "68%", left: "28%", delay: 1.6 },
+              ].map((pin, i) => (
+                <motion.span
+                  key={i}
+                  className="absolute flex h-8 w-8 items-center justify-center rounded-full bg-accent text-accent-fg shadow-lifted"
+                  style={{ top: pin.top, left: pin.left }}
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: pin.delay }}
+                >
+                  <Warehouse size={14} />
+                </motion.span>
+              ))}
+            </div>
+          </Reveal>
+
+          <Reveal variant="slideInRight" delay={0.1} className="order-1 lg:order-2">
+            <Eyebrow>{t("landing.map_eyebrow")}</Eyebrow>
+            <h2 className="mt-3 font-display text-3xl font-semibold leading-tight text-ink sm:text-4xl">
+              {t("landing.map_title")}
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-ink-muted">{t("landing.map_desc")}</p>
+            <Button as={Link} to="/discover" className="mt-7">
+              {t("nav.discover")} <MapPin size={15} />
+            </Button>
+          </Reveal>
+        </Container>
+      </section>
+
+      {/* ══════════════════════ HOW IT WORKS ══════════════════════ */}
+      <section className="border-y border-line bg-surface-light py-20">
+        <Container>
+          <SectionHeading align="center" className="mx-auto mb-12" title={t("home.how_title")} />
+          <RevealGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" stagger={0.07}>
+            {STEPS.map(({ n, Icon, title, desc }, i) => (
+              <RevealItem key={i}>
+                <Card className="relative h-full overflow-hidden p-5">
+                  <span
+                    aria-hidden="true"
+                    className="absolute -right-1 -top-3 select-none font-mono text-6xl font-black text-surface-deep"
+                  >
+                    {n}
+                  </span>
+                  <span className="relative flex h-10 w-10 items-center justify-center rounded-md bg-accent-pale text-accent">
+                    <Icon size={18} />
+                  </span>
+                  <h3 className="relative mt-3 text-sm font-bold text-ink">{title}</h3>
+                  <p className="relative mt-1.5 text-xs leading-relaxed text-ink-muted">{desc}</p>
+                </Card>
+              </RevealItem>
+            ))}
+          </RevealGroup>
+        </Container>
+      </section>
+
+      {/* ══════════════════════ FARMER BENEFITS ══════════════════════ */}
+      <section className="py-20">
+        <Container>
+          <SectionHeading
+            align="center"
+            className="mx-auto mb-12"
+            eyebrow={t("landing.benefits_eyebrow")}
+            title={t("landing.benefits_title")}
+          />
+          <RevealGroup className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            {BENEFITS.map(({ title, desc }, i) => (
+              <RevealItem key={i}>
+                <Card className="h-full border-t-2 border-t-accent p-6">
+                  <h3 className="font-display text-base font-semibold text-ink">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-ink-muted">{desc}</p>
+                </Card>
+              </RevealItem>
+            ))}
+          </RevealGroup>
+        </Container>
+      </section>
+
+      {/* ══════════════════════ TESTIMONIALS ══════════════════════ */}
+      <section className="border-y border-line bg-surface-light py-20">
+        <Container>
+          <SectionHeading
+            align="center"
+            className="mx-auto mb-12"
+            eyebrow={t("landing.testimonials_eyebrow")}
+            title={t("landing.testimonials_title")}
+          />
+          <RevealGroup className="grid grid-cols-1 gap-5 lg:grid-cols-3" stagger={0.08}>
+            {TESTIMONIALS.map(({ quote, name, role }, i) => (
+              <RevealItem key={i}>
+                <Card className="flex h-full flex-col p-6">
+                  <Quote size={22} className="mb-3 text-accent/40" />
+                  <p className="flex-1 text-sm italic leading-relaxed text-ink">"{quote}"</p>
+                  <div className="mt-5 border-t border-line pt-4">
+                    <div className="text-sm font-bold text-ink">{name}</div>
+                    <div className="text-xs text-ink-muted">{role}</div>
+                  </div>
+                </Card>
+              </RevealItem>
+            ))}
+          </RevealGroup>
+        </Container>
+      </section>
+
+      {/* ══════════════════════ FINAL CTA ══════════════════════ */}
+      <section className="py-20">
+        <Container>
+          <Reveal>
+            <Card className="relative overflow-hidden border-accent/20 bg-gradient-to-br from-accent-pale to-surface-light px-8 py-14 text-center">
+              <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-fg">
+                <Sprout size={26} />
+              </span>
+              <h2 className="font-display text-2xl font-bold text-ink sm:text-3xl">{t("home.cta_title")}</h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">{t("home.cta_sub")}</p>
+              <Button as={Link} to="/signup" size="lg" className="mt-7">
+                {t("home.cta_btn")}
+              </Button>
+              <p className="mt-4 text-xs text-ink-soft">{t("landing.final_cta_note")}</p>
+            </Card>
+          </Reveal>
+        </Container>
       </section>
     </div>
   );

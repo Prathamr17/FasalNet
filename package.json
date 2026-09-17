@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "lucide-react": "^1.46.0",
+    "motion": "^13.4.0",
+    "tailwindcss": "^4.3.3"
+  }
+}

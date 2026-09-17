@@ -1,105 +1,104 @@
-/** FasalNet — "AgriTech Glass" Tailwind config, ported from the Stitch
- *  design reference (agritech_glass/DESIGN.md). Tailwind was previously
- *  installed as a dependency with @tailwind directives in index.css but
- *  had NO config file anywhere in the repo — meaning every Tailwind
- *  utility class already used in the app (MarketplacePage, DiscoverPage,
- *  CustomerOrders, ProductDetail, NotFoundPage, etc.) was silently doing
- *  nothing. This file (plus postcss.config.js) fixes that. */
+/** FasalNet — "Mandi Ledger" Tailwind bridge.
+ *
+ *  This config does NOT introduce a second design system. It exposes the
+ *  CSS custom properties already defined in src/index.css (the live
+ *  "Mandi Ledger" theme — husk-paper surfaces, role-based accent colors,
+ *  dark "Monsoon Night" mode) as Tailwind utilities, so new components can
+ *  be built with Tailwind classes (`bg-surface`, `text-ink-muted`,
+ *  `border-line`, `bg-accent`, `shadow-card`, `rounded-panel`, ...) while
+ *  staying perfectly in sync with the existing theme, role accents and
+ *  dark-mode switch (`[data-theme="dark"]` / `.dark`) — no duplicated
+ *  color values, no drift between old and new UI.
+ *
+ *  A small `brand` palette (static hex, not CSS-var-based) is included for
+ *  marketing-only surfaces (landing page gradients/illustrations) where a
+ *  fixed identity color is wanted regardless of role/theme.
+ */
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}", "./public/index.html"],
-  darkMode: "class",
+  darkMode: ["class", '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
-        "on-tertiary-fixed": "#181d17",
-        "surface-container-lowest": "#ffffff",
-        "inverse-on-surface": "#f2f1ec",
-        "secondary-fixed-dim": "#90da4b",
-        "on-error-container": "#93000a",
-        "surface-bright": "#faf9f4",
-        "border-glass": "rgba(255, 255, 255, 0.4)",
-        "on-primary-container": "#76af7e",
-        "on-secondary-fixed-variant": "#2a5000",
-        "primary-fixed-dim": "#9ad4a0",
-        primary: "#002a0e",
-        "secondary-fixed": "#abf764",
-        "primary-fixed": "#b5f1bb",
-        surface: "#faf9f4",
-        "outline-variant": "#c0c9be",
-        secondary: "#396a00",
-        "error-container": "#ffdad6",
-        "surface-dim": "#dbdad5",
-        "on-secondary": "#ffffff",
-        "tertiary-fixed-dim": "#c3c8bf",
-        "on-secondary-fixed": "#0d2000",
-        "primary-container": "#05421c",
-        "surface-container-low": "#f5f4ef",
-        "inverse-surface": "#30312e",
-        "on-tertiary": "#ffffff",
-        "on-tertiary-fixed-variant": "#434841",
-        "on-surface": "#1b1c19",
-        tertiary: "#1f251e",
-        "on-surface-variant": "#414940",
-        "surface-tint": "#33693f",
-        "on-secondary-container": "#3d7100",
-        "on-background": "#1b1c19",
-        error: "#ba1a1a",
-        "risk-critical": "#D32F2F",
-        "ai-blue": "#007AFF",
-        "secondary-container": "#abf764",
-        outline: "#717970",
-        "surface-container-highest": "#e3e3de",
-        "surface-container": "#efeee9",
-        background: "#faf9f4",
-        "on-primary": "#ffffff",
-        "on-primary-fixed-variant": "#195129",
-        "on-primary-fixed": "#00210a",
-        "on-error": "#ffffff",
-        "surface-variant": "#e3e3de",
-        "inverse-primary": "#9ad4a0",
-        "tertiary-container": "#353a33",
-        "surface-container-high": "#e9e8e3",
-        "surface-glass": "rgba(255, 255, 255, 0.65)",
-        "tertiary-fixed": "#dfe4da",
-        "on-tertiary-container": "#9ea49b",
-      },
-      borderRadius: {
-        DEFAULT: "0.5rem",
-        sm: "0.25rem",
-        md: "0.75rem",
-        lg: "1rem",
-        xl: "1.5rem",
-        full: "9999px",
-      },
-      spacing: {
-        "margin-desktop": "40px",
-        gutter: "24px",
-        "container-max": "1280px",
-        base: "8px",
-        "margin-mobile": "16px",
+        surface: {
+          DEFAULT: "var(--bg)",
+          light: "var(--bg-l)",
+          muted: "var(--bg-m)",
+          deep: "var(--bg-d)",
+          card: "var(--bg-card)",
+        },
+        ink: {
+          DEFAULT: "var(--tx)",
+          muted: "var(--tx-m)",
+          soft: "var(--tx-s)",
+        },
+        line: {
+          DEFAULT: "var(--bd)",
+          strong: "var(--bd-h)",
+        },
+        accent: {
+          DEFAULT: "var(--cp)",
+          dark: "var(--cp-dark)",
+          pale: "var(--cp-pale)",
+          glow: "var(--cp-glow)",
+          fg: "var(--cp-text)",
+        },
+        safe: { DEFAULT: "var(--safe)", bg: "var(--safe-bg)" },
+        warn: { DEFAULT: "var(--warn)", bg: "var(--warn-bg)" },
+        danger: { DEFAULT: "var(--danger)", bg: "var(--danger-bg)" },
+        info: { DEFAULT: "var(--info)", bg: "var(--info-bg)" },
+        brand: {
+          leaf: "#3F6B33",
+          "leaf-dark": "#2E4F25",
+          "leaf-light": "#DCE8D2",
+          harvest: "#B4741E",
+          "harvest-light": "#F1E1BF",
+          husk: "#F1EEE1",
+          "husk-deep": "#DDD6BE",
+          soil: "#23281F",
+          indigo: "#2B4570",
+        },
       },
       fontFamily: {
-        "body-md": ["Inter", "sans-serif"],
-        "headline-lg-mobile": ["Plus Jakarta Sans", "sans-serif"],
-        "display-lg": ["Plus Jakarta Sans", "sans-serif"],
-        "headline-lg": ["Plus Jakarta Sans", "sans-serif"],
-        "label-md": ["Inter", "sans-serif"],
-        "headline-md": ["Plus Jakarta Sans", "sans-serif"],
-        "body-lg": ["Inter", "sans-serif"],
-        "label-sm": ["Inter", "sans-serif"],
+        display: ["Fraunces", "serif"],
+        body: ["Work Sans", "sans-serif"],
+        mono: ["IBM Plex Mono", "monospace"],
       },
-      fontSize: {
-        "body-md": ["16px", { lineHeight: "1.6", fontWeight: "400" }],
-        "headline-lg-mobile": ["28px", { lineHeight: "1.2", fontWeight: "600" }],
-        "display-lg": ["48px", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "700" }],
-        "headline-lg": ["32px", { lineHeight: "1.2", fontWeight: "600" }],
-        "label-md": ["14px", { lineHeight: "1.4", letterSpacing: "0.01em", fontWeight: "600" }],
-        "headline-md": ["24px", { lineHeight: "1.3", fontWeight: "600" }],
-        "body-lg": ["18px", { lineHeight: "1.6", fontWeight: "400" }],
-        "label-sm": ["12px", { lineHeight: "1.4", fontWeight: "500" }],
+      borderRadius: {
+        sm: "var(--r)",
+        md: "var(--r2)",
+        panel: "14px",
+        pill: "9999px",
       },
-      backdropBlur: { xs: "4px" },
+      boxShadow: {
+        card: "var(--sh)",
+        subtle: "var(--sh2)",
+        lifted: "var(--sh3)",
+        "glow-accent": "0 0 0 4px var(--cp-glow)",
+      },
+      maxWidth: {
+        container: "1280px",
+      },
+      keyframes: {
+        "fade-up": {
+          "0%": { opacity: "0", transform: "translateY(18px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "float-y": {
+          "0%,100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
+        "ticker-pulse": {
+          "0%,100%": { opacity: "1" },
+          "50%": { opacity: ".4" },
+        },
+      },
+      animation: {
+        "fade-up": "fade-up .6s cubic-bezier(0.16,1,0.3,1) both",
+        "float-y": "float-y 4s ease-in-out infinite",
+        "ticker-pulse": "ticker-pulse 1.8s ease-in-out infinite",
+      },
     },
   },
-  plugins: [],
+  plugins: [require("@tailwindcss/forms"), require("tailwindcss-animate")],
 };
