@@ -9,10 +9,17 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  BarChart3, TrendingUp, TrendingDown, MapPin, Calendar, RefreshCw,
+  Tag, Sparkles, Wand2, Compass, Grid3x3, Wrench,
+} from "lucide-react";
 import { marketAPI, mlAPI, weatherAPI, aiAPI } from "../../services/api";
 import WeatherSection from "../../components/farmer/WeatherSection";
 import AIAgriculturalAdvisor from "../../components/farmer/AIAgriculturalAdvisor";
 import ForecastIntelligencePage from "./ForecastIntelligencePage";
+import Reveal from "../../components/ui/Reveal";
+import { RevealGroup, RevealItem } from "../../components/ui/RevealGroup";
 
 const PALETTE = [
   "#3F6B33","#2B4570","#B4741E","#8B3A2B",
@@ -1015,23 +1022,28 @@ function HeatmapGrid({ matrix, dates, commodities }) {
 }
 
 // ─── SHARED STYLES ─────────────────────────────────────────────────────────────
+// Elevated in the Phase 2 redesign to match the app-wide "Mandi Ledger" tokens
+// (panel radius, card shadow tokens) — every panel below (filters, KPIs, quick
+// ML tools, price intelligence, ARIMA) consumes these constants, so raising
+// them here lifts the whole page consistently without touching any logic.
 const CARD = {
-  background: "var(--bg-m)",
-  borderRadius: "16px",
+  background: "var(--bg-card)",
+  borderRadius: "14px",
   padding: "18px 20px",
   border: "1px solid var(--bd)",
-  boxShadow: "0 2px 10px rgba(0,0,0,0.02)",
-  transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+  borderTop: "2px solid var(--bd-h)",
+  boxShadow: "var(--sh2)",
+  transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
 };
 const INP = {
   width: "100%",
   background: "var(--bg-l)",
-  border: "1px solid var(--bd)",
+  border: "1.5px solid var(--bd)",
   color: "var(--tx)",
   fontFamily: "var(--fb)",
   fontSize: "12.5px",
   padding: "8px 12px",
-  borderRadius: "10px",
+  borderRadius: "8px",
   outline: "none",
   boxSizing: "border-box",
   transition: "all 0.18s ease",
@@ -1046,25 +1058,25 @@ const LBL = {
   marginBottom: "4px"
 };
 const BTN = {
-  background: "linear-gradient(135deg,var(--cp),var(--cp-dark))",
-  color: "var(--bg)",
-  border: "none",
-  borderRadius: "10px",
+  background: "var(--cp)",
+  color: "var(--cp-text)",
+  border: "1.5px solid var(--cp-dark)",
+  borderRadius: "8px",
   padding: "8px 16px",
-  fontFamily: "var(--fd)",
-  fontWeight: 800,
+  fontFamily: "var(--fb)",
+  fontWeight: 700,
   fontSize: "12.5px",
   cursor: "pointer",
-  boxShadow: "0 2px 8px var(--cp-glow)",
-  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+  boxShadow: "var(--sh2)",
+  transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
 };
 const SECONDARY_BTN = {
-  background: "var(--bg-l)",
+  background: "var(--bg-card)",
   color: "var(--tx-m)",
-  border: "1px solid var(--bd)",
-  borderRadius: "10px",
+  border: "1.5px solid var(--bd)",
+  borderRadius: "8px",
   padding: "7px 14px",
-  fontFamily: "var(--fd)",
+  fontFamily: "var(--fb)",
   fontWeight: 600,
   fontSize: "11.5px",
   cursor: "pointer",
@@ -1217,10 +1229,10 @@ export default function FarmerMarketIntelligencePage() {
   const { t, i18n } = useTranslation();
 
   const TABS = [
-    { icon: "📈", label: t("market.tab_trend") },
-    { icon: "📊", label: t("market.tab_compare") },
-    { icon: "🗓", label: t("market.tab_heatmap") },
-    { icon: "🧰", label: t("ml.title") },
+    { Icon: TrendingUp, label: t("market.tab_trend") },
+    { Icon: BarChart3, label: t("market.tab_compare") },
+    { Icon: Grid3x3, label: t("market.tab_heatmap") },
+    { Icon: Wrench, label: t("ml.title") },
   ];
   const [cities,          setCities]          = useState([]);
   const [commodities,     setCommodities]     = useState([]);
@@ -1647,61 +1659,59 @@ export default function FarmerMarketIntelligencePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
 
-      {toast && (
-        <div className="fixed bottom-5 right-5 z-[9999] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-900 dark:text-white shadow-xl">
-          {toast}
-        </div>
-      )}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-5 right-5 z-[9999] max-w-sm rounded-panel border border-line bg-surface-card px-4 py-3 text-sm text-ink shadow-lifted"
+          >
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── 1. MARKET HEADER ── */}
-      <div className="anim-fadeup mb-6" style={{ position: "relative", zIndex: 1 }}>
+      <Reveal className="mb-6" style={{ position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "14px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--tx)", display: "flex", alignItems: "center", gap: "10px", margin: 0 }}>
-                <span style={{ fontSize: "1.8rem" }}>📊</span> {t('mi.title', 'Market Intelligence')}
+              <h1 className="flex items-center gap-2.5 font-display text-[1.75rem] font-extrabold text-ink">
+                <BarChart3 size={26} className="text-accent" /> {t('mi.title', 'Market Intelligence')}
               </h1>
-              <span style={{
-                fontSize: "11.5px", fontWeight: 700, color: "#10B981",
-                background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)",
-                padding: "3px 10px", borderRadius: "20px", display: "inline-flex", alignItems: "center", gap: "6px"
-              }}>
-                <span className="anim-pulse-glow" style={{ width: 7, height: 7, borderRadius: "50%", background: "#10B981", display: "inline-block" }} />
+              <span className="inline-flex items-center gap-1.5 rounded-pill border border-safe/25 bg-safe-bg px-2.5 py-1 text-[11.5px] font-bold text-safe">
+                <span className="h-[7px] w-[7px] animate-[tickerPulse_1.8s_ease-in-out_infinite] rounded-full bg-safe" />
                 {t("mi.live_feed", "Live Mandi Feed")}
               </span>
             </div>
-            <p style={{ fontSize: "12.5px", color: "var(--tx-m)", margin: "4px 0 0 0" }}>
+            <p className="mt-1 text-[12.5px] text-ink-muted">
               {t('mi.subtitle', 'Live APMC price data · Maharashtra · Auto-updated daily')}
             </p>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             {syncStatus?.newest && (
-              <div style={{
-                fontSize: "12px", fontWeight: 600, color: "var(--tx-m)",
-                background: "var(--bg-m)", padding: "7px 14px", borderRadius: "12px",
-                border: "1px solid var(--bd)", display: "flex", alignItems: "center", gap: "6px"
-              }}>
-                <span>🗓️</span> {t('mi.latest_date', 'Latest:')} <strong style={{ color: "var(--tx)" }}>{syncStatus.newest}</strong>
+              <div className="flex items-center gap-1.5 rounded-pill border border-line bg-surface-muted px-3.5 py-1.5 text-xs font-semibold text-ink-muted">
+                <Calendar size={13} /> {t('mi.latest_date', 'Latest:')} <strong className="text-ink">{syncStatus.newest}</strong>
               </div>
             )}
-            <button
+            <motion.button
+              whileTap={{ scale: 0.96 }}
               type="button"
               onClick={handleManualRefresh}
               disabled={syncing || loading}
-              style={{
-                ...SECONDARY_BTN,
-                display: "inline-flex", alignItems: "center", gap: "6px",
-                padding: "7px 14px", fontSize: "12px", borderRadius: "12px"
-              }}
+              style={{ ...SECONDARY_BTN, borderRadius: "12px" }}
+              className="inline-flex items-center gap-1.5 disabled:opacity-60"
               title={t("mi.refresh_data", "Refresh Data")}
             >
-              <span style={{ display: "inline-block", animation: syncing ? "spin 0.8s linear infinite" : "none" }}>🔄</span>
+              <RefreshCw size={13} className={syncing ? "animate-spin" : ""} />
               <span>{syncing ? t("market.syncing", "Syncing…") : t("mi.refresh_data", "Refresh Data")}</span>
-            </button>
+            </motion.button>
           </div>
         </div>
-      </div>
+      </Reveal>
 
       {/* ── 2. FILTERS (Compact Unified Toolbar) ── */}
       <div style={{ ...CARD, position: "relative", zIndex: 30, marginBottom: "24px", padding: "16px 20px" }} className="anim-fadeup stagger-1 hover-card-elevation shadow-sm">
@@ -1929,15 +1939,15 @@ export default function FarmerMarketIntelligencePage() {
       </div>
 
       {/* ── 3. KPI SUMMARY ── */}
-      <div className="anim-fadeup stagger-2" style={{ position: "relative", zIndex: 10, marginBottom: "24px" }}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 w-full">
+      <div style={{ position: "relative", zIndex: 10, marginBottom: "24px" }}>
+        <RevealGroup className="grid w-full grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4" stagger={0.07}>
           {/* 1. Current Price */}
-          <div style={{ ...CARD, padding: "16px 18px" }} className="hover-card-elevation transition-all duration-200 min-w-0">
+          <RevealItem style={{ ...CARD, padding: "16px 18px" }} className="min-w-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".5px" }}>
-                🏷️ {t("mi.kpi_current_price", "Current Modal Price")}
+              <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-soft">
+                <Tag size={12} /> {t("mi.kpi_current_price", "Current Modal Price")}
               </span>
-              <span style={{ fontSize: "10px", color: "var(--cp)", fontWeight: 700, background: "rgba(63,107,51,0.1)", padding: "2px 6px", borderRadius: "6px", flexShrink: 0 }}>
+              <span className="shrink-0 rounded-md bg-accent-pale px-1.5 py-0.5 text-[10px] font-bold text-accent">
                 Actual
               </span>
             </div>
@@ -1948,15 +1958,15 @@ export default function FarmerMarketIntelligencePage() {
             <div style={{ fontSize: "11px", color: "var(--tx-m)", marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {currentPriceDate ? `${currentPriceDate} · ` : ""}{formatMarketDisplayName(primaryCity) || t("market.active", "Active")}
             </div>
-          </div>
+          </RevealItem>
 
           {/* 2. Forecast Target Price */}
-          <div style={{ ...CARD, padding: "16px 18px" }} className="hover-card-elevation transition-all duration-200 min-w-0">
+          <RevealItem style={{ ...CARD, padding: "16px 18px" }} className="min-w-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".5px" }}>
-                🔮 {t("mi.kpi_forecast_target", { days: arimaDays, defaultValue: `${arimaDays}-Day Target Price` })}
+              <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-soft">
+                <Wand2 size={12} /> {t("mi.kpi_forecast_target", { days: arimaDays, defaultValue: `${arimaDays}-Day Target Price` })}
               </span>
-              <span style={{ fontSize: "10px", color: "#2563EB", fontWeight: 700, background: "rgba(37,99,235,0.1)", padding: "2px 6px", borderRadius: "6px", flexShrink: 0 }}>
+              <span className="shrink-0 rounded-md bg-info-bg px-1.5 py-0.5 text-[10px] font-bold text-info">
                 XGBoost
               </span>
             </div>
@@ -1967,24 +1977,19 @@ export default function FarmerMarketIntelligencePage() {
             <div style={{ fontSize: "11px", color: "var(--tx-m)", marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {forecastTargetDate ? `Target: ${forecastTargetDate}` : `${arimaDays}-Day Horizon ML`}
             </div>
-          </div>
+          </RevealItem>
 
           {/* 3. Expected Price Change */}
-          <div style={{ ...CARD, padding: "16px 18px" }} className="hover-card-elevation transition-all duration-200 min-w-0">
+          <RevealItem style={{ ...CARD, padding: "16px 18px" }} className="min-w-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".5px" }}>
-                {isPriceUp ? "📈" : "📉"} {t("mi.kpi_price_change", "Expected Price Change")}
+              <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-soft">
+                {isPriceUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {t("mi.kpi_price_change", "Expected Price Change")}
               </span>
-              <span style={{
-                fontSize: "10px", fontWeight: 700,
-                color: isPriceUp ? "#10B981" : "#EF4444",
-                background: isPriceUp ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
-                padding: "2px 6px", borderRadius: "6px", flexShrink: 0
-              }}>
+              <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${isPriceUp ? "bg-safe-bg text-safe" : "bg-danger-bg text-danger"}`}>
                 {isPriceUp ? "Bullish" : "Bearish"}
               </span>
             </div>
-            <div style={{ fontSize: "1.75rem", fontWeight: 900, color: isPriceUp ? "#10B981" : "#EF4444", fontFamily: "var(--fd)", lineHeight: 1.1 }}>
+            <div className={`font-display text-[1.75rem] font-black leading-none ${isPriceUp ? "text-safe" : "text-danger"}`}>
               {animatedPriceChange != null ? `${isPriceUp ? '▲ +' : '▼ -'}₹${Math.abs(animatedPriceChange)}` : "—"}
               {priceChangePct != null && (
                 <span style={{ fontSize: "12px", fontWeight: 700, marginLeft: "4px" }}>
@@ -1995,15 +2000,15 @@ export default function FarmerMarketIntelligencePage() {
             <div style={{ fontSize: "11px", color: "var(--tx-m)", marginTop: "4px" }}>
               {isPriceUp ? t("mi.bullish_outlook", "Bullish price momentum") : t("mi.bearish_outlook", "Downside pressure detected")}
             </div>
-          </div>
+          </RevealItem>
 
           {/* 4. Best Nearby Market */}
-          <div style={{ ...CARD, padding: "16px 18px" }} className="hover-card-elevation transition-all duration-200 min-w-0">
+          <RevealItem style={{ ...CARD, padding: "16px 18px" }} className="min-w-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: ".5px" }}>
-                📍 {t("mi.kpi_best_nearby", "Best Nearby Mandi")}
+              <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-soft">
+                <MapPin size={12} /> {t("mi.kpi_best_nearby", "Best Nearby Mandi")}
               </span>
-              <span style={{ fontSize: "10px", color: "var(--cp)", fontWeight: 700, background: "rgba(63,107,51,0.1)", padding: "2px 6px", borderRadius: "6px", flexShrink: 0 }}>
+              <span className="shrink-0 rounded-md bg-accent-pale px-1.5 py-0.5 text-[10px] font-bold text-accent">
                 ≤ 40 km
               </span>
             </div>
@@ -2025,20 +2030,20 @@ export default function FarmerMarketIntelligencePage() {
             <div style={{ fontSize: "11px", color: "var(--tx-m)", marginTop: "4px" }} className="truncate">
               {bestNearby?.distanceKm ? `${bestNearby.distanceKm} km away` : t("mi.within_radius", "Within 40 km radius")}
               {bestNearby?.diff != null && bestNearby.diff > 0 && (
-                <strong style={{ color: "#10B981", marginLeft: "4px" }}>+₹{bestNearby.diff}/q</strong>
+                <strong className="ml-1 text-safe">+₹{bestNearby.diff}/q</strong>
               )}
             </div>
-          </div>
-        </div>
+          </RevealItem>
+        </RevealGroup>
       </div>
 
       {/* ── 4. PRICE INTELLIGENCE (Main Visual Focus) ── */}
-      <div style={{ ...CARD, position: "relative", zIndex: 5, marginBottom: "28px" }} className="anim-fadeup stagger-3 hover-card-elevation">
+      <Reveal delay={0.06} style={{ ...CARD, position: "relative", zIndex: 5, marginBottom: "28px" }}>
         {/* Section Header & Tabs */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "16px", borderBottom: "1px solid var(--bd)", paddingBottom: "12px" }}>
           <div>
-            <div style={{ fontWeight: 800, fontSize: "16px", color: "var(--tx)", display: "flex", alignItems: "center", gap: "8px" }}>
-              <span>📊</span>
+            <div className="flex items-center gap-2 font-display text-base font-extrabold text-ink">
+              <Compass size={17} className="text-accent" />
               <span>{t("market.price_trend", "Price Intelligence")} — <span style={{ color: "var(--cp)" }}>{commodity || t("market.all_commodities", "All Commodities")}</span></span>
             </div>
             <div style={{ fontSize: "11.5px", color: "var(--tx-m)", marginTop: "2px" }}>
@@ -2046,34 +2051,40 @@ export default function FarmerMarketIntelligencePage() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "4px", overflowX: "auto" }}>
+          <div className="relative flex gap-1 overflow-x-auto rounded-md bg-surface-muted p-1">
             {TABS.map((tab, i) => (
               <button
                 key={i}
                 onClick={() => setActiveTab(i)}
+                className="relative z-10 flex items-center gap-1.5 whitespace-nowrap rounded-md px-3.5 py-1.5 text-[12.5px] transition-colors duration-150"
                 style={{
-                  background: activeTab === i ? "var(--cp)" : "transparent",
-                  color: activeTab === i ? "var(--cp-text, #fff)" : "var(--tx-m)",
-                  border: "none",
-                  borderRadius: "8px",
-                  padding: "6px 14px",
-                  cursor: "pointer",
-                  fontFamily: "var(--fd)",
+                  color: activeTab === i ? "var(--cp-text)" : "var(--tx-m)",
+                  fontFamily: "var(--fb)",
                   fontWeight: activeTab === i ? 700 : 500,
-                  fontSize: "12.5px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  transition: "all .15s ease",
-                  whiteSpace: "nowrap"
                 }}
               >
-                <span>{tab.icon}</span>
+                {activeTab === i && (
+                  <motion.span
+                    layoutId="fn-market-tab-indicator"
+                    className="absolute inset-0 -z-10 rounded-md bg-accent"
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  />
+                )}
+                <tab.Icon size={14} />
                 <span>{tab.label}</span>
               </button>
             ))}
           </div>
         </div>
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18 }}
+          >
 
         {/* TAB 0: Price Trend & XGBoost Forecast */}
         {activeTab === 0 && (
@@ -2188,10 +2199,12 @@ export default function FarmerMarketIntelligencePage() {
             <QuickMarketRec meta={mlMeta} />
           </div>
         )}
-      </div>
+          </motion.div>
+        </AnimatePresence>
+      </Reveal>
 
       {/* ── 5. WEATHER & CLIMATE INTELLIGENCE (Open-Meteo) ── */}
-      <div className="anim-fadeup stagger-4" style={{ position: "relative", zIndex: 4, marginBottom: "28px" }}>
+      <Reveal delay={0.08} style={{ position: "relative", zIndex: 4, marginBottom: "28px" }}>
         <WeatherSection
           coords={userCoords}
           weatherData={weatherData}
@@ -2203,10 +2216,10 @@ export default function FarmerMarketIntelligencePage() {
           onDetectLocation={() => detectUserLocation(citiesRef.current, true)}
           locationStatus={locationStatus}
         />
-      </div>
+      </Reveal>
 
       {/* ── 6. AI AGRICULTURAL & MARKET ADVISOR (Gemini Free Tier) ── */}
-      <div className="anim-fadeup stagger-5" style={{ position: "relative", zIndex: 3, marginBottom: "36px" }}>
+      <Reveal delay={0.1} style={{ position: "relative", zIndex: 3, marginBottom: "36px" }}>
         <AIAgriculturalAdvisor
           city={selectedCities[0] || (cities && cities[0]) || "Sangli"}
           commodity={commodity || "Onion"}
@@ -2214,7 +2227,7 @@ export default function FarmerMarketIntelligencePage() {
           lat={userCoords?.lat}
           lon={userCoords?.lon}
         />
-      </div>
+      </Reveal>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

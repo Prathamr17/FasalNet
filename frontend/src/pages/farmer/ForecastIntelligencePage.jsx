@@ -7,30 +7,32 @@
 //   - Weather Risk & Rainfall Impact Intelligence
 //   - 30/60-Day Binary Trend Indicators
 
-import React from "react";
 import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
+import { Database, ShieldCheck } from "lucide-react";
+import Reveal from "../../components/ui/Reveal";
 
 // ── Shared style tokens & modern design constants ───────────────────────────
 const CARD = {
-  background: "var(--bg-l)",
+  background: "var(--bg-card)",
   border: "1px solid var(--bd)",
-  borderRadius: "16px",
+  borderRadius: "14px",
   padding: "22px 24px",
-  boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
-  transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+  boxShadow: "var(--sh2)",
+  transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
 };
 
 const BTN = {
-  background: "linear-gradient(135deg, var(--cp), var(--cp-dark, #2d4f24))",
-  color: "var(--cp-text, #ffffff)",
-  border: "none",
-  borderRadius: "10px",
+  background: "var(--cp)",
+  color: "var(--cp-text)",
+  border: "1.5px solid var(--cp-dark)",
+  borderRadius: "8px",
   padding: "9px 20px",
-  fontFamily: "var(--fd)",
-  fontWeight: 800,
+  fontFamily: "var(--fb)",
+  fontWeight: 700,
   fontSize: "12.5px",
   cursor: "pointer",
-  boxShadow: "0 2px 10px rgba(63,107,51,0.2)",
+  boxShadow: "var(--sh2)",
   transition: "all 0.2s ease",
   lineHeight: 1,
 };
@@ -52,35 +54,18 @@ function Spin() {
 // ── HEADER: Engine Metadata Badge ─────────────────────────────────────────────
 function EngineStatusBadge({ t }) {
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      flexWrap: "wrap",
-      gap: "8px",
-      padding: "10px 16px",
-      background: "linear-gradient(90deg, rgba(63,107,51,0.08) 0%, rgba(43,69,112,0.08) 100%)",
-      border: "1px solid rgba(63,107,51,0.2)",
-      borderRadius: "12px",
-      marginBottom: "4px"
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <span style={{
-          width: 8, height: 8, borderRadius: "50%",
-          background: "#10B981", boxShadow: "0 0 8px #10B981",
-          display: "inline-block"
-        }} />
-        <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--tx)" }}>
-          FasalNet XGBoost + Open-Meteo Engine
-        </span>
-        <span style={{ fontSize: "11px", color: "var(--tx-m)", borderLeft: "1px solid var(--bd)", paddingLeft: "8px" }}>
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-accent/20 bg-accent-pale/50 px-4 py-2.5">
+      <div className="flex items-center gap-2">
+        <span className="h-2 w-2 animate-[tickerPulse_1.8s_ease-in-out_infinite] rounded-full bg-safe" />
+        <span className="text-xs font-bold text-ink">FasalNet XGBoost + Open-Meteo Engine</span>
+        <span className="border-l border-line pl-2 text-[11px] text-ink-muted">
           Direct Multi-Horizon XGBoost Regressor + Exogenous Agro-Weather Features
         </span>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "11px", fontWeight: 600, color: "var(--tx-s)" }}>
-        <span>🗄️ {t("mi.data_source", "Real DB (mh_market_prices)")}</span>
+      <div className="flex items-center gap-2.5 text-[11px] font-semibold text-ink-soft">
+        <span className="flex items-center gap-1"><Database size={12} /> {t("mi.data_source", "Real DB (mh_market_prices)")}</span>
         <span>•</span>
-        <span style={{ color: "var(--cp)", fontWeight: 700 }}>{t("mi.model_status", "Real Time-Series Validation")}</span>
+        <span className="flex items-center gap-1 font-bold text-accent"><ShieldCheck size={12} /> {t("mi.model_status", "Real Time-Series Validation")}</span>
       </div>
     </div>
   );
@@ -116,8 +101,8 @@ function ModelEvaluationCard({ metrics, t }) {
         {[
           { label: "MAE", value: `₹${metrics.mae ?? "—"}`, desc: "Mean Absolute Error", color: "var(--tx)" },
           { label: "RMSE", value: `₹${metrics.rmse ?? "—"}`, desc: "Root Mean Sq Error", color: "var(--tx)" },
-          { label: "MAPE", value: `${metrics.mape ?? "—"}%`, desc: "Mean Abs % Error", color: (metrics.mape ?? 0) <= 15 ? "#10B981" : "#B4741E" },
-          { label: "R² Score", value: `${metrics.r2 != null ? Number(metrics.r2).toFixed(2) : "—"}`, desc: "Variance Explained", color: (metrics.r2 ?? 0) >= 0.5 ? "#10B981" : "var(--tx-m)" },
+          { label: "MAPE", value: `${metrics.mape ?? "—"}%`, desc: "Mean Abs % Error", color: (metrics.mape ?? 0) <= 15 ? "var(--safe)" : "#B4741E" },
+          { label: "R² Score", value: `${metrics.r2 != null ? Number(metrics.r2).toFixed(2) : "—"}`, desc: "Variance Explained", color: (metrics.r2 ?? 0) >= 0.5 ? "var(--safe)" : "var(--tx-m)" },
         ].map((item, idx) => (
           <div key={idx} style={{
             background: "var(--bg-l)", borderRadius: "10px", padding: "10px 12px",
@@ -145,13 +130,13 @@ function WeatherRiskSignalCard({ summary, t }) {
 
   const isRiskHigh = summary.weather_risk === "High";
   const isRiskMod = summary.weather_risk === "Moderate";
-  const riskColor = isRiskHigh ? "#EF4444" : isRiskMod ? "#F59E0B" : "#10B981";
+  const riskColor = isRiskHigh ? "#EF4444" : isRiskMod ? "#F59E0B" : "var(--safe)";
   const riskBg = isRiskHigh ? "rgba(239,68,68,0.1)" : isRiskMod ? "rgba(245,158,11,0.1)" : "rgba(16,185,129,0.1)";
   const riskBorder = isRiskHigh ? "rgba(239,68,68,0.3)" : isRiskMod ? "rgba(245,158,11,0.3)" : "rgba(16,185,129,0.3)";
 
   const isUp = summary.direction === "UP";
   const isDown = summary.direction === "DOWN";
-  const trendColor = isUp ? "#10B981" : isDown ? "#EF4444" : "var(--tx-m)";
+  const trendColor = isUp ? "var(--safe)" : isDown ? "#EF4444" : "var(--tx-m)";
 
   return (
     <div style={{
@@ -304,7 +289,7 @@ function TodayTomorrowCard({ todayTomorrow, ttLoading, arimaError, t }) {
             const isDown = tm.direction === "DOWN";
             const arrow  = isUp ? "▲" : isDown ? "▼" : "→";
             const badgeBg= isUp ? "rgba(16,185,129,0.15)" : isDown ? "rgba(239,68,68,0.15)" : "rgba(107,114,128,0.15)";
-            const badgeFg= isUp ? "#10B981" : isDown ? "#EF4444" : "var(--tx-m)";
+            const badgeFg= isUp ? "var(--safe)" : isDown ? "#EF4444" : "var(--tx-m)";
             const price = Math.round(tm.forecasted_price ?? 0);
             const low80 = Math.round(tm.confidence_bounds?.lower_80 ?? price * 0.95);
             const high80 = Math.round(tm.confidence_bounds?.upper_80 ?? price * 1.05);
@@ -452,7 +437,7 @@ function ContinuousForecastCard({ arimaDays, setArimaDays, arimaData, arimaLoadi
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px" }}>
                 {[
                   { label: t("mi.avg_price", "Forecast Average"), val: `₹${Math.round(avg).toLocaleString("en-IN")}`, color: "var(--cp)" },
-                  { label: t("mi.forecast_trend", "Net Change"), val: `${delta >= 0 ? "▲" : "▼"} ₹${Math.abs(Math.round(delta)).toLocaleString("en-IN")}`, color: delta >= 0 ? "#10B981" : "#EF4444" },
+                  { label: t("mi.forecast_trend", "Net Change"), val: `${delta >= 0 ? "▲" : "▼"} ₹${Math.abs(Math.round(delta)).toLocaleString("en-IN")}`, color: delta >= 0 ? "var(--safe)" : "#EF4444" },
                   { label: t("mi.peak_max", "95% Upper Peak"), val: `₹${Math.round(peak).toLocaleString("en-IN")}`, color: "var(--warn, #B4741E)" },
                   { label: t("mi.floor_min", "95% Lower Floor"), val: `₹${Math.round(trough).toLocaleString("en-IN")}`, color: "var(--info, #2B4570)" },
                 ].map(({ label, val, color }) => (
@@ -480,7 +465,7 @@ function ContinuousForecastCard({ arimaDays, setArimaDays, arimaData, arimaLoadi
                 <div key={i} style={{
                   minWidth: "135px", flexShrink: 0, background: "var(--bg-m)",
                   border: "1px solid var(--bd)",
-                  borderTop: `4px solid ${isUp ? "#10B981" : "#EF4444"}`,
+                  borderTop: `4px solid ${isUp ? "var(--safe)" : "#EF4444"}`,
                   borderRadius: "12px", padding: "12px", textAlign: "center",
                   transition: "transform .15s ease",
                 }}>
@@ -491,7 +476,7 @@ function ContinuousForecastCard({ arimaDays, setArimaDays, arimaData, arimaLoadi
                   <div style={{ fontWeight: 900, fontSize: "15px", color: "var(--tx)", fontFamily: "var(--fd)", marginBottom: "4px" }}>
                     ₹{pt.price.toLocaleString("en-IN")}
                   </div>
-                  <div style={{ fontSize: "10px", fontWeight: 800, marginBottom: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "2px", color: isUp ? "#10B981" : "#EF4444" }}>
+                  <div style={{ fontSize: "10px", fontWeight: 800, marginBottom: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "2px", color: isUp ? "var(--safe)" : "#EF4444" }}>
                     {isUp ? "▲" : "▼"} ₹{Math.abs(Math.round(change)).toLocaleString("en-IN")}
                   </div>
                   
@@ -555,38 +540,42 @@ export default function ForecastIntelligencePage({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-      <EngineStatusBadge t={t} />
+      <Reveal><EngineStatusBadge t={t} /></Reveal>
 
       {/* Model Performance & Evaluation Card */}
       {arimaData?.metrics && (
-        <ModelEvaluationCard metrics={arimaData.metrics} t={t} />
+        <Reveal delay={0.05}><ModelEvaluationCard metrics={arimaData.metrics} t={t} /></Reveal>
       )}
 
       {/* Weather Risk & Price Intelligence Card */}
       {arimaData?.summary && (
-        <WeatherRiskSignalCard summary={arimaData.summary} t={t} />
+        <Reveal delay={0.08}><WeatherRiskSignalCard summary={arimaData.summary} t={t} /></Reveal>
       )}
 
       {/* Today & Tomorrow Highlight Card */}
-      <TodayTomorrowCard
-        todayTomorrow={todayTomorrow || arimaData?.today_tomorrow}
-        ttLoading={ttLoading}
-        arimaError={arimaError}
-        t={t}
-      />
+      <Reveal delay={0.1}>
+        <TodayTomorrowCard
+          todayTomorrow={todayTomorrow || arimaData?.today_tomorrow}
+          ttLoading={ttLoading}
+          arimaError={arimaError}
+          t={t}
+        />
+      </Reveal>
 
       {/* Continuous 7/14-Day Multi-Horizon Forecast Card */}
-      <ContinuousForecastCard
-        arimaDays={arimaDays}
-        setArimaDays={setArimaDays}
-        arimaData={arimaData}
-        arimaLoading={arimaLoading}
-        arimaError={arimaError}
-        selectedCities={selectedCities}
-        commodity={commodity}
-        onRunForecast={onRunForecast}
-        t={t}
-      />
+      <Reveal delay={0.14}>
+        <ContinuousForecastCard
+          arimaDays={arimaDays}
+          setArimaDays={setArimaDays}
+          arimaData={arimaData}
+          arimaLoading={arimaLoading}
+          arimaError={arimaError}
+          selectedCities={selectedCities}
+          commodity={commodity}
+          onRunForecast={onRunForecast}
+          t={t}
+        />
+      </Reveal>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
