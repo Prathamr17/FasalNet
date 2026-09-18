@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { farmerAPI, mlAPI } from "../services/api";
 import StorageMap   from "../components/map/StorageMap";
 import StorageList  from "../components/map/StorageList";
+import Reveal from "../components/ui/Reveal";
 import BookingModal from "../components/booking/BookingModal";
 
 const DEMO_STORAGES = [
@@ -292,14 +293,14 @@ export default function DiscoverPage() {
   return (
     <div style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 20px" }}>
 
-      <div style={{ marginBottom: 20 }} className="anim-fadeup">
+      <Reveal style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--tx)", marginBottom: 4 }}>
           {t("nav.discover")} {t("nav.cold_storage")}
         </h1>
         <p style={{ fontSize: 13, color: "var(--tx-m)" }}>
           {t("farmer.risk_sub")}
         </p>
-      </div>
+      </Reveal>
 
       <div className="anim-fadeup d1" style={{ marginBottom: 16 }}>
         <SpoilageRiskPanel onRiskResult={handleRiskResult} spoilageMeta={spoilageMeta} />

@@ -1,9 +1,12 @@
 // pages/OperatorPage.js — v8: payment visibility, delivery assignment
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
+import { LayoutDashboard, Clock, CheckCircle2, Wallet, ShoppingCart } from "lucide-react";
 import { operatorAPI, apiError } from "../services/api";
 import BookingCard       from "../components/operator/BookingCard";
 import StorageUpdateForm from "../components/operator/StorageUpdateForm";
+import Reveal from "../components/ui/Reveal";
 
 const INDIA_STATES = [
   "Andhra Pradesh","Assam","Bihar","Chhattisgarh","Delhi","Goa","Gujarat","Haryana",
@@ -566,31 +569,44 @@ export default function OperatorPage() {
     return true;
   });
 
-  const TAB = (id, label, count) => (
-    <button
-      style={{
-        padding:"8px 16px", borderRadius:"8px", border:"none", cursor:"pointer",
-        fontSize:"12px", fontWeight:700, transition:"all .15s",
-        background: activeTab === id ? "var(--cp)" : "transparent",
-        color:      activeTab === id ? "#fff" : "var(--tx-m)",
-        display:"flex", alignItems:"center", gap:"6px",
-      }}
-      onClick={() => setTab(id)}>
-      {label}
-      {count > 0 && (
-        <span style={{ background: activeTab===id ? "rgba(255,255,255,.3)" : "var(--cp-pale)",
-          color: activeTab===id ? "#fff" : "var(--cp)", borderRadius:"99px", padding:"1px 6px", fontSize:"10px" }}>
-          {count}
-        </span>
-      )}
-    </button>
-  );
+  const TAB_ICONS = { dashboard: LayoutDashboard, pending: Clock, confirmed: CheckCircle2, paid: Wallet, orders: ShoppingCart };
+  const TAB = (id, label, count) => {
+    const Icon = TAB_ICONS[id];
+    return (
+      <button
+        key={id}
+        style={{
+          position: "relative", zIndex: 1,
+          padding:"8px 16px", borderRadius:"8px", border:"none", cursor:"pointer",
+          fontSize:"12px", fontWeight:700, transition:"color .15s",
+          color: activeTab === id ? "var(--cp-text)" : "var(--tx-m)",
+          display:"flex", alignItems:"center", gap:"6px",
+        }}
+        onClick={() => setTab(id)}>
+        {activeTab === id && (
+          <motion.span
+            layoutId="fn-operator-tab-indicator"
+            style={{ position: "absolute", inset: 0, zIndex: -1, borderRadius: "8px", background: "var(--cp)" }}
+            transition={{ type: "spring", stiffness: 420, damping: 34 }}
+          />
+        )}
+        {Icon && <Icon size={13} />}
+        {label}
+        {count > 0 && (
+          <span style={{ background: activeTab===id ? "rgba(255,255,255,.3)" : "var(--cp-pale)",
+            color: activeTab===id ? "#fff" : "var(--cp)", borderRadius:"99px", padding:"1px 6px", fontSize:"10px" }}>
+            {count}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div style={{ maxWidth:"1000px", margin:"0 auto", padding:"24px 20px" }}>
 
       {/* Header */}
-      <div style={{ marginBottom:"24px" }} className="anim-fadeup">
+      <Reveal style={{ marginBottom:"24px" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start",
           flexWrap:"wrap", gap:"12px" }}>
           <div>
@@ -599,8 +615,8 @@ export default function OperatorPage() {
               <span style={{ fontSize:"10px", fontWeight:700, color:"var(--cp)",
                 background:"rgba(43,69,112,.12)", border:"1px solid rgba(43,69,112,.3)",
                 borderRadius:"99px", padding:"2px 10px", display:"flex", alignItems:"center", gap:"5px" }}>
-                <span style={{ width:"6px", height:"6px", borderRadius:"50%", background:"var(--cp)",
-                  display:"inline-block", animation:"ping 1.5s ease-in-out infinite" }}/>
+                <span className="animate-[tickerPulse_1.8s_ease-in-out_infinite]" style={{ width:"6px", height:"6px", borderRadius:"50%", background:"var(--cp)",
+                  display:"inline-block" }}/>
                 {t("farmer.live")}
               </span>
             </h1>
@@ -609,14 +625,14 @@ export default function OperatorPage() {
             </p>
           </div>
           <div style={{ display:"flex", gap:"4px", background:"var(--bg-m)", borderRadius:"10px", padding:"4px", flexWrap:"wrap" }}>
-            {TAB("dashboard", `📊 ${t("nav.dashboard")}`, 0)}
-            {TAB("pending",   `⏳ ${t("booking.pending")}`, pending.length)}
-            {TAB("confirmed", `✅ ${t("booking.confirmed")}`, confirmed.length)}
-            {TAB("paid",      `💰 ${t("booking.completed")}`, paid.length)}
-            {TAB("orders",    `🛒 ${t("nav.orders")}`, orders.length)}
+            {TAB("dashboard", t("nav.dashboard"), 0)}
+            {TAB("pending",   t("booking.pending"), pending.length)}
+            {TAB("confirmed", t("booking.confirmed"), confirmed.length)}
+            {TAB("paid",      t("booking.completed"), paid.length)}
+            {TAB("orders",    t("nav.orders"), orders.length)}
           </div>
         </div>
-      </div>
+      </Reveal>
 
       {/* ── DASHBOARD ── */}
       {activeTab === "dashboard" && (

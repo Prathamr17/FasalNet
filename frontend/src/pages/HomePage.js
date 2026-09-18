@@ -69,13 +69,13 @@ export default function HomePage() {
 
   const heroCta = user
     ? {
-        to: user.role === "farmer" ? "/discover" : user.role === "operator" ? "/operator" : "/marketplace",
+        to: user.role === "farmer" ? "/discover" : user.role === "operator" ? "/operator" : "/discover",
         label:
           user.role === "farmer"
             ? t("home.go_to_discover")
             : user.role === "operator"
             ? t("home.go_to_dashboard")
-            : t("home.go_to_marketplace"),
+            : t("home.go_to_discover"),
       }
     : null;
 

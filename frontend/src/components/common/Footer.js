@@ -36,7 +36,7 @@ export default function Footer() {
           <Link to="/market" className={linkCls}>{t("footer.market_intel_link")}</Link>
           <Link to="/ml-predict" className={linkCls}>{t("footer.ai_advisor_link")}</Link>
           <Link to="/discover" className={linkCls}>{t("footer.cold_storage_link")}</Link>
-          <Link to="/marketplace" className={linkCls}>{t("footer.marketplace")}</Link>
+          <Link to="/marketplace" className={linkCls}>{t("footer.marketplace_link", "Marketplace")}</Link>
         </div>
 
         <div className="flex flex-col gap-3">

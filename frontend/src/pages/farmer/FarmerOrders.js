@@ -1,30 +1,33 @@
-// pages/farmer/FarmerOrders.js — Customer orders for farmer's products
+// pages/farmer/FarmerOrders.js — Orders placed by customers for a farmer's products
 import { useState, useEffect } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from "react-i18next";
+import { Package, User, Phone, MapPin, Truck, ShoppingBag } from "lucide-react";
 import { farmerAPI } from "../../services/api";
+import { Card } from "../../components/ui/Card";
+import { Container } from "../../components/ui/Container";
+import Reveal from "../../components/ui/Reveal";
+import { RevealGroup, RevealItem } from "../../components/ui/RevealGroup";
 
-function StatusBadge({ status }) {
+function StatusBadge({ status, t }) {
   const map = {
-    pending:    { class:"badge-warn",    label:"Pending" },
-    confirmed:  { class:"badge-safe",    label:"Confirmed" },
-    in_transit: { class:"badge-info",    label:"In Transit" },
-    delivered:  { class:"badge-safe",    label:"Delivered" },
-    rejected:   { class:"badge-danger",  label:"Rejected" },
-    cancelled:  { class:"badge-neutral", label:"Cancelled" },
+    pending: { cls: "bg-warn-bg text-warn", label: t("orders.status_pending") },
+    confirmed: { cls: "bg-safe-bg text-safe", label: t("orders.status_confirmed") },
+    in_transit: { cls: "bg-info-bg text-info", label: t("orders.status_in_transit") },
+    delivered: { cls: "bg-safe-bg text-safe", label: t("orders.status_delivered") },
+    rejected: { cls: "bg-danger-bg text-danger", label: t("orders.status_rejected") },
+    cancelled: { cls: "bg-surface-muted text-ink-muted", label: t("orders.status_cancelled") },
   };
   const cfg = map[status] || map.pending;
-  return <span className={`badge ${cfg.class}`}>{cfg.label}</span>;
+  return <span className={`rounded-pill px-2.5 py-0.5 text-[11px] font-bold ${cfg.cls}`}>{cfg.label}</span>;
 }
 
 export default function FarmerOrders() {
-  const { user } = useAuth();
+  const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // all, pending, confirmed, delivered
+  const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
-    loadOrders();
-  }, []);
+  useEffect(() => { loadOrders(); }, []);
 
   const loadOrders = async () => {
     setLoading(true);
@@ -39,7 +42,7 @@ export default function FarmerOrders() {
     }
   };
 
-  const filteredOrders = orders.filter(o => {
+  const filteredOrders = orders.filter((o) => {
     if (filter === "all") return true;
     if (filter === "pending") return o.status === "pending";
     if (filter === "confirmed") return o.status === "confirmed" || o.status === "in_transit";
@@ -49,173 +52,144 @@ export default function FarmerOrders() {
 
   const stats = {
     total: orders.length,
-    pending: orders.filter(o => o.status === "pending").length,
-    confirmed: orders.filter(o => o.status === "confirmed" || o.status === "in_transit").length,
-    delivered: orders.filter(o => o.status === "delivered").length,
+    pending: orders.filter((o) => o.status === "pending").length,
+    confirmed: orders.filter((o) => o.status === "confirmed" || o.status === "in_transit").length,
+    delivered: orders.filter((o) => o.status === "delivered").length,
   };
 
+  const STAT_CARDS = [
+    { label: t("orders.total_orders"), value: stats.total, cls: "text-accent" },
+    { label: t("orders.pending"), value: stats.pending, cls: "text-warn" },
+    { label: t("orders.active"), value: stats.confirmed, cls: "text-info" },
+    { label: t("orders.delivered"), value: stats.delivered, cls: "text-safe" },
+  ];
+
+  const FILTERS = [
+    { id: "all", label: t("orders.all_orders"), count: stats.total },
+    { id: "pending", label: t("orders.pending"), count: stats.pending },
+    { id: "confirmed", label: t("orders.active"), count: stats.confirmed },
+    { id: "delivered", label: t("orders.delivered"), count: stats.delivered },
+  ];
+
   return (
-    <div style={{ maxWidth:"1000px", margin:"0 auto", padding:"24px 20px" }}>
-      {/* Header */}
-      <div style={{ marginBottom:"24px" }}>
-        <h1 style={{ fontSize:"24px", fontWeight:800, color:"var(--tx)", marginBottom:"6px" }}>
-          Customer Orders
+    <Container className="max-w-[1000px] py-6">
+      <Reveal className="mb-6">
+        <h1 className="mb-1.5 flex items-center gap-2 font-display text-2xl font-extrabold text-ink">
+          <ShoppingBag size={22} className="text-accent" /> {t("orders.title")}
         </h1>
-        <p style={{ fontSize:"13px", color:"var(--tx-m)" }}>
-          Orders placed by customers for your products
-        </p>
-      </div>
+        <p className="text-[13px] text-ink-muted">{t("orders.subtitle")}</p>
+      </Reveal>
 
-      {/* Stats cards */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))", 
-        gap:"12px", marginBottom:"20px" }}>
-        {[
-          { label:"Total Orders",    value:stats.total,     color:"var(--cp)",     bg:"var(--cp-pale)" },
-          { label:"Pending",         value:stats.pending,   color:"var(--warn)",   bg:"var(--warn-bg)" },
-          { label:"Active",          value:stats.confirmed, color:"var(--info)",   bg:"var(--info-bg)" },
-          { label:"Delivered",       value:stats.delivered, color:"var(--safe)",   bg:"var(--safe-bg)" },
-        ].map((stat, i) => (
-          <div key={i} className="card" style={{ padding:"16px" }}>
-            <div style={{ fontSize:"11px", fontWeight:600, color:"var(--tx-m)", 
-              textTransform:"uppercase", letterSpacing:".5px", marginBottom:"6px" }}>
-              {stat.label}
-            </div>
-            <div style={{ fontSize:"28px", fontWeight:800, fontFamily:"var(--fm)", 
-              color:stat.color }}>
-              {stat.value}
-            </div>
-          </div>
+      <RevealGroup className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4" stagger={0.06}>
+        {STAT_CARDS.map((s, i) => (
+          <RevealItem key={i}>
+            <Card className="p-4">
+              <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">{s.label}</div>
+              <div className={`font-mono text-[1.75rem] font-extrabold ${s.cls}`}>{s.value}</div>
+            </Card>
+          </RevealItem>
         ))}
-      </div>
+      </RevealGroup>
 
-      {/* Filter tabs */}
-      <div style={{ display:"flex", gap:"8px", marginBottom:"16px", flexWrap:"wrap" }}>
-        {[
-          { id:"all",       label:"All Orders",   count:stats.total },
-          { id:"pending",   label:"Pending",      count:stats.pending },
-          { id:"confirmed", label:"Active",       count:stats.confirmed },
-          { id:"delivered", label:"Delivered",    count:stats.delivered },
-        ].map(tab => (
-          <button key={tab.id} onClick={() => setFilter(tab.id)} style={{
-            padding:"8px 16px", borderRadius:"10px", cursor:"pointer",
-            border:`1.5px solid ${filter === tab.id ? "var(--cp)" : "var(--bd)"}`,
-            background: filter === tab.id ? "var(--cp-pale)" : "var(--bg-l)",
-            fontSize:"13px", fontWeight:600,
-            color: filter === tab.id ? "var(--cp)" : "var(--tx-m)",
-            transition:"all .15s",
-          }}>
-            {tab.label}
-            {tab.count > 0 && (
-              <span style={{ marginLeft:"6px", background: filter === tab.id ? "var(--cp)" : "var(--bg-m)",
-                color: filter === tab.id ? "#fff" : "var(--tx-m)",
-                borderRadius:"99px", padding:"2px 7px", fontSize:"11px", fontWeight:700 }}>
-                {tab.count}
+      <Reveal delay={0.06} className="mb-4 flex flex-wrap gap-2">
+        {FILTERS.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className={`rounded-md border-[1.5px] px-4 py-2 text-[13px] font-semibold transition-all duration-150 ${
+              filter === f.id ? "border-accent bg-accent-pale text-accent" : "border-line bg-surface-light text-ink-muted hover:border-accent/40"
+            }`}
+          >
+            {f.label}
+            {f.count > 0 && (
+              <span
+                className="ml-1.5 rounded-pill px-1.5 py-0.5 text-[11px] font-bold"
+                style={{ background: filter === f.id ? "var(--cp)" : "var(--bg-m)", color: filter === f.id ? "#fff" : "var(--tx-m)" }}
+              >
+                {f.count}
               </span>
             )}
           </button>
         ))}
-      </div>
+      </Reveal>
 
-      {/* Orders list */}
       {loading ? (
-        <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
-          {[1,2,3].map(i => <div key={i} className="skel" style={{ height:"140px" }} />)}
+        <div className="flex flex-col gap-3">
+          {[1, 2, 3].map((i) => <div key={i} className="skel" style={{ height: "140px", borderRadius: "14px" }} />)}
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="card" style={{ padding:"60px 20px", textAlign:"center" }}>
-          <div style={{ fontSize:"3rem", marginBottom:"12px" }}>📦</div>
-          <div style={{ fontSize:"16px", fontWeight:700, color:"var(--tx)", marginBottom:"6px" }}>
-            No {filter !== "all" && filter} orders yet
+        <Card className="flex flex-col items-center gap-2 px-5 py-16 text-center">
+          <Package size={32} className="text-ink-soft" />
+          <div className="font-display text-base font-bold text-ink">
+            {t("orders.no_orders", { filter: filter !== "all" ? FILTERS.find((f) => f.id === filter)?.label.toLowerCase() : "" })}
           </div>
-          <p style={{ fontSize:"13px", color:"var(--tx-m)" }}>
-            Orders from customers will appear here
-          </p>
-        </div>
+          <p className="text-[13px] text-ink-muted">{t("orders.no_orders_desc")}</p>
+        </Card>
       ) : (
-        <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
-          {filteredOrders.map((order, i) => (
-            <div key={order.id} className="card anim-fadeup" 
-              style={{ padding:"18px", animationDelay:`${i*.05}s` }}>
-              
-              {/* Header */}
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start",
-                marginBottom:"14px", gap:"12px", flexWrap:"wrap" }}>
-                <div>
-                  <div style={{ fontSize:"15px", fontWeight:700, color:"var(--tx)", marginBottom:"4px" }}>
-                    {order.product_name}
+        <RevealGroup className="flex flex-col gap-3" stagger={0.05}>
+          {filteredOrders.map((order) => (
+            <RevealItem key={order.id}>
+              <Card className="p-4.5">
+                <div className="mb-3.5 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="mb-1 text-[15px] font-bold text-ink">{order.product_name}</div>
+                    <div className="text-xs text-ink-muted">
+                      {t("orders.order_hash")} #{order.id} · {new Date(order.created_at).toLocaleDateString("en-IN")}
+                    </div>
                   </div>
-                  <div style={{ fontSize:"12px", color:"var(--tx-m)" }}>
-                    Order #{order.id} · {new Date(order.created_at).toLocaleDateString("en-IN")}
-                  </div>
+                  <StatusBadge status={order.status} t={t} />
                 </div>
-                <StatusBadge status={order.status} />
-              </div>
 
-              {/* Customer info */}
-              <div style={{ background:"var(--bg-m)", borderRadius:"10px", padding:"12px", marginBottom:"12px" }}>
-                <div style={{ fontSize:"11px", fontWeight:600, color:"var(--tx-m)", 
-                  textTransform:"uppercase", letterSpacing:".5px", marginBottom:"6px" }}>
-                  Customer Details
+                <div className="mb-3 rounded-md bg-surface-muted p-3">
+                  <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+                    {t("orders.customer_details")}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[13px] font-semibold text-ink">
+                    <User size={13} /> {order.customer_name}
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-muted">
+                    <Phone size={12} /> {order.customer_phone}
+                  </div>
+                  {order.delivery_address && (
+                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-muted">
+                      <MapPin size={12} /> {order.delivery_address}
+                    </div>
+                  )}
                 </div>
-                <div style={{ fontSize:"13px", fontWeight:600, color:"var(--tx)", marginBottom:"2px" }}>
-                  👤 {order.customer_name}
+
+                <div className="mb-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                  {[
+                    [t("orders.quantity"), `${order.quantity_kg} kg`],
+                    [t("orders.price_per_kg"), `₹${parseFloat(order.price_per_kg || 0).toFixed(2)}`],
+                    [t("orders.total_amount"), `₹${parseFloat(order.total_amount || 0).toLocaleString("en-IN")}`],
+                    [t("orders.delivery_date"), order.delivery_date ? new Date(order.delivery_date).toLocaleDateString("en-IN") : "—"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-md bg-surface-muted p-2.5">
+                      <div className="mb-0.5 text-[10px] uppercase tracking-wide text-ink-soft">{label}</div>
+                      <div className="font-mono text-[13px] font-semibold text-ink">{value}</div>
+                    </div>
+                  ))}
                 </div>
-                <div style={{ fontSize:"12px", color:"var(--tx-m)", marginBottom:"1px" }}>
-                  📞 {order.customer_phone}
-                </div>
-                {order.delivery_address && (
-                  <div style={{ fontSize:"12px", color:"var(--tx-m)" }}>
-                    📍 {order.delivery_address}
+
+                {order.delivery_boy_name && (
+                  <div className="rounded-md border border-info/25 bg-info-bg p-2.5">
+                    <div className="mb-0.5 flex items-center gap-1.5 text-[11px] font-semibold text-info">
+                      <Truck size={12} /> {t("orders.delivery_assigned")}
+                    </div>
+                    <div className="text-xs text-ink">{order.delivery_boy_name} · {order.delivery_boy_phone}</div>
                   </div>
                 )}
-              </div>
 
-              {/* Order details grid */}
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(120px, 1fr))", 
-                gap:"10px", marginBottom:"12px" }}>
-                {[
-                  { label:"Quantity",       value:`${order.quantity_kg} kg` },
-                  { label:"Price/kg",       value:`₹${parseFloat(order.price_per_kg||0).toFixed(2)}` },
-                  { label:"Total Amount",   value:`₹${parseFloat(order.total_amount||0).toLocaleString("en-IN")}` },
-                  { label:"Delivery Date",  value:order.delivery_date ? 
-                    new Date(order.delivery_date).toLocaleDateString("en-IN") : "—" },
-                ].map(item => (
-                  <div key={item.label} style={{ background:"var(--bg-m)", borderRadius:"8px", padding:"10px" }}>
-                    <div style={{ fontSize:"10px", color:"var(--tx-s)", marginBottom:"3px",
-                      textTransform:"uppercase", letterSpacing:".5px" }}>
-                      {item.label}
-                    </div>
-                    <div style={{ fontFamily:"var(--fm)", fontSize:"13px", fontWeight:600, color:"var(--tx)" }}>
-                      {item.value}
-                    </div>
+                {order.notes && (
+                  <div className="mt-2 rounded-md bg-surface-muted p-2.5 text-xs text-ink-muted">
+                    <strong className="text-ink">{t("orders.note")}:</strong> {order.notes}
                   </div>
-                ))}
-              </div>
-
-              {/* Delivery info if assigned */}
-              {order.delivery_boy_name && (
-                <div style={{ background:"var(--info-bg)", borderRadius:"8px", padding:"10px",
-                  border:"1px solid rgba(43,69,112,.2)" }}>
-                  <div style={{ fontSize:"11px", fontWeight:600, color:"var(--info)", marginBottom:"3px" }}>
-                    🚚 Delivery Assigned
-                  </div>
-                  <div style={{ fontSize:"12px", color:"var(--tx)" }}>
-                    {order.delivery_boy_name} · {order.delivery_boy_phone}
-                  </div>
-                </div>
-              )}
-
-              {/* Notes if any */}
-              {order.notes && (
-                <div style={{ fontSize:"12px", color:"var(--tx-m)", padding:"10px",
-                  background:"var(--bg-m)", borderRadius:"8px", marginTop:"8px" }}>
-                  <strong>Note:</strong> {order.notes}
-                </div>
-              )}
-            </div>
+                )}
+              </Card>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       )}
-    </div>
+    </Container>
   );
 }

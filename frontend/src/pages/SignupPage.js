@@ -2,12 +2,18 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, ArrowLeft, ArrowRight, MapPin, AlertCircle, Sprout, Factory } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import OTPVerification from "../components/OTPVerification";
 import { otpAPI } from "../services/api";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import { Card } from "../components/ui/Card";
+import Reveal from "../components/ui/Reveal";
 
 const DEST_MAP = {
-  farmer:   "/discover",
+  farmer: "/discover",
   operator: "/operator",
 };
 
@@ -73,13 +79,13 @@ function useGoogleAuth(onSuccess, onError) {
 }
 
 export default function SignupPage() {
-  const { t }                          = useTranslation();
-  const { login, loginWithGoogle }     = useAuth();
-  const navigate                       = useNavigate();
+  const { t } = useTranslation();
+  const { login, loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
 
   const ROLES = [
-    { id: "farmer",   emoji: "🌾", label: t("auth.farmer"),   desc: t("auth.upload_produce"), color: "#3F6B33", bg: "rgba(63,107,51,.1)", border: "rgba(63,107,51,.3)" },
-    { id: "operator", emoji: "🏭", label: t("auth.operator"), desc: t("auth.manage_facility"), color: "#2B4570", bg: "rgba(43,69,112,.1)", border: "rgba(43,69,112,.3)" },
+    { id: "farmer", Icon: Sprout, label: t("auth.farmer"), desc: t("auth.upload_produce") },
+    { id: "operator", Icon: Factory, label: t("auth.operator"), desc: t("auth.manage_facility") },
   ];
 
   const [form, setForm] = useState({
@@ -89,12 +95,14 @@ export default function SignupPage() {
     storage_district: "", storage_state: "Maharashtra",
     storage_lat: "", storage_lon: "",
   });
-  const [loading,  setLoad]     = useState(false);
-  const [error,    setError]    = useState("");
-  const [errors,   setErrs]     = useState({});
-  const [step,     setStep]     = useState(1);
-  const [showOTP,  setShowOTP]  = useState(false);
+  const [loading, setLoad] = useState(false);
+  const [error, setError] = useState("");
+  const [errors, setErrs] = useState({});
+  const [step, setStep] = useState(1);
+  const [showOTP, setShowOTP] = useState(false);
   const [locating, setLocating] = useState(false);
+
+  const totalSteps = form.role === "operator" ? 3 : 2;
 
   const handleGoogleSignup = async (idToken) => {
     setError("");
@@ -111,8 +119,8 @@ export default function SignupPage() {
 
   useGoogleAuth(handleGoogleSignup, (err) => setError(err));
 
-  const set          = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const selectedRole = ROLES.find(r => r.id === form.role);
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const selectedRole = ROLES.find((r) => r.id === form.role);
 
   const detectLocation = () => {
     if (!navigator.geolocation) return;
@@ -120,16 +128,16 @@ export default function SignupPage() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude: lat, longitude: lon } = pos.coords;
-        setForm(f => ({ ...f, storage_lat: lat.toFixed(6), storage_lon: lon.toFixed(6) }));
+        setForm((f) => ({ ...f, storage_lat: lat.toFixed(6), storage_lon: lon.toFixed(6) }));
         try {
-          const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
-          const d    = await res.json();
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+          const d = await res.json();
           const addr = d.address || {};
-          setForm(f => ({
+          setForm((f) => ({
             ...f,
             storage_district: addr.county || addr.city || addr.town || f.storage_district,
-            storage_state:    addr.state  || f.storage_state,
-            storage_address:  d.display_name || f.storage_address,
+            storage_state: addr.state || f.storage_state,
+            storage_address: d.display_name || f.storage_address,
           }));
         } catch {}
         setLocating(false);
@@ -140,20 +148,20 @@ export default function SignupPage() {
 
   const validate = () => {
     const e = {};
-    if (!form.name.trim())                                     e.name     = t("auth.name") + " required";
-    if (!/^\d{10}$/.test(form.phone))                         e.phone    = "Valid 10-digit phone required";
-    if (!form.email.trim())                                    e.email    = t("auth.email") + " required";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))      e.email    = "Valid email required";
-    if (form.password.length < 6)                             e.password = "Min 6 characters";
+    if (!form.name.trim()) e.name = t("auth.field_required");
+    if (!/^\d{10}$/.test(form.phone)) e.phone = t("auth.phone_invalid");
+    if (!form.email.trim()) e.email = t("auth.field_required");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = t("auth.email_invalid");
+    if (form.password.length < 6) e.password = t("auth.password_min_length");
     setErrs(e);
     return Object.keys(e).length === 0;
   };
 
   const validateStorage = () => {
     const e = {};
-    if (!form.storage_name.trim())    e.storage_name     = "Cold storage name required";
+    if (!form.storage_name.trim()) e.storage_name = t("auth.field_required");
     if (!form.storage_capacity || isNaN(parseFloat(form.storage_capacity)) || parseFloat(form.storage_capacity) <= 0)
-                                      e.storage_capacity = "Valid capacity in kg required";
+      e.storage_capacity = t("auth.field_required");
     setErrs(e);
     return Object.keys(e).length === 0;
   };
@@ -187,7 +195,7 @@ export default function SignupPage() {
     try {
       const { data } = await otpAPI.signupWithOtp({ ...form, otp });
       localStorage.setItem("fasalnet_token", data.token);
-      localStorage.setItem("fasalnet_user",  JSON.stringify(data.user));
+      localStorage.setItem("fasalnet_user", JSON.stringify(data.user));
       await login(form.phone, form.password).catch(() => {});
       navigate(DEST_MAP[form.role] || "/", { replace: true });
     } catch (err) {
@@ -196,268 +204,302 @@ export default function SignupPage() {
     } finally { setLoad(false); }
   };
 
-  const inp = (key) => ({
-    width: "100%", background: "rgba(128,128,128,.06)", border: "1px solid",
-    borderColor: errors[key] ? "var(--danger)" : "var(--bd)",
-    color: "var(--tx)", fontFamily: "var(--fb)", fontSize: "13px",
-    padding: "10px 13px", borderRadius: "10px", outline: "none",
-    transition: "all .2s", boxSizing: "border-box",
-  });
+  const ErrorBanner = ({ msg }) => (
+    <AnimatePresence>
+      {msg && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          className="flex items-center gap-2 overflow-hidden rounded-md border border-danger bg-danger-bg px-3.5 py-2.5 text-[13px] text-danger"
+        >
+          <AlertCircle size={15} className="shrink-0" /> {msg}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 
-  const labelStyle = {
-    fontSize: "11px", fontWeight: 600, textTransform: "uppercase",
-    letterSpacing: "1px", color: "var(--tx-m)", display: "block", marginBottom: "5px",
-  };
+  const FieldError = ({ msg }) => (msg ? <p className="mt-1 text-[11px] text-danger">{msg}</p> : null);
 
   return (
-    <div style={{ minHeight: "calc(100vh - 56px)", display: "flex", alignItems: "center",
-      justifyContent: "center", padding: "2rem 1rem", position: "relative", overflow: "hidden" }}>
-
-      {/* BG orbs */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{ position: "absolute", top: "-5%", right: "10%", width: "30vw", height: "30vw",
-          borderRadius: "50%", background: "radial-gradient(circle,var(--cp-glow),transparent 70%)",
-          animation: "float 7s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", bottom: "-10%", left: "5%", width: "25vw", height: "25vw",
-          borderRadius: "50%", background: "radial-gradient(circle,var(--cp-glow),transparent 70%)",
-          animation: "float 5s ease-in-out infinite", animationDelay: "1.5s" }} />
+    <div className="relative flex min-h-[calc(100vh-56px)] items-center justify-center overflow-hidden px-4 py-8">
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+        <motion.div
+          className="absolute -right-[10%] -top-[5%] h-[30vw] w-[30vw] rounded-full bg-accent/10 blur-3xl"
+          animate={{ y: [0, -14, 0] }}
+          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute -bottom-[10%] left-[5%] h-[25vw] w-[25vw] rounded-full bg-brand-harvest/10 blur-3xl"
+          animate={{ y: [0, 12, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+        />
       </div>
 
-      <div style={{ width: "100%", maxWidth: "480px", position: "relative", zIndex: 1 }}>
-
-        {/* Header */}
-        <div className="au d1" style={{ textAlign: "center", marginBottom: "1.75rem" }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: "6px" }} className="af">✨</div>
-          <h1 style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "24px", color: "var(--tx)", marginBottom: "4px" }}>
-            {t("auth.join_title")}
-          </h1>
-          <p style={{ color: "var(--tx-m)", fontSize: "13px", marginTop: "4px" }}>
-            {step === 1 ? t("auth.choose_role")
-             : step === 3 ? t("auth.cold_storage_step")
-                          : `${t("auth.setting_up")} — ${selectedRole?.label}`}
+      <div className="relative z-10 w-full max-w-[480px]">
+        <Reveal className="mb-6 text-center">
+          <motion.div
+            className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-panel bg-accent-pale text-accent"
+            animate={{ rotate: [0, 6, -6, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Sprout size={22} />
+          </motion.div>
+          <h1 className="font-display text-2xl font-extrabold text-ink">{t("auth.join_title")}</h1>
+          <p className="mt-1 text-[13px] text-ink-muted">
+            {step === 1
+              ? t("auth.choose_role")
+              : step === 3
+              ? t("auth.cold_storage_step")
+              : `${t("auth.setting_up")} — ${selectedRole?.label}`}
           </p>
-        </div>
 
-        {/* ── STEP 1: Role selection ── */}
-        {step === 1 && (
-          <div className="ap">
-            <div style={{ display: "grid", gap: "12px", marginBottom: "1.5rem" }}>
-              {ROLES.map(r => (
-                <button key={r.id} onClick={() => set("role", r.id)}
-                  className="press hbr"
-                  style={{ display: "flex", alignItems: "center", gap: "14px", padding: "16px 18px",
-                    borderRadius: "16px", border: "2px solid",
-                    borderColor: form.role === r.id ? r.color : r.border,
-                    background:  form.role === r.id ? r.bg : "var(--bg-l)",
-                    cursor: "pointer", transition: "all .25s", textAlign: "left",
-                    boxShadow: form.role === r.id ? `0 0 0 3px ${r.color}25` : "none" }}>
-                  <span style={{ fontSize: "2rem" }}>{r.emoji}</span>
-                  <div>
-                    <div style={{ fontFamily: "var(--fd)", fontWeight: 700, fontSize: "15px", color: r.color }}>{r.label}</div>
-                    <div style={{ fontSize: "12px", color: "var(--tx-m)", marginTop: "2px" }}>{r.desc}</div>
-                  </div>
-                  <div style={{ marginLeft: "auto", width: "20px", height: "20px", borderRadius: "50%",
-                    border: `2px solid ${r.color}`, display: "flex", alignItems: "center", justifyContent: "center",
-                    background: form.role === r.id ? r.color : "transparent", transition: "all .2s" }}>
-                    {form.role === r.id && <span style={{ fontSize: "11px", color: "white", fontWeight: 800 }}>✓</span>}
-                  </div>
+          {/* Step progress dots */}
+          <div className="mt-3 flex items-center justify-center gap-1.5">
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <span
+                key={i}
+                className="h-1.5 rounded-pill transition-all duration-300"
+                style={{
+                  width: step === i + 1 ? "22px" : "8px",
+                  background: step > i ? "var(--cp)" : "var(--bd)",
+                }}
+              />
+            ))}
+          </div>
+        </Reveal>
+
+        <AnimatePresence mode="wait">
+          {/* ── STEP 1: Role selection ── */}
+          {step === 1 && (
+            <motion.div
+              key="step1"
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -16 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="mb-5 grid gap-2.5">
+                {ROLES.map((r) => {
+                  const active = form.role === r.id;
+                  return (
+                    <motion.button
+                      key={r.id}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => set("role", r.id)}
+                      className={`flex items-center gap-3.5 rounded-panel border-[1.5px] p-4 text-left transition-all duration-200 ${
+                        active ? "border-accent bg-accent-pale shadow-glow-accent" : "border-line bg-surface-card hover:border-accent/40"
+                      }`}
+                    >
+                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md ${active ? "bg-accent text-accent-fg" : "bg-surface-muted text-ink-muted"}`}>
+                        <r.Icon size={20} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-display text-sm font-bold text-ink">{r.label}</div>
+                        <div className="mt-0.5 text-xs text-ink-muted">{r.desc}</div>
+                      </div>
+                      <span
+                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                        style={{ borderColor: active ? "var(--cp)" : "var(--bd)", background: active ? "var(--cp)" : "transparent" }}
+                      >
+                        {active && <Check size={12} className="text-white" strokeWidth={3} />}
+                      </span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              <Button onClick={() => setStep(2)} className="w-full justify-center py-3 text-sm">
+                {t("auth.continue_as")} {selectedRole?.label} <ArrowRight size={15} />
+              </Button>
+
+              <div className="my-4 flex items-center gap-2.5">
+                <div className="h-px flex-1 bg-line" />
+                <span className="text-xs text-ink-soft">{t("auth.or")}</span>
+                <div className="h-px flex-1 bg-line" />
+              </div>
+
+              <div className="flex min-h-[44px] w-full flex-col items-center">
+                <div id="google-signup-btn" className="flex w-full justify-center" />
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── STEP 2: Details ── */}
+          {step === 2 && (
+            <motion.div key="step2" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <Card className="p-6">
+                <button onClick={() => setStep(1)} className="mb-4 flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-accent">
+                  <ArrowLeft size={14} /> {t("auth.back")}
                 </button>
-              ))}
-            </div>
-            <button onClick={() => setStep(2)} className="ripple-btn press"
-              style={{ width: "100%", background: "linear-gradient(135deg,var(--cp),var(--cp-dark))",
-                color: "var(--bg)", border: "none", borderRadius: "12px", padding: "13px",
-                fontFamily: "var(--fd)", fontWeight: 800, fontSize: "15px", cursor: "pointer",
-                boxShadow: "0 4px 20px var(--cp-glow)" }}>
-              {t("auth.continue_as")} {selectedRole?.label} →
-            </button>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "16px 0" }}>
-              <div style={{ flex: 1, height: "1px", background: "var(--bd)" }} />
-              <span style={{ fontSize: "12px", color: "var(--tx-s)" }}>{t("auth.or")}</span>
-              <div style={{ flex: 1, height: "1px", background: "var(--bd)" }} />
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", minHeight: "44px" }}>
-              <div id="google-signup-btn" style={{ width: "100%", display: "flex", justifyContent: "center" }} />
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 2: Details ── */}
-        {step === 2 && (
-          <div className="glass au" style={{ borderRadius: "20px", padding: "1.75rem",
-            border: "1px solid var(--bd)", boxShadow: "var(--sh)" }}>
-
-            <button onClick={() => setStep(1)}
-              style={{ background: "none", border: "none", color: "var(--tx-m)",
-                cursor: "pointer", fontSize: "13px", marginBottom: "16px",
-                display: "flex", alignItems: "center", gap: "6px" }}>
-              {t("auth.back")}
-            </button>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px",
-              padding: "10px 14px", borderRadius: "12px", background: selectedRole?.bg,
-              border: `1px solid ${selectedRole?.border}` }}>
-              <span style={{ fontSize: "1.5rem" }}>{selectedRole?.emoji}</span>
-              <div style={{ fontFamily: "var(--fd)", fontWeight: 700, color: selectedRole?.color }}>
-                {selectedRole?.label}
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {[
-                ["name",     t("auth.name"),     "Ramesh Jadhav",    "text"],
-                ["phone",    t("auth.phone"),     "9876543210",       "tel"],
-                ["email",    t("auth.email"),     "you@email.com",    "email"],
-                ["password", t("auth.password"),  "Min 6 characters", "password"],
-                ["district", t("auth.district"),  "Kolhapur",         "text"],
-                ["state",    t("auth.state"),     "Maharashtra",      "text"],
-              ].map(([key, label, ph, type]) => (
-                <div key={key}>
-                  <label style={labelStyle}>{label}</label>
-                  <input type={type} placeholder={ph} value={form[key]}
-                    onChange={e => set(key, e.target.value)} style={inp(key)}
-                    onFocus={e => e.target.style.borderColor = "var(--cp)"}
-                    onBlur={e => e.target.style.borderColor = errors[key] ? "var(--danger)" : "var(--bd)"} />
-                  {errors[key] && <p style={{ fontSize: "11px", color: "var(--danger)", marginTop: "3px" }}>{errors[key]}</p>}
+                <div className="mb-5 flex items-center gap-2.5 rounded-md border border-accent/25 bg-accent-pale px-3.5 py-2.5">
+                  <selectedRole.Icon size={18} className="text-accent" />
+                  <span className="font-display text-sm font-bold text-accent-dark">{selectedRole?.label}</span>
                 </div>
-              ))}
 
-              {/* Language — English + Marathi only */}
-              <div>
-                <label style={labelStyle}>{t("auth.preferred_language")}</label>
-                <select value={form.language} onChange={e => set("language", e.target.value)}
-                  style={{ ...inp("language"), background: "var(--bg-l)" }}>
-                  <option value="en">{t("common.english")}</option>
-                  <option value="mr">{t("common.marathi")}</option>
-                </select>
-              </div>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                  {[
+                    ["name", t("auth.name"), "Ramesh Jadhav", "text"],
+                    ["phone", t("auth.phone"), "9876543210", "tel"],
+                    ["email", t("auth.email"), "you@email.com", "email"],
+                    ["password", t("auth.password"), t("auth.min_6_chars"), "password"],
+                    ["district", t("auth.district"), "Kolhapur", "text"],
+                    ["state", t("auth.state"), "Maharashtra", "text"],
+                  ].map(([key, label, ph, type]) => (
+                    <div key={key}>
+                      <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-muted">{label}</label>
+                      <Input
+                        type={type}
+                        placeholder={ph}
+                        value={form[key]}
+                        onChange={(e) => set(key, e.target.value)}
+                        className={errors[key] ? "border-danger focus:border-danger" : ""}
+                      />
+                      <FieldError msg={errors[key]} />
+                    </div>
+                  ))}
 
-              {error && (
-                <div style={{ background: "rgba(139,58,43,.08)", border: "1px solid rgba(139,58,43,.25)",
-                  color: "var(--danger)", borderRadius: "10px", padding: "10px 14px", fontSize: "13px" }}>
-                  {error}
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+                      {t("auth.preferred_language")}
+                    </label>
+                    <select
+                      value={form.language}
+                      onChange={(e) => set("language", e.target.value)}
+                      className="w-full rounded-sm border-[1.5px] border-line bg-surface-light px-3.5 py-2.5 text-sm text-ink outline-none transition-all focus:border-accent focus:shadow-glow-accent"
+                    >
+                      <option value="en">{t("common.english")}</option>
+                      <option value="mr">{t("common.marathi")}</option>
+                    </select>
+                  </div>
+
+                  <ErrorBanner msg={error} />
+
+                  <Button type="submit" disabled={loading} className="mt-1 w-full justify-center py-3 text-sm">
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        {t("auth.sending_otp")}
+                      </span>
+                    ) : (
+                      <>{t("auth.signup_btn")} <ArrowRight size={15} /></>
+                    )}
+                  </Button>
+                </form>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* ── STEP 3: Cold storage info (operator only) ── */}
+          {step === 3 && (
+            <motion.div key="step3" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <Card className="p-6">
+                <button onClick={() => setStep(2)} className="mb-4 flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-accent">
+                  <ArrowLeft size={14} /> {t("auth.back")}
+                </button>
+
+                <div className="mb-5 flex items-center gap-2.5 rounded-md border border-info/25 bg-info-bg px-3.5 py-2.5">
+                  <Factory size={18} className="text-info" />
+                  <span className="font-display text-sm font-bold text-info">{t("auth.cold_storage_details")}</span>
                 </div>
-              )}
 
-              <button type="submit" disabled={loading} className="ripple-btn press"
-                style={{ background: "linear-gradient(135deg,var(--cp),var(--cp-dark))",
-                  color: "var(--bg)", border: "none", borderRadius: "12px", padding: "13px",
-                  fontFamily: "var(--fd)", fontWeight: 800, fontSize: "15px", cursor: "pointer",
-                  boxShadow: "0 4px 20px var(--cp-glow)", marginTop: "4px",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                  opacity: loading ? 0.7 : 1 }}>
-                {loading
-                  ? <><span className="aspin" style={{ width: "18px", height: "18px",
-                      border: "2px solid var(--bg)", borderTopColor: "transparent",
-                      borderRadius: "50%", display: "inline-block" }} />{t("auth.sending_otp")}</>
-                  : `${t("auth.signup_btn")} →`}
-              </button>
-            </form>
-          </div>
-        )}
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+                      {t("auth.storage_name_label")} *
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. Jadhav Cold Storage"
+                      value={form.storage_name}
+                      onChange={(e) => set("storage_name", e.target.value)}
+                      className={errors.storage_name ? "border-danger" : ""}
+                    />
+                    <FieldError msg={errors.storage_name} />
+                  </div>
 
-        {/* ── STEP 3: Cold storage info (operator only) ── */}
-        {step === 3 && (
-          <div className="glass au" style={{ borderRadius: "20px", padding: "1.75rem",
-            border: "1px solid var(--bd)", boxShadow: "var(--sh)" }}>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+                      {t("auth.storage_capacity_label")} (kg) *
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 50000"
+                      min="1"
+                      value={form.storage_capacity}
+                      onChange={(e) => set("storage_capacity", e.target.value)}
+                      className={errors.storage_capacity ? "border-danger" : ""}
+                    />
+                    <FieldError msg={errors.storage_capacity} />
+                  </div>
 
-            <button onClick={() => setStep(2)}
-              style={{ background: "none", border: "none", color: "var(--tx-m)",
-                cursor: "pointer", fontSize: "13px", marginBottom: "16px",
-                display: "flex", alignItems: "center", gap: "6px" }}>
-              {t("auth.back")}
-            </button>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+                      {t("auth.storage_address_label")}
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Full address of storage facility"
+                      value={form.storage_address}
+                      onChange={(e) => set("storage_address", e.target.value)}
+                    />
+                  </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px",
-              padding: "10px 14px", borderRadius: "12px", background: "rgba(43,69,112,.1)",
-              border: "1px solid rgba(43,69,112,.3)" }}>
-              <span style={{ fontSize: "1.5rem" }}>🏭</span>
-              <div style={{ fontFamily: "var(--fd)", fontWeight: 700, color: "#2B4570" }}>
-                {t("auth.cold_storage_details")}
-              </div>
-            </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-muted">{t("auth.district")}</label>
+                      <Input type="text" placeholder="Kolhapur" value={form.storage_district} onChange={(e) => set("storage_district", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-muted">{t("auth.state")}</label>
+                      <Input type="text" placeholder="Maharashtra" value={form.storage_state} onChange={(e) => set("storage_state", e.target.value)} />
+                    </div>
+                  </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <div>
-                <label style={labelStyle}>{t("operator.storage_capacity").replace("Update ", "")} Name *</label>
-                <input type="text" placeholder="e.g. Jadhav Cold Storage" value={form.storage_name}
-                  onChange={e => set("storage_name", e.target.value)} style={inp("storage_name")} />
-                {errors.storage_name && <p style={{ fontSize: "11px", color: "var(--danger)", marginTop: "3px" }}>{errors.storage_name}</p>}
-              </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+                      {t("farmer.location")} (for map)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Input type="text" placeholder="Latitude" value={form.storage_lat} onChange={(e) => set("storage_lat", e.target.value)} />
+                      <Input type="text" placeholder="Longitude" value={form.storage_lon} onChange={(e) => set("storage_lon", e.target.value)} />
+                      <motion.button
+                        whileTap={{ scale: 0.92 }}
+                        type="button"
+                        onClick={detectLocation}
+                        disabled={locating}
+                        title={t("auth.detect_location")}
+                        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-sm border-[1.5px] border-line bg-surface-muted text-ink-muted transition-colors hover:text-accent disabled:opacity-60"
+                      >
+                        <MapPin size={16} className={locating ? "animate-pulse" : ""} />
+                      </motion.button>
+                    </div>
+                  </div>
 
-              <div>
-                <label style={labelStyle}>{t("operator.storage_capacity")} (kg) *</label>
-                <input type="number" placeholder="e.g. 50000" min="1" value={form.storage_capacity}
-                  onChange={e => set("storage_capacity", e.target.value)} style={inp("storage_capacity")} />
-                {errors.storage_capacity && <p style={{ fontSize: "11px", color: "var(--danger)", marginTop: "3px" }}>{errors.storage_capacity}</p>}
-              </div>
+                  <ErrorBanner msg={error} />
 
-              <div>
-                <label style={labelStyle}>Address</label>
-                <input type="text" placeholder="Full address of storage facility" value={form.storage_address}
-                  onChange={e => set("storage_address", e.target.value)} style={inp("storage_address")} />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                <div>
-                  <label style={labelStyle}>{t("auth.district")}</label>
-                  <input type="text" placeholder="Kolhapur" value={form.storage_district}
-                    onChange={e => set("storage_district", e.target.value)} style={inp("storage_district")} />
+                  <Button type="button" disabled={loading} onClick={handleStorageNext} className="mt-1 w-full justify-center py-3 text-sm">
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        {t("auth.sending_otp")}
+                      </span>
+                    ) : (
+                      <>{t("auth.verify_create_account")} <ArrowRight size={15} /></>
+                    )}
+                  </Button>
                 </div>
-                <div>
-                  <label style={labelStyle}>{t("auth.state")}</label>
-                  <input type="text" placeholder="Maharashtra" value={form.storage_state}
-                    onChange={e => set("storage_state", e.target.value)} style={inp("storage_state")} />
-                </div>
-              </div>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-              <div>
-                <label style={labelStyle}>{t("farmer.location")} (for map)</label>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <input type="text" placeholder="Latitude" value={form.storage_lat}
-                    onChange={e => set("storage_lat", e.target.value)} style={{ ...inp("storage_lat"), flex: 1 }} />
-                  <input type="text" placeholder="Longitude" value={form.storage_lon}
-                    onChange={e => set("storage_lon", e.target.value)} style={{ ...inp("storage_lon"), flex: 1 }} />
-                  <button type="button" onClick={detectLocation} disabled={locating}
-                    title="Detect my location"
-                    style={{ flexShrink: 0, background: "var(--bg-m)", border: "1px solid var(--bd)",
-                      color: "var(--tx)", borderRadius: "10px", padding: "10px 14px",
-                      cursor: "pointer", fontSize: "16px" }}>
-                    {locating ? "⏳" : "📍"}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div style={{ background: "rgba(139,58,43,.08)", border: "1px solid rgba(139,58,43,.25)",
-                  color: "var(--danger)", borderRadius: "10px", padding: "10px 14px", fontSize: "13px" }}>
-                  {error}
-                </div>
-              )}
-
-              <button type="button" disabled={loading} onClick={handleStorageNext}
-                className="ripple-btn press"
-                style={{ background: "linear-gradient(135deg,var(--cp),var(--cp-dark))",
-                  color: "var(--bg)", border: "none", borderRadius: "12px", padding: "13px",
-                  fontFamily: "var(--fd)", fontWeight: 800, fontSize: "15px", cursor: "pointer",
-                  boxShadow: "0 4px 20px var(--cp-glow)", marginTop: "4px",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                  opacity: loading ? 0.7 : 1 }}>
-                {loading
-                  ? <><span className="aspin" style={{ width: "18px", height: "18px",
-                      border: "2px solid var(--bg)", borderTopColor: "transparent",
-                      borderRadius: "50%", display: "inline-block" }} />{t("auth.sending_otp")}</>
-                  : "Verify Email & Create Account →"}
-              </button>
-            </div>
-          </div>
-        )}
-
-        <p style={{ color: "var(--tx-m)", marginTop: "1.25rem", textAlign: "center" }}>
+        <p className="mt-5 text-center text-[13px] text-ink-muted">
           {t("auth.have_account")}{" "}
-          <Link to="/login" style={{ color: "var(--cp)", fontWeight: 700, textDecoration: "none" }}>{t("auth.login_btn")}</Link>
+          <Link to="/login" className="font-bold text-accent no-underline hover:underline">
+            {t("auth.login_btn")}
+          </Link>
         </p>
       </div>
 

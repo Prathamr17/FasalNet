@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
   // ── Google OAuth login ─────────────────────────────────────────
   // Call this with the Google ID-token string returned by the Google
   // Sign-In SDK (google.accounts.id.initialize callback).
-  const loginWithGoogle = useCallback(async (idToken, role = "customer") => {
+  const loginWithGoogle = useCallback(async (idToken, role = "farmer") => {
     const { data } = await authAPI.googleLogin({ id_token: idToken, role });
     localStorage.setItem("fasalnet_token", data.token);
     localStorage.setItem("fasalnet_user",  JSON.stringify(data.user));

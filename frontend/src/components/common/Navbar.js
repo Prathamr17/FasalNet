@@ -14,7 +14,7 @@ import Button from "../ui/Button";
 
 const LANGUAGES = [
   { code: "en", label: "EN" },
-  { code: "hi", label: "हिं" },
+  { code: "hi", label: "हि" },
   { code: "mr", label: "मरा" },
 ];
 
@@ -37,17 +37,13 @@ export default function Navbar() {
       { to: "/market", label: t("nav.market") },
       { to: "/ml-predict", label: t("nav.crop_advisor") },
       { to: "/bookings", label: t("nav.bookings") },
+      { to: "/farmer-orders", label: t("nav.orders") },
     ],
     operator: [{ to: "/operator", label: t("nav.dashboard") }],
     admin: [
       { to: "/discover", label: t("nav.discover") },
       { to: "/market", label: t("nav.market") },
       { to: "/operator", label: t("nav.dashboard") },
-    ],
-    customer: [
-      { to: "/marketplace", label: t("nav.marketplace") },
-      { to: "/customer/map", label: t("nav.map") },
-      { to: "/my-orders", label: t("nav.orders") },
     ],
     delivery_boy: [{ to: "/delivery", label: t("nav.dashboard") }],
   };
@@ -56,7 +52,6 @@ export default function Navbar() {
     farmer: { bg: "var(--cp-pale)", color: "var(--cp)" },
     operator: { bg: "var(--info-bg)", color: "var(--info)" },
     admin: { bg: "var(--danger-bg)", color: "var(--danger)" },
-    customer: { bg: "var(--warn-bg)", color: "var(--warn)" },
     delivery_boy: { bg: "var(--cp-pale)", color: "var(--cp)" },
   };
 
@@ -113,8 +108,10 @@ export default function Navbar() {
       >
         <div className="mx-auto flex h-14 max-w-container items-center gap-3 px-4 sm:px-6">
           {/* Logo */}
-          <Link to="/" className="flex shrink-0 items-center gap-2 no-underline">
-            <img src="/logo.png" alt="FasalNet" className="h-[34px] w-[34px] rounded-md object-contain" />
+          <Link to="/" className="flex shrink-0 items-center gap-2.5 no-underline">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-white p-1 shadow-xs">
+              <img src="/logo.png" alt="FasalNet" className="h-full w-full object-contain" />
+            </div>
             <span className="font-display text-lg font-bold tracking-tight text-ink">
               {t("app_name")}
             </span>
@@ -146,22 +143,22 @@ export default function Navbar() {
             <button
               onClick={toggleTheme}
               title={theme === "light" ? t("common.theme_dark") : t("common.theme_light")}
-              className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border-[1.5px] border-line bg-surface-muted text-ink-muted transition-colors hover:text-accent"
+              className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-lg border border-line bg-surface-light text-ink-muted transition-colors hover:text-accent hover:bg-surface-muted"
             >
-              {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
+              {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
             </button>
 
             {/* Language switcher — desktop only */}
-            <div className="hidden items-center gap-0.5 sm:flex">
+            <div className="hidden items-center gap-1 sm:flex">
               {LANGUAGES.map(({ code, label }) => (
                 <button
                   key={code}
                   onClick={() => handleLang(code)}
                   className={cn(
-                    "rounded-md px-2 py-1 text-xs font-bold transition-colors",
+                    "rounded-md px-2.5 py-1 text-xs font-bold transition-all duration-150",
                     i18n.language === code
-                      ? "border border-accent bg-accent-pale text-accent"
-                      : "border border-transparent text-ink-soft hover:text-ink-muted"
+                      ? "border border-accent/30 bg-accent-pale text-accent shadow-xs"
+                      : "border border-transparent text-ink-soft hover:text-ink hover:bg-surface-muted"
                   )}
                 >
                   {label}
@@ -218,13 +215,19 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5">
-                <Button as={Link} to="/login" variant="ghost" size="sm">
-                  {t("auth.sign_in")}
-                </Button>
-                <Button as={Link} to="/signup" variant="primary" size="sm">
-                  {t("auth.sign_up")}
-                </Button>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted hover:text-ink no-underline transition-colors"
+                >
+                  {t("auth.sign_in", "Sign In")}
+                </Link>
+                <Link
+                  to="/signup"
+                  className="rounded-lg bg-[#375E2C] hover:bg-[#2D4D24] text-white px-4 py-1.5 text-[13px] font-bold no-underline shadow-sm transition-all active:scale-95"
+                >
+                  {t("auth.sign_up", "Sign Up")}
+                </Link>
               </div>
             )}
 

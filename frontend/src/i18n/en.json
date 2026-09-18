@@ -6,9 +6,7 @@
     "discover": "Discover",
     "bookings": "My Bookings",
     "dashboard": "Dashboard",
-    "marketplace": "Marketplace",
     "orders": "My Orders",
-    "map": "Storage Map",
     "settings": "Settings",
     "login": "Login",
     "signup": "Sign Up",
@@ -22,7 +20,6 @@
     "coordination_board": "COORDINATION BOARD",
     "role_farmer": "Farmer",
     "role_operator": "Operator",
-    "role_customer": "Customer",
     "role_admin": "Admin",
     "role_delivery_boy": "Delivery Partner"
   },
@@ -71,7 +68,28 @@
     "send_otp": "Send OTP",
     "verify_otp": "Verify OTP",
     "otp_sent": "OTP sent to your email",
-    "password_reset_success": "Password reset successfully! Redirecting..."
+    "password_reset_success": "Password reset successfully! Redirecting...",
+    "back_to_login": "← Back to Login",
+    "forgot_subtitle_step1": "Enter your email to get a reset OTP",
+    "forgot_subtitle_step2": "Create your new password",
+    "email_address": "Email Address",
+    "min_6_chars": "Min 6 characters",
+    "reenter_password": "Re-enter password",
+    "invalid_email": "Enter a valid email address",
+    "password_min_length": "Password must be at least 6 characters",
+    "passwords_no_match": "Passwords do not match",
+    "otp_send_failed": "Failed to send OTP",
+    "password_reset_failed": "Password reset failed",
+    "resetting": "Resetting…",
+    "phone_invalid": "Valid 10-digit phone number required",
+    "email_invalid": "Valid email required",
+    "field_required": "This field is required",
+    "storage_name_label": "Cold Storage Name",
+    "storage_address_label": "Address",
+    "detect_location": "Detect my location",
+    "verify_create_account": "Verify Email & Create Account",
+    "step_of": "Step {{step}} of {{total}}",
+    "storage_capacity_label": "Storage Capacity"
   },
   "home": {
     "badge": "AgriTech · Built for India's Farmers",
@@ -292,20 +310,6 @@
     "booking_approved": "Booking Approved",
     "booking_rejected": "Booking Rejected"
   },
-  "customer": {
-    "marketplace_title": "Shop Fresh Produce Directly from Farmers",
-    "map_title": "Storage Map & Delivery Planner",
-    "my_orders": "My Orders",
-    "order_now": "Order Now",
-    "no_orders": "No orders yet",
-    "cart": "Cart",
-    "checkout": "Checkout",
-    "price_per_kg": "₹/kg",
-    "in_stock": "In Stock",
-    "farmer": "Farmer",
-    "order_placed": "Order Placed!",
-    "track_order": "Track Order"
-  },
   "delivery": {
     "dashboard": "Delivery Partner Dashboard",
     "assigned": "Assigned",
@@ -340,7 +344,6 @@
     "platform": "Platform",
     "company": "Account",
     "contact": "Contact",
-    "marketplace": "Marketplace",
     "rights": "All rights reserved.",
     "made_for": "Built with pride for India's farmers.",
     "product": "Product",
@@ -351,7 +354,9 @@
     "cold_storage_link": "Cold Storage Discovery",
     "about": "About FasalNet",
     "languages_note": "Available in English, हिंदी & मराठी",
-    "location": "D.K.T.E. Society's TEI, Ichalkaranji, Maharashtra"
+    "location": "D.K.T.E. Society's TEI, Ichalkaranji, Maharashtra",
+    "bookings_link": "My Bookings",
+    "marketplace_link": "Marketplace"
   },
   "mi": {
     "title": "Market Intelligence",
@@ -576,5 +581,30 @@
     "testimonial_3_name": "Vikram Deshmukh",
     "testimonial_3_role": "Cold storage operator, Kolhapur",
     "final_cta_note": "Free to join · No hidden fees · Works on 2G"
+  },
+  "orders": {
+    "title": "Customer Orders",
+    "subtitle": "Orders placed by customers for your products",
+    "total_orders": "Total Orders",
+    "pending": "Pending",
+    "active": "Active",
+    "delivered": "Delivered",
+    "all_orders": "All Orders",
+    "no_orders": "No {{filter}} orders yet",
+    "no_orders_desc": "Orders from customers will appear here",
+    "customer_details": "Customer Details",
+    "quantity": "Quantity",
+    "price_per_kg": "Price/kg",
+    "total_amount": "Total Amount",
+    "delivery_date": "Delivery Date",
+    "delivery_assigned": "Delivery Assigned",
+    "note": "Note",
+    "order_hash": "Order",
+    "status_pending": "Pending",
+    "status_confirmed": "Confirmed",
+    "status_in_transit": "In Transit",
+    "status_delivered": "Delivered",
+    "status_rejected": "Rejected",
+    "status_cancelled": "Cancelled"
   }
 }

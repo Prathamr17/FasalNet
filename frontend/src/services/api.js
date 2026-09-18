@@ -64,18 +64,6 @@ export const operatorAPI = {
   assignDelivery:      (id, data)   => api.post(`/api/orders/${id}/assign-delivery`, data),
 };
 
-// ── Customer ──────────────────────────────────────────────────────
-export const customerAPI = {
-  getProducts:      (params) => api.get("/api/products",          { params }),
-  getProduct:       (id)     => api.get(`/api/products/${id}`),
-  placeOrder:       (data)   => api.post("/api/orders",           data),
-  getOrders:        ()       => api.get("/api/orders"),
-  cancelOrder:      (id)     => api.post(`/api/orders/${id}/cancel`),
-  getInventory:     (params) => api.get("/api/inventory",         { params }),
-  getNotifications: ()       => api.get("/api/notifications"),
-  markRead:         (id)     => api.patch(`/api/notifications/${id}/read`),
-};
-
 // ── Settings ──────────────────────────────────────────────────────
 export const settingsAPI = {
   getProfile:     ()     => api.get("/api/settings/profile"),

@@ -2,7 +2,9 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { Bot } from "lucide-react";
 import { mlAPI } from "../../services/api";
+import Reveal from "../../components/ui/Reveal";
 
 const INP = {
   width:"100%", background:"var(--bg-l)", border:"1px solid var(--bd)",
@@ -302,10 +304,10 @@ export default function MLPredictionsPage() {
 
   return (
     <div style={{ maxWidth:"840px", margin:"0 auto", padding:"24px 20px" }}>
-      <div className="anim-fadeup" style={{ marginBottom:"24px" }}>
+      <Reveal style={{ marginBottom:"24px" }}>
         <h1 style={{ fontSize:"22px", fontWeight:800, color:"var(--tx)", marginBottom:"4px",
           display:"flex", alignItems:"center", gap:"8px" }}>
-          🤖 {t("ml.title")}
+          <Bot size={20} className="text-accent" /> {t("ml.title")}
         </h1>
         <p style={{ fontSize:"13px", color:"var(--tx-m)" }}>
           {t("ml.subtitle")}
@@ -324,7 +326,7 @@ export default function MLPredictionsPage() {
             🌿 {t("nav.discover")} → {t("farmer.title")}
           </Link>
         </div>
-      </div>
+      </Reveal>
 
       {metaErr && (
         <div className="card" style={{ padding:"16px", marginBottom:"20px",

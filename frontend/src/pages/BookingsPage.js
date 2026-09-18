@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { bookingAPI, apiError } from "../services/api";
+import Reveal from "../components/ui/Reveal";
 
 // ── Week bar chart ──────────────────────────────────────────────
 function WeeklyChart({ bookings }) {
@@ -475,12 +476,12 @@ export default function BookingsPage() {
 
   return (
     <div style={{ maxWidth:"960px", margin:"0 auto", padding:"24px 20px" }}>
-      <div style={{ marginBottom:"24px" }}>
+      <Reveal style={{ marginBottom:"24px" }}>
         <h1 style={{ fontSize:"22px", fontWeight:800, color:"var(--tx)" }}>{t("booking.my_bookings")}</h1>
         <p style={{ fontSize:"13px", color:"var(--tx-m)", marginTop:"3px" }}>
           {t("booking.subtitle")}
         </p>
-      </div>
+      </Reveal>
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px", marginBottom:"20px" }}>
         <div className="card anim-fadeup d1" style={{ padding:0 }}>

@@ -1,169 +1,195 @@
 // pages/settings/SettingsPage.js — multilang: English + Marathi only
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  User, Lock, CreditCard, AlertCircle, CheckCircle2, Smartphone,
+  IndianRupee, Receipt, ShieldCheck,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { settingsAPI } from "../../services/api";
+import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
+import { Card } from "../../components/ui/Card";
+import { Container } from "../../components/ui/Container";
+import Reveal from "../../components/ui/Reveal";
 
-function SectionCard({ title, icon, children }) {
+function SectionCard({ title, Icon, children }) {
   return (
-    <div style={{ background: "var(--bg-l)", border: "1px solid var(--bd)", borderRadius: "18px",
-      padding: "22px", marginBottom: "16px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
-        <span style={{ fontSize: "20px" }}>{icon}</span>
-        <h3 style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "15px", color: "var(--cp)" }}>{title}</h3>
-      </div>
-      {children}
-    </div>
+    <Reveal>
+      <Card className="mb-4 p-6">
+        <div className="mb-5 flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-accent-pale text-accent">
+            <Icon size={17} />
+          </span>
+          <h3 className="font-display text-base font-extrabold text-ink">{title}</h3>
+        </div>
+        {children}
+      </Card>
+    </Reveal>
   );
 }
 
 function Field({ label, children }) {
   return (
-    <div style={{ marginBottom: "14px" }}>
-      <label style={{ display: "block", fontSize: "11px", color: "var(--tx-m)", marginBottom: "6px",
-        fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.8px" }}>{label}</label>
+    <div className="mb-3.5">
+      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-ink-muted">{label}</label>
       {children}
     </div>
   );
 }
 
 function StatusMsg({ type, msg }) {
-  if (!msg) return null;
-  const isErr = type === "error";
   return (
-    <div style={{ background: isErr ? "rgba(255,82,82,.08)" : "rgba(74,222,128,.08)",
-      border: `1px solid ${isErr ? "rgba(255,82,82,.2)" : "rgba(74,222,128,.2)"}`,
-      borderRadius: "10px", padding: "10px 14px", fontSize: "13px",
-      color: isErr ? "var(--danger)" : "var(--safe)", marginTop: "10px" }}>
-      {isErr ? "⚠ " : "✅ "}{msg}
-    </div>
+    <AnimatePresence>
+      {msg && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          className={`mt-2.5 flex items-center gap-2 overflow-hidden rounded-md border px-3.5 py-2.5 text-[13px] ${
+            type === "error" ? "border-danger bg-danger-bg text-danger" : "border-safe bg-safe-bg text-safe"
+          }`}
+        >
+          {type === "error" ? <AlertCircle size={14} className="shrink-0" /> : <CheckCircle2 size={14} className="shrink-0" />}
+          {msg}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
 export default function SettingsPage() {
-  const { t }              = useTranslation();
+  const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
-  const [tab, setTab]      = useState("profile");
+  const [tab, setTab] = useState("profile");
 
   const TABS = [
-    { id: "profile",  icon: "👤", label: t("settings.profile")  },
-    { id: "security", icon: "🔒", label: t("settings.security") },
-    { id: "payments", icon: "💳", label: t("settings.payments") },
+    { id: "profile", Icon: User, label: t("settings.profile") },
+    { id: "security", Icon: Lock, label: t("settings.security") },
+    { id: "payments", Icon: CreditCard, label: t("settings.payments") },
   ];
 
   return (
-    <div style={{ maxWidth: "720px", margin: "0 auto", padding: "1.5rem 1rem" }}>
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.75rem", color: "var(--cp)" }}>
-          {t("settings.title")}
-        </h1>
-        <p style={{ color: "var(--tx-m)", fontSize: "13px", marginTop: "3px" }}>
-          {t("settings.manage_desc")}
-        </p>
-      </div>
+    <Container className="max-w-[720px] py-8">
+      <Reveal className="mb-6">
+        <h1 className="font-display text-[1.75rem] font-extrabold text-ink">{t("settings.title")}</h1>
+        <p className="mt-1 text-[13px] text-ink-muted">{t("settings.manage_desc")}</p>
+      </Reveal>
 
-      {/* Tab row */}
-      <div style={{ display: "flex", gap: "6px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+      <Reveal delay={0.05} className="relative mb-6 flex flex-wrap gap-1.5 rounded-md bg-surface-muted p-1.5">
         {TABS.map((tb) => (
-          <button key={tb.id} onClick={() => setTab(tb.id)} style={{
-            display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px",
-            borderRadius: "999px", border: "1.5px solid", cursor: "pointer", transition: "all .2s",
-            fontFamily: "var(--fb)", fontWeight: tab === tb.id ? 700 : 500, fontSize: "13px",
-            background:  tab === tb.id ? "var(--cp)"  : "transparent",
-            color:       tab === tb.id ? "var(--bg)"  : "var(--tx-m)",
-            borderColor: tab === tb.id ? "var(--cp)"  : "var(--bd)",
-          }}>
-            {tb.icon} {tb.label}
+          <button
+            key={tb.id}
+            onClick={() => setTab(tb.id)}
+            className="relative z-10 flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] transition-colors duration-150"
+            style={{ color: tab === tb.id ? "var(--cp-text)" : "var(--tx-m)", fontWeight: tab === tb.id ? 700 : 500 }}
+          >
+            {tab === tb.id && (
+              <motion.span
+                layoutId="fn-settings-tab-indicator"
+                className="absolute inset-0 -z-10 rounded-md bg-accent"
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              />
+            )}
+            <tb.Icon size={14} /> {tb.label}
           </button>
         ))}
-      </div>
+      </Reveal>
 
-      {tab === "profile"  && <ProfileSection  user={user} refreshUser={refreshUser} />}
-      {tab === "security" && <SecuritySection />}
-      {tab === "payments" && <PaymentsSection />}
-    </div>
+      <AnimatePresence mode="wait">
+        <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
+          {tab === "profile" && <ProfileSection user={user} refreshUser={refreshUser} t={t} />}
+          {tab === "security" && <SecuritySection t={t} />}
+          {tab === "payments" && <PaymentsSection t={t} />}
+        </motion.div>
+      </AnimatePresence>
+    </Container>
   );
 }
 
-function ProfileSection({ user, refreshUser }) {
-  const { t } = useTranslation();
+function ProfileSection({ user, refreshUser, t }) {
   const [form, setForm] = useState({
-    name:     user?.name     || "",
-    email:    user?.email    || "",
+    name: user?.name || "",
+    email: user?.email || "",
     district: user?.district || "",
-    state:    user?.state    || "",
+    state: user?.state || "",
     language: user?.language || "en",
   });
   const [loading, setLoad] = useState(false);
-  const [msg,     setMsg]  = useState({ type: "", text: "" });
+  const [msg, setMsg] = useState({ type: "", text: "" });
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleSave = async (e) => {
-    e.preventDefault(); setLoad(true); setMsg({ type: "", text: "" });
+    e.preventDefault();
+    setLoad(true);
+    setMsg({ type: "", text: "" });
     try {
       const { data } = await settingsAPI.updateProfile(form);
       refreshUser?.(data.user);
       setMsg({ type: "success", text: t("settings.save") + " ✓" });
     } catch (err) {
       setMsg({ type: "error", text: err.response?.data?.error || "Update failed" });
-    } finally { setLoad(false); }
+    } finally {
+      setLoad(false);
+    }
   };
 
   return (
-    <SectionCard title={t("settings.profile")} icon="👤">
+    <SectionCard title={t("settings.profile")} Icon={User}>
       <form onSubmit={handleSave}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+        <div className="mb-4 flex items-center gap-3 rounded-md border border-line bg-surface-light p-3.5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent font-display text-lg font-extrabold text-accent-fg">
+            {user?.name?.[0]?.toUpperCase()}
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-ink">{user?.name}</div>
+            <div className="flex items-center gap-1 text-[11px] text-ink-muted">
+              <Smartphone size={11} /> {user?.phone} · {user?.role}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
           <Field label={t("auth.name")}>
-            <input className="inp" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Your name" />
+            <Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Your name" />
           </Field>
           <Field label={t("auth.email")}>
-            <input className="inp" type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="email@example.com" />
+            <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="email@example.com" />
           </Field>
           <Field label={t("auth.district")}>
-            <input className="inp" value={form.district} onChange={e => set("district", e.target.value)} placeholder="District" />
+            <Input value={form.district} onChange={(e) => set("district", e.target.value)} placeholder="District" />
           </Field>
           <Field label={t("auth.state")}>
-            <input className="inp" value={form.state} onChange={e => set("state", e.target.value)} placeholder="State" />
+            <Input value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="State" />
           </Field>
-          {/* Language: English + Marathi only — Hindi removed */}
           <Field label={t("auth.preferred_language")}>
-            <select className="inp" value={form.language} onChange={e => set("language", e.target.value)}>
+            <select
+              value={form.language}
+              onChange={(e) => set("language", e.target.value)}
+              className="w-full rounded-sm border-[1.5px] border-line bg-surface-light px-3.5 py-2.5 text-sm text-ink outline-none transition-all focus:border-accent focus:shadow-glow-accent"
+            >
               <option value="en">{t("common.english")}</option>
               <option value="mr">{t("common.marathi")}</option>
             </select>
           </Field>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px",
-          background: "var(--bg-m)", borderRadius: "12px", marginBottom: "16px" }}>
-          <div style={{ width: 40, height: 40, borderRadius: "50%",
-            background: "linear-gradient(135deg,var(--cp),var(--cp-dark))",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "18px", fontWeight: 800, color: "var(--bg)", fontFamily: "var(--fd)" }}>
-            {user?.name?.[0]?.toUpperCase()}
-          </div>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: "13px", color: "var(--tx)" }}>{user?.name}</div>
-            <div style={{ fontSize: "11px", color: "var(--tx-m)" }}>📞 {user?.phone} · {user?.role}</div>
-          </div>
-        </div>
-
-        <button type="submit" disabled={loading} className="btn-primary" style={{ width: "100%", padding: "11px" }}>
-          {loading ? "..." : t("settings.save")}
-        </button>
+        <Button type="submit" disabled={loading} className="mt-1 w-full justify-center py-3 text-sm">
+          {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : t("settings.save")}
+        </Button>
         <StatusMsg type={msg.type} msg={msg.text} />
       </form>
     </SectionCard>
   );
 }
 
-function SecuritySection() {
-  const { t } = useTranslation();
+function SecuritySection({ t }) {
   const [pwForm, setPw] = useState({ current_password: "", new_password: "", confirm: "" });
   const [phForm, setPh] = useState({ new_phone: "", password: "" });
-  const [pwMsg,  setPwMsg] = useState({ type: "", text: "" });
-  const [phMsg,  setPhMsg] = useState({ type: "", text: "" });
+  const [pwMsg, setPwMsg] = useState({ type: "", text: "" });
+  const [phMsg, setPhMsg] = useState({ type: "", text: "" });
   const [pwLoad, setPwLoad] = useState(false);
   const [phLoad, setPhLoad] = useState(false);
 
@@ -196,40 +222,35 @@ function SecuritySection() {
 
   return (
     <>
-      <SectionCard title={t("settings.change_password")} icon="🔑">
+      <SectionCard title={t("settings.change_password")} Icon={Lock}>
         <form onSubmit={handlePw}>
           <Field label="Current Password">
-            <input className="inp" type="password" value={pwForm.current_password}
-              onChange={e => setPw(f => ({ ...f, current_password: e.target.value }))} placeholder="Current password" />
+            <Input type="password" value={pwForm.current_password} onChange={(e) => setPw((f) => ({ ...f, current_password: e.target.value }))} placeholder="Current password" />
           </Field>
           <Field label="New Password">
-            <input className="inp" type="password" value={pwForm.new_password}
-              onChange={e => setPw(f => ({ ...f, new_password: e.target.value }))} placeholder="At least 6 characters" />
+            <Input type="password" value={pwForm.new_password} onChange={(e) => setPw((f) => ({ ...f, new_password: e.target.value }))} placeholder="At least 6 characters" />
           </Field>
           <Field label="Confirm New Password">
-            <input className="inp" type="password" value={pwForm.confirm}
-              onChange={e => setPw(f => ({ ...f, confirm: e.target.value }))} placeholder="Repeat new password" />
+            <Input type="password" value={pwForm.confirm} onChange={(e) => setPw((f) => ({ ...f, confirm: e.target.value }))} placeholder="Repeat new password" />
           </Field>
-          <button type="submit" disabled={pwLoad} className="btn-primary" style={{ width: "100%", padding: "11px" }}>
-            {pwLoad ? "..." : t("settings.change_password")}
-          </button>
+          <Button type="submit" disabled={pwLoad} className="w-full justify-center py-3 text-sm">
+            {pwLoad ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : t("settings.change_password")}
+          </Button>
           <StatusMsg type={pwMsg.type} msg={pwMsg.text} />
         </form>
       </SectionCard>
 
-      <SectionCard title={t("settings.change_phone")} icon="📱">
+      <SectionCard title={t("settings.change_phone")} Icon={Smartphone}>
         <form onSubmit={handlePh}>
           <Field label="New Phone Number">
-            <input className="inp" type="tel" value={phForm.new_phone}
-              onChange={e => setPh(f => ({ ...f, new_phone: e.target.value }))} placeholder="10-digit number" />
+            <Input type="tel" value={phForm.new_phone} onChange={(e) => setPh((f) => ({ ...f, new_phone: e.target.value }))} placeholder="10-digit number" />
           </Field>
           <Field label="Confirm with Password">
-            <input className="inp" type="password" value={phForm.password}
-              onChange={e => setPh(f => ({ ...f, password: e.target.value }))} placeholder="Your current password" />
+            <Input type="password" value={phForm.password} onChange={(e) => setPh((f) => ({ ...f, password: e.target.value }))} placeholder="Your current password" />
           </Field>
-          <button type="submit" disabled={phLoad} className="btn-primary" style={{ width: "100%", padding: "11px" }}>
-            {phLoad ? "..." : t("settings.change_phone")}
-          </button>
+          <Button type="submit" disabled={phLoad} className="w-full justify-center py-3 text-sm">
+            {phLoad ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : t("settings.change_phone")}
+          </Button>
           <StatusMsg type={phMsg.type} msg={phMsg.text} />
         </form>
       </SectionCard>
@@ -237,11 +258,11 @@ function SecuritySection() {
   );
 }
 
-function PaymentsSection() {
-  const { t } = useTranslation();
+function PaymentsSection({ t }) {
   const [payments, setPayments] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [totalSpent, setTotal]  = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [totalSpent, setTotal] = useState(0);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -250,64 +271,85 @@ function PaymentsSection() {
         setPayments(data.payments || []);
         setTotal(data.total_spent || 0);
       } catch {
-        setPayments([
-          { id: 1, amount: 1260, method: "upi",  status: "paid", product_name: "Tomatoes",        storage_name: "GreenGrain",   created_at: "2026-04-15T10:00", order_status: "confirmed" },
-          { id: 2, amount: 2800, method: "card", status: "paid", product_name: "Alphonso Mangoes", storage_name: "FreshChain",   created_at: "2026-04-12T14:30", order_status: "completed" },
-          { id: 3, amount: 450,  method: "upi",  status: "paid", product_name: "Grapes",           storage_name: "Vaibhav Cold", created_at: "2026-04-10T09:15", order_status: "completed" },
-        ]);
-        setTotal(4510);
-      } finally { setLoading(false); }
+        // No fabricated data — show a genuine empty/error state instead.
+        setPayments([]);
+        setTotal(0);
+        setLoadError(true);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
-  const METHOD_ICON = { upi: "📱", card: "💳", cod: "💵", cash: "💵" };
+  const METHOD_ICON = { upi: Smartphone, card: CreditCard, cod: IndianRupee, cash: IndianRupee };
 
   return (
-    <SectionCard title={t("settings.payments")} icon="💳">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px", marginBottom: "18px" }}>
+    <SectionCard title={t("settings.payments")} Icon={CreditCard}>
+      <div className="mb-4.5 grid grid-cols-3 gap-2.5">
         {[
-          ["Total",         `₹${parseFloat(totalSpent).toLocaleString("en-IN")}`,        "var(--cp)"],
-          ["Transactions",  payments.length,                                               "var(--tx)"],
-          ["Successful",    payments.filter(p => p.status === "paid").length,              "var(--safe)"],
-        ].map(([label, value, color]) => (
-          <div key={label} style={{ background: "var(--bg-m)", borderRadius: "12px", padding: "12px", textAlign: "center" }}>
-            <div style={{ fontFamily: "var(--fm)", fontWeight: 800, fontSize: "1.3rem", color }}>{value}</div>
-            <div style={{ fontSize: "10px", color: "var(--tx-s)", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: "3px" }}>{label}</div>
+          ["Total", `₹${parseFloat(totalSpent).toLocaleString("en-IN")}`, "text-accent"],
+          ["Transactions", payments.length, "text-ink"],
+          ["Successful", payments.filter((p) => p.status === "paid").length, "text-safe"],
+        ].map(([label, value, cls]) => (
+          <div key={label} className="rounded-md bg-surface-muted p-3 text-center">
+            <div className={`font-mono text-[1.3rem] font-extrabold ${cls}`}>{value}</div>
+            <div className="mt-0.5 text-[10px] uppercase tracking-wide text-ink-soft">{label}</div>
           </div>
         ))}
       </div>
 
-      {loading && <div style={{ textAlign: "center", padding: "2rem", color: "var(--tx-m)" }}>Loading…</div>}
-      {!loading && payments.length === 0 && <div style={{ textAlign: "center", padding: "2rem", color: "var(--tx-m)" }}>No payments yet.</div>}
-
-      {!loading && payments.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {payments.map((p) => (
-            <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
-              background: "var(--bg-m)", borderRadius: "12px", padding: "12px 14px", flexWrap: "wrap", gap: "8px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span style={{ fontSize: "22px" }}>{METHOD_ICON[p.method] || "💰"}</span>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: "13px", color: "var(--tx)" }}>{p.product_name}</div>
-                  <div style={{ fontSize: "11px", color: "var(--tx-m)" }}>
-                    {p.storage_name} · {new Date(p.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {p.method?.toUpperCase()}
-                  </div>
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontFamily: "var(--fm)", fontWeight: 800, fontSize: "14px", color: "var(--cp)" }}>
-                  ₹{parseFloat(p.amount).toLocaleString("en-IN")}
-                </div>
-                <span style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "20px", fontWeight: 700,
-                  background: p.status === "paid" ? "rgba(74,222,128,.12)" : "rgba(255,82,82,.12)",
-                  color: p.status === "paid" ? "var(--safe)" : "var(--danger)" }}>
-                  {p.status?.toUpperCase()}
-                </span>
-              </div>
-            </div>
-          ))}
+      {loading && (
+        <div className="py-8 text-center">
+          <div className="mx-auto h-6 w-6 animate-spin rounded-full border-[3px] border-line border-t-accent" />
         </div>
       )}
+
+      {!loading && loadError && (
+        <div className="flex items-center gap-2.5 rounded-md border border-warn bg-warn-bg px-4 py-3 text-xs text-ink">
+          <AlertCircle size={16} className="shrink-0 text-warn" />
+          Unable to load payment history right now. Please try again later.
+        </div>
+      )}
+
+      {!loading && !loadError && payments.length === 0 && (
+        <div className="flex flex-col items-center gap-2 py-8 text-center text-ink-muted">
+          <Receipt size={26} className="text-ink-soft" />
+          <span className="text-xs">No payments yet.</span>
+        </div>
+      )}
+
+      {!loading && payments.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {payments.map((p) => {
+            const MethodIcon = METHOD_ICON[p.method] || IndianRupee;
+            return (
+              <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-surface-muted p-3.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-md bg-surface-light text-ink-muted">
+                    <MethodIcon size={16} />
+                  </span>
+                  <div>
+                    <div className="text-[13px] font-semibold text-ink">{p.product_name}</div>
+                    <div className="text-[11px] text-ink-muted">
+                      {p.storage_name} · {new Date(p.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {p.method?.toUpperCase()}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-sm font-extrabold text-accent">₹{parseFloat(p.amount).toLocaleString("en-IN")}</div>
+                  <span className={`rounded-pill px-2 py-0.5 text-[10px] font-bold ${p.status === "paid" ? "bg-safe-bg text-safe" : "bg-danger-bg text-danger"}`}>
+                    {p.status?.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mt-4 flex items-center gap-1.5 text-[11px] text-ink-soft">
+        <ShieldCheck size={12} /> Payments are securely processed and recorded against your account.
+      </div>
     </SectionCard>
   );
 }

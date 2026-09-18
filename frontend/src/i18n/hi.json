@@ -6,9 +6,7 @@
     "discover": "खोजें",
     "bookings": "मेरी बुकिंग",
     "dashboard": "डैशबोर्ड",
-    "marketplace": "बाज़ार",
     "orders": "मेरे ऑर्डर",
-    "map": "स्टोरेज नक्शा",
     "settings": "सेटिंग्स",
     "login": "लॉगिन",
     "signup": "साइन अप",
@@ -22,7 +20,6 @@
     "coordination_board": "समन्वय बोर्ड",
     "role_farmer": "किसान",
     "role_operator": "ऑपरेटर",
-    "role_customer": "ग्राहक",
     "role_admin": "एडमिन",
     "role_delivery_boy": "डिलीवरी पार्टनर"
   },
@@ -71,7 +68,28 @@
     "send_otp": "OTP भेजें",
     "verify_otp": "OTP सत्यापित करें",
     "otp_sent": "आपकी ईमेल पर OTP भेजा गया है",
-    "password_reset_success": "पासवर्ड सफलतापूर्वक रीसेट हो गया! पुनर्निर्देशित किया जा रहा है..."
+    "password_reset_success": "पासवर्ड सफलतापूर्वक रीसेट हो गया! पुनर्निर्देशित किया जा रहा है...",
+    "back_to_login": "← लॉगिन पर वापस जाएं",
+    "forgot_subtitle_step1": "रीसेट OTP पाने के लिए अपना ईमेल दर्ज करें",
+    "forgot_subtitle_step2": "अपना नया पासवर्ड बनाएं",
+    "email_address": "ईमेल पता",
+    "min_6_chars": "कम से कम 6 अक्षर",
+    "reenter_password": "पासवर्ड दोबारा दर्ज करें",
+    "invalid_email": "एक मान्य ईमेल पता दर्ज करें",
+    "password_min_length": "पासवर्ड कम से कम 6 अक्षर का होना चाहिए",
+    "passwords_no_match": "पासवर्ड मेल नहीं खाते",
+    "otp_send_failed": "OTP भेजने में विफल",
+    "password_reset_failed": "पासवर्ड रीसेट विफल रहा",
+    "resetting": "रीसेट किया जा रहा है…",
+    "phone_invalid": "मान्य 10-अंकीय फोन नंबर आवश्यक है",
+    "email_invalid": "मान्य ईमेल आवश्यक है",
+    "field_required": "यह फ़ील्ड आवश्यक है",
+    "storage_name_label": "कोल्ड स्टोरेज का नाम",
+    "storage_address_label": "पता",
+    "detect_location": "मेरा स्थान पता करें",
+    "verify_create_account": "ईमेल सत्यापित करें और खाता बनाएं",
+    "step_of": "चरण {{step}} / {{total}}",
+    "storage_capacity_label": "भंडारण क्षमता"
   },
   "home": {
     "badge": "एग्रीटेक · भारत के किसानों के लिए",
@@ -292,20 +310,6 @@
     "booking_approved": "बुकिंग स्वीकृत हो गई",
     "booking_rejected": "बुकिंग अस्वीकृत कर दी गई"
   },
-  "customer": {
-    "marketplace_title": "किसानों से सीधे ताज़ी फसलें खरीदें",
-    "map_title": "स्टोरेज मानचित्र और डिलीवरी योजनाकार",
-    "my_orders": "मेरे ऑर्डर",
-    "order_now": "अभी ऑर्डर करें",
-    "no_orders": "अभी तक कोई ऑर्डर नहीं",
-    "cart": "कार्ट",
-    "checkout": "चेकआउट",
-    "price_per_kg": "₹/किग्रा",
-    "in_stock": "उपलब्ध स्टॉक",
-    "farmer": "किसान",
-    "order_placed": "ऑर्डर सफलतापूर्वक दर्ज हो गया!",
-    "track_order": "ऑर्डर ट्रैक करें"
-  },
   "delivery": {
     "dashboard": "डिलीवरी पार्टनर डैशबोर्ड",
     "assigned": "आवंटित",
@@ -340,7 +344,6 @@
     "platform": "प्लेटफ़ॉर्म",
     "company": "खाता",
     "contact": "संपर्क",
-    "marketplace": "बाज़ार",
     "rights": "सर्वाधिकार सुरक्षित।",
     "made_for": "भारत के किसानों के लिए गर्व से निर्मित।",
     "product": "उत्पाद",
@@ -351,7 +354,9 @@
     "cold_storage_link": "कोल्ड स्टोरेज खोजें",
     "about": "FasalNet के बारे में",
     "languages_note": "English, हिंदी और मराठी में उपलब्ध",
-    "location": "डी.के.टी.ई. सोसाइटी की TEI, इचलकरंजी, महाराष्ट्र"
+    "location": "डी.के.टी.ई. सोसाइटी की TEI, इचलकरंजी, महाराष्ट्र",
+    "bookings_link": "मेरी बुकिंग",
+    "marketplace_link": "मार्केटप्लेस"
   },
   "mi": {
     "title": "बाजार भाव व विश्लेषण",
@@ -564,5 +569,30 @@
     "testimonial_3_name": "विक्रम देशमुख",
     "testimonial_3_role": "कोल्ड स्टोरेज ऑपरेटर, कोल्हापुर",
     "final_cta_note": "मुफ्त जुड़ें · कोई छिपी फीस नहीं · 2G पर भी चलता है"
+  },
+  "orders": {
+    "title": "ग्राहक ऑर्डर",
+    "subtitle": "ग्राहकों द्वारा आपके उत्पादों के लिए दिए गए ऑर्डर",
+    "total_orders": "कुल ऑर्डर",
+    "pending": "लंबित",
+    "active": "सक्रिय",
+    "delivered": "डिलीवर हुआ",
+    "all_orders": "सभी ऑर्डर",
+    "no_orders": "अभी तक कोई {{filter}} ऑर्डर नहीं",
+    "no_orders_desc": "ग्राहकों के ऑर्डर यहां दिखेंगे",
+    "customer_details": "ग्राहक विवरण",
+    "quantity": "मात्रा",
+    "price_per_kg": "मूल्य/किग्रा",
+    "total_amount": "कुल राशि",
+    "delivery_date": "डिलीवरी तिथि",
+    "delivery_assigned": "डिलीवरी असाइन की गई",
+    "note": "टिप्पणी",
+    "order_hash": "ऑर्डर",
+    "status_pending": "लंबित",
+    "status_confirmed": "पुष्टि हुई",
+    "status_in_transit": "मार्ग में",
+    "status_delivered": "डिलीवर हुआ",
+    "status_rejected": "अस्वीकृत",
+    "status_cancelled": "रद्द"
   }
 }
