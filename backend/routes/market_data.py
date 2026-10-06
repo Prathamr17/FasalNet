@@ -72,7 +72,7 @@ def get_cities():
     try:
         with get_engine().connect() as conn:
             rows = conn.execute(
-                text(f"SELECT DISTINCT market FROM {TABLE} ORDER BY market")
+                text(f"SELECT DISTINCT TRIM(REGEXP_REPLACE(REGEXP_REPLACE(market, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', '')) AS market FROM {TABLE} ORDER BY market")
             ).fetchall()
         return jsonify([r[0] for r in rows if r[0]])
     except Exception as exc:
@@ -87,7 +87,7 @@ def get_commodities():
         q = f"SELECT DISTINCT commodity FROM {TABLE}"
         params: dict = {}
         if city:
-            q += " WHERE LOWER(market) = LOWER(:city)"
+            q += " WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(market, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', ''))) = LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(:city, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', '')))"
             params["city"] = city
         q += " ORDER BY commodity"
         with get_engine().connect() as conn:
@@ -101,16 +101,16 @@ def get_commodities():
 @market_bp.get("/summary")
 def get_summary():
     cities_raw = request.args.get("cities", "")
-    cities     = [c.strip() for c in cities_raw.split(",") if c.strip()]
+    cities     = [c.strip() for c in re.split(r',\s*(?![^()]*\))', cities_raw) if c.strip()]
     if not cities:
         return jsonify({"error": "cities param required"}), 400
     commodity = request.args.get("commodity", "")
     start = request.args.get("start", (date.today() - timedelta(days=30)).isoformat())
-    end   = request.args.get("end",   date.today().isoformat())
+    end   = request.args.get("end",   (date.today() + timedelta(days=30)).isoformat())
     params: dict = {f"city{i}": c for i, c in enumerate(cities)}
     params.update({"start": start, "end": end})
-    city_where = " OR ".join(f"LOWER(market) = LOWER(:city{i})" for i in range(len(cities)))
-    where = f"({city_where}) AND arrival_date BETWEEN :start AND :end"
+    city_where = " OR ".join(f"LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(market, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', ''))) = LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(:city{i}, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', '')))" for i in range(len(cities)))
+    where = f"({city_where}) AND arrival_date BETWEEN CAST(:start AS DATE) AND CAST(:end AS DATE)"
     if commodity:
         where += " AND LOWER(commodity) = LOWER(:commodity)"
         params["commodity"] = commodity
@@ -135,16 +135,16 @@ def get_summary():
 @market_bp.get("/trend")
 def get_trend():
     cities_raw = request.args.get("cities", "")
-    cities     = [c.strip() for c in cities_raw.split(",") if c.strip()]
+    cities     = [c.strip() for c in re.split(r',\s*(?![^()]*\))', cities_raw) if c.strip()]
     if not cities:
         return jsonify({"error": "cities param required"}), 400
     commodity = request.args.get("commodity", "")
     start = request.args.get("start", (date.today() - timedelta(days=90)).isoformat())
-    end   = request.args.get("end",   date.today().isoformat())
+    end   = request.args.get("end",   (date.today() + timedelta(days=30)).isoformat())
     params: dict = {f"city{i}": c for i, c in enumerate(cities)}
     params.update({"start": start, "end": end})
-    city_where = " OR ".join(f"LOWER(market) = LOWER(:city{i})" for i in range(len(cities)))
-    where = f"({city_where}) AND arrival_date BETWEEN :start AND :end"
+    city_where = " OR ".join(f"LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(market, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', ''))) = LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(:city{i}, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', '')))" for i in range(len(cities)))
+    where = f"({city_where}) AND arrival_date BETWEEN CAST(:start AS DATE) AND CAST(:end AS DATE)"
     if commodity:
         where += " AND LOWER(commodity) = LOWER(:commodity)"
         params["commodity"] = commodity
@@ -256,14 +256,14 @@ def _arima_predict(series: np.ndarray, steps: int) -> np.ndarray:
 def get_heatmap():
     city  = request.args.get("city", "")
     start = request.args.get("start", (date.today() - timedelta(days=30)).isoformat())
-    end   = request.args.get("end",   date.today().isoformat())
+    end   = request.args.get("end",   (date.today() + timedelta(days=30)).isoformat())
     if not city:
         return jsonify({"error": "city param required"}), 400
     q = text(f"""
         SELECT arrival_date::date AS date, commodity,
                ROUND(AVG(modal_price)::numeric,2) AS avg_modal
         FROM {TABLE}
-        WHERE LOWER(market) = LOWER(:city) AND arrival_date BETWEEN :start AND :end
+        WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(market, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', ''))) = LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(:city, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', ''))) AND arrival_date BETWEEN CAST(:start AS DATE) AND CAST(:end AS DATE)
         GROUP BY date, commodity ORDER BY date ASC, commodity
     """)
     try:
@@ -283,16 +283,16 @@ def get_heatmap():
 @market_bp.get("/compare")
 def get_compare():
     cities_raw = request.args.get("cities", "")
-    cities     = [c.strip() for c in cities_raw.split(",") if c.strip()]
+    cities     = [c.strip() for c in re.split(r',\s*(?![^()]*\))', cities_raw) if c.strip()]
     commodity  = request.args.get("commodity", "")
     start = request.args.get("start", (date.today() - timedelta(days=30)).isoformat())
-    end   = request.args.get("end",   date.today().isoformat())
+    end   = request.args.get("end",   (date.today() + timedelta(days=30)).isoformat())
     if not cities:
         return jsonify({"error": "cities required"}), 400
     params: dict = {f"city{i}": c for i, c in enumerate(cities)}
     params.update({"start": start, "end": end})
-    city_where = " OR ".join(f"LOWER(market) = LOWER(:city{i})" for i in range(len(cities)))
-    where = f"({city_where}) AND arrival_date BETWEEN :start AND :end"
+    city_where = " OR ".join(f"LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(market, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', ''))) = LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(:city{i}, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', '')))" for i in range(len(cities)))
+    where = f"({city_where}) AND arrival_date BETWEEN CAST(:start AS DATE) AND CAST(:end AS DATE)"
     if commodity:
         where += " AND LOWER(commodity) = LOWER(:commodity)"
         params["commodity"] = commodity

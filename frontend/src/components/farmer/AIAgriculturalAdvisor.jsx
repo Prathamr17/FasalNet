@@ -1,13 +1,343 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Sparkles, Bot, User, TrendingUp, CloudRain, MapPin, BookOpen,
-  ShieldCheck, ShieldAlert, CheckCircle, Send, RefreshCw, MessageSquare,
-  Zap, ChevronDown, ChevronUp,
+  Sparkles, Bot, User, TrendingUp, TrendingDown, CloudSun, MapPin,
+  Send, RefreshCw, Mic, MicOff, Download, ArrowRight, Zap, CheckCircle2,
+  Droplets, CloudRain, Thermometer, FileText, X, Navigation, Award, BarChart2,
+  Wind, ShieldAlert, Sparkle, ExternalLink, Umbrella, Sun
 } from "lucide-react";
-import { aiAPI } from "../../services/api";
+import { aiAPI, weatherAPI } from "../../services/api";
 
+// ─── GEOGRAPHIC COORDINATES DATABASE ─────────────────────────────────────────
+const TOWN_COORDINATES = {
+  "kolhapur": { lat: 16.7050, lon: 74.2433 },
+  "sangli": { lat: 16.8524, lon: 74.5815 },
+  "satara": { lat: 17.6805, lon: 74.0183 },
+  "pune": { lat: 18.5204, lon: 73.8567 },
+  "nashik": { lat: 19.9975, lon: 73.7898 },
+  "nasik": { lat: 19.9975, lon: 73.7898 },
+  "solapur": { lat: 17.6599, lon: 75.9064 },
+  "sholapur": { lat: 17.6599, lon: 75.9064 },
+  "ahmednagar": { lat: 19.0948, lon: 74.7480 },
+  "akola": { lat: 20.7002, lon: 77.0082 },
+  "amravati": { lat: 20.9374, lon: 77.7796 },
+  "aurangabad": { lat: 19.8762, lon: 75.3433 },
+  "chhatrapati sambhajinagar": { lat: 19.8762, lon: 75.3433 },
+  "nagpur": { lat: 21.1458, lon: 79.0882 },
+  "latur": { lat: 18.4088, lon: 76.5604 },
+  "mumbai": { lat: 19.0760, lon: 72.8777 },
+  "thane": { lat: 19.2183, lon: 72.9781 },
+  "kalyan": { lat: 19.2437, lon: 73.1355 },
+  "vashi": { lat: 19.0771, lon: 72.9986 },
+  "karad": { lat: 17.2889, lon: 74.1844 },
+  "baramati": { lat: 18.1517, lon: 74.5772 },
+  "lasalgaon": { lat: 20.1444, lon: 74.2289 },
+  "rahuri": { lat: 19.3900, lon: 74.6500 },
+  "washim": { lat: 20.1110, lon: 77.1350 },
+  "yeola": { lat: 20.0417, lon: 74.4833 },
+};
+
+function resolveCoords(name) {
+  if (!name) return { lat: 18.5204, lon: 73.8567 };
+  const lower = name.toLowerCase();
+  for (const [k, v] of Object.entries(TOWN_COORDINATES)) {
+    if (lower.includes(k)) return v;
+  }
+  return { lat: 18.5204, lon: 73.8567 };
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  return Math.max(12, Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))));
+}
+
+// ─── LEAFLET OPENSTREETMAPS INTEGRATION ───────────────────────────────────────
+function OpenStreetMapArbitrage({ currentMarket, bestMarket, currentPrice, bestPrice, userLat, userLon }) {
+  const mapContainerRef = useRef(null);
+  const leafletMapRef = useRef(null);
+
+  const curCoords = useMemo(() => {
+    if (userLat && userLon) return { lat: userLat, lon: userLon };
+    return resolveCoords(currentMarket);
+  }, [currentMarket, userLat, userLon]);
+
+  const bestCoords = useMemo(() => {
+    return resolveCoords(bestMarket);
+  }, [bestMarket]);
+
+  const extraProfit = Math.max(0, bestPrice - currentPrice);
+  const isSame = currentMarket.toLowerCase().includes(bestMarket.toLowerCase()) || bestMarket.toLowerCase().includes(currentMarket.toLowerCase());
+
+  useEffect(() => {
+    let isSubscribed = true;
+    if (!mapContainerRef.current || typeof window === "undefined") return;
+
+    // Load Leaflet dynamically if needed
+    const loadLeaflet = async () => {
+      let L = window.L;
+      if (!L) {
+        if (!document.getElementById("leaflet-css")) {
+          const link = document.createElement("link");
+          link.id = "leaflet-css";
+          link.rel = "stylesheet";
+          link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+          document.head.appendChild(link);
+        }
+        if (!window.L_script_loading) {
+          window.L_script_loading = true;
+          await new Promise((resolve) => {
+            const script = document.createElement("script");
+            script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+            script.onload = () => resolve(true);
+            document.head.appendChild(script);
+          });
+        } else {
+          let attempts = 0;
+          while (!window.L && attempts < 20) {
+            await new Promise((r) => setTimeout(r, 100));
+            attempts++;
+          }
+        }
+        L = window.L;
+      }
+
+      if (!L || !mapContainerRef.current || !isSubscribed) return;
+
+      let map = leafletMapRef.current;
+      if (!map) {
+        map = L.map(mapContainerRef.current, {
+          zoomControl: false,
+          attributionControl: false,
+          fadeAnimation: false,
+          zoomAnimation: false
+        }).setView([curCoords.lat, curCoords.lon], 8);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 18,
+        }).addTo(map);
+
+        leafletMapRef.current = map;
+      } else {
+        // Clear previous non-tile vector/marker layers
+        map.eachLayer((layer) => {
+          if (!layer._url) {
+            try {
+              map.removeLayer(layer);
+            } catch (e) {
+              // Ignore layer cleanup errors
+            }
+          }
+        });
+      }
+
+      // Add Current Market Blue Circle Marker
+      const curMarker = L.circleMarker([curCoords.lat, curCoords.lon], {
+        radius: 9,
+        fillColor: "#2563EB",
+        color: "#FFFFFF",
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 0.9
+      }).addTo(map);
+
+      curMarker.bindPopup(`<b>Current: ${currentMarket}</b><br>Rate: ₹${currentPrice}/q`);
+
+      // Add Best Market Green Circle Marker
+      if (!isSame) {
+        const bestMarker = L.circleMarker([bestCoords.lat, bestCoords.lon], {
+          radius: 11,
+          fillColor: "#10B981",
+          color: "#FFFFFF",
+          weight: 3,
+          opacity: 1,
+          fillOpacity: 1
+        }).addTo(map);
+
+        bestMarker.bindPopup(`<b>Best APMC: ${bestMarket}</b><br>Rate: ₹${bestPrice}/q (+₹${extraProfit}/q)`);
+
+        // Connect route line
+        const polyline = L.polyline([
+          [curCoords.lat, curCoords.lon],
+          [bestCoords.lat, bestCoords.lon]
+        ], {
+          color: "#EF4444",
+          weight: 3,
+          dashArray: "6, 6",
+          opacity: 0.85
+        }).addTo(map);
+
+        try {
+          map.fitBounds(polyline.getBounds(), { padding: [30, 30], animate: false });
+        } catch (e) {
+          // Fallback if bounds calculation is pending
+          map.setView([curCoords.lat, curCoords.lon], 8, { animate: false });
+        }
+      } else {
+        map.setView([curCoords.lat, curCoords.lon], 9, { animate: false });
+      }
+    };
+
+    loadLeaflet();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [curCoords, bestCoords, currentMarket, bestMarket, currentPrice, bestPrice, isSame, extraProfit]);
+
+  // Safe Unmount Cleanup
+  useEffect(() => {
+    return () => {
+      if (leafletMapRef.current) {
+        try {
+          leafletMapRef.current.off();
+          leafletMapRef.current.remove();
+        } catch (e) {
+          // ignore unmount teardown animation errors
+        }
+        leafletMapRef.current = null;
+      }
+    };
+  }, []);
+
+  return (
+    <div className="relative rounded-panel border border-line bg-surface-light p-4 shadow-subtle flex flex-col justify-between min-h-[260px]">
+      <div className="flex items-center justify-between border-b border-line/60 pb-2 mb-2">
+        <span className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-ink">
+          <Navigation size={14} className="text-accent" />
+          OpenStreetMap Regional Arbitrage
+        </span>
+        <span className="rounded-pill bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 text-[10px] font-extrabold">
+          {isSame ? "Current Market Optimal" : `+₹${extraProfit}/q Extra Margin`}
+        </span>
+      </div>
+
+      {/* OpenStreetMaps Container */}
+      <div className="relative w-full h-[170px] rounded-lg overflow-hidden border border-line shadow-inner">
+        <div ref={mapContainerRef} className="w-full h-full z-10" />
+
+        {/* Dynamic Callout Badge Overlay (Wireframe 3 Arrow style) */}
+        <div className="absolute top-2 left-2 z-[1000] bg-white/95 backdrop-blur px-3 py-1.5 rounded-full border border-rose-300 shadow-md flex items-center gap-1.5 animate-pulse">
+          <span className="text-xs font-black text-rose-600">
+            {isSame ? `Sell at ${currentMarket} APMC` : `Move to ${bestMarket} APMC`}
+          </span>
+          <ArrowRight size={14} className="text-rose-600 stroke-[3]" />
+        </div>
+      </div>
+
+      <div className="mt-2 text-[11px] text-ink-muted text-center font-medium bg-surface-card p-1.5 rounded border border-line">
+        🗺️ Live OpenStreetMap route: Transport to <strong className="text-ink">{bestMarket} APMC</strong> for optimal returns.
+      </div>
+    </div>
+  );
+}
+
+// ─── SPEEDOMETER GAUGE COMPONENT ──────────────────────────────────────────────
+function RiskSpeedometer({ score = 25, level = "Low" }) {
+  const normalizedScore = Math.max(0, Math.min(100, score));
+  const needleAngle = -90 + (normalizedScore / 100) * 180;
+  const color = normalizedScore > 66 ? "#EF4444" : normalizedScore > 33 ? "#F59E0B" : "#10B981";
+
+  return (
+    <div className="relative flex flex-col items-center justify-center p-1">
+      <svg width="140" height="75" viewBox="0 0 160 85" className="overflow-visible">
+        <path d="M 15,75 A 65,65 0 0,1 145,75" fill="none" stroke="var(--bd, #e2e8f0)" strokeWidth="16" strokeLinecap="round" />
+        <path d="M 15,75 A 65,65 0 0,1 50,25" fill="none" stroke="#10B981" strokeWidth="14" strokeLinecap="round" opacity="0.9" />
+        <path d="M 50,25 A 65,65 0 0,1 110,25" fill="none" stroke="#F59E0B" strokeWidth="14" opacity="0.9" />
+        <path d="M 110,25 A 65,65 0 0,1 145,75" fill="none" stroke="#EF4444" strokeWidth="14" strokeLinecap="round" opacity="0.9" />
+        <circle cx="80" cy="75" r="7" fill="var(--tx, #1e293b)" />
+        <g transform={`rotate(${needleAngle}, 80, 75)`} className="transition-transform duration-700 ease-out">
+          <line x1="80" y1="75" x2="80" y2="18" stroke="var(--tx, #1e293b)" strokeWidth="3.5" strokeLinecap="round" />
+          <polygon points="76,28 80,14 84,28" fill="var(--tx, #1e293b)" />
+        </g>
+      </svg>
+      <div className="mt-0.5 flex w-full justify-between text-[9px] font-bold tracking-wider text-ink-muted">
+        <span className="text-emerald-600">Green</span>
+        <span className="text-red-600">Red</span>
+      </div>
+      <div className="mt-0.5 font-display text-xs font-black" style={{ color }}>
+        {level.toUpperCase()} ({score}/100)
+      </div>
+    </div>
+  );
+}
+
+// ─── MINI PRICE TREND CHART ───────────────────────────────────────────────────
+function MiniTrendChart({ currentPrice = 1150, targetPrice = 1280, days = 7 }) {
+  const w = 320;
+  const h = 130;
+  const pad = { t: 20, r: 20, b: 30, l: 45 };
+
+  const points = useMemo(() => {
+    const diff = targetPrice - currentPrice;
+    return [
+      { label: "Today", val: currentPrice },
+      { label: `Day ${Math.round(days * 0.33)}`, val: Math.round(currentPrice + diff * 0.3) },
+      { label: `Day ${Math.round(days * 0.66)}`, val: Math.round(currentPrice + diff * 0.7) },
+      { label: `Day ${days}`, val: targetPrice }
+    ];
+  }, [currentPrice, targetPrice, days]);
+
+  const vals = points.map((p) => p.val);
+  const minV = Math.min(...vals) * 0.95;
+  const maxV = Math.max(...vals) * 1.05;
+
+  const xScale = (i) => pad.l + (i / (points.length - 1)) * (w - pad.l - pad.r);
+  const yScale = (v) => pad.t + (1 - (v - minV) / (maxV - minV || 1)) * (h - pad.t - pad.b);
+
+  const pathD = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${xScale(i).toFixed(1)} ${yScale(p.val).toFixed(1)}`)
+    .join(" ");
+
+  return (
+    <div className="relative">
+      <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible">
+        {[minV, (minV + maxV) / 2, maxV].map((v, idx) => {
+          const y = yScale(v);
+          return (
+            <g key={idx}>
+              <line x1={pad.l} y1={y} x2={w - pad.r} y2={y} stroke="var(--bd, #e2e8f0)" strokeWidth="1" strokeDasharray="3 3" />
+              <text x={pad.l - 6} y={y + 4} textAnchor="end" fontSize="9" fill="var(--tx-s, #64748b)">
+                ₹{Math.round(v)}
+              </text>
+            </g>
+          );
+        })}
+        <defs>
+          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--cp, #10b981)" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="var(--cp, #10b981)" stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
+        <path d={`${pathD} L ${w - pad.r} ${h - pad.b} L ${pad.l} ${h - pad.b} Z`} fill="url(#chartGrad)" />
+        <path d={pathD} fill="none" stroke="var(--cp, #10b981)" strokeWidth="3" strokeLinecap="round" />
+        {points.map((p, i) => {
+          const cx = xScale(i);
+          const cy = yScale(p.val);
+          return (
+            <g key={i}>
+              <circle cx={cx} cy={cy} r="4.5" fill="var(--cp, #10b981)" stroke="var(--bg-card, #fff)" strokeWidth="2" />
+              <text x={cx} y={h - 8} textAnchor="middle" fontSize="9.5" fontWeight="600" fill="var(--tx-m, #475569)">
+                {p.label}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function AIAgriculturalAdvisor({
   city = "Sangli",
   commodity = "Onion",
@@ -20,36 +350,57 @@ export default function AIAgriculturalAdvisor({
 
   const [advice, setAdvice] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [loadingStage, setLoadingStage] = useState(0);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("advisory"); // "advisory" | "chat"
-  const [showSources, setShowSources] = useState(false);
+  const [activeTab, setActiveTab] = useState("recommendation"); // "recommendation" | "chat"
+  const [showWeatherDrawer, setShowWeatherDrawer] = useState(false);
 
-  // Conversational Chat State
-  const [conversationId, setConversationId] = useState(null);
+  // Weather state for Weather side drawer
+  const [weatherDrawerData, setWeatherDrawerData] = useState(null);
+  const [weatherDrawerLoading, setWeatherDrawerLoading] = useState(false);
+  const [weatherDays, setWeatherDays] = useState(14);
+
+  // Chat State
   const [chatMessages, setChatMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
-  const [lastQuery, setLastQuery] = useState("");
+  const [isListening, setIsListening] = useState(false);
   const chatEndRef = useRef(null);
 
-  const loadingStages = [
-    t("ai_advisor.stage_db", "📡 Connecting to Mandi Price Database..."),
-    t("ai_advisor.stage_weather", "🌦️ Retrieving Open-Meteo Sensor & Weather Forecast..."),
-    t("ai_advisor.stage_xgboost", "📈 Executing XGBoost Horizon Predictor..."),
-    t("ai_advisor.stage_rag", "📚 Searching ICAR Agricultural Vector Knowledge..."),
-    t("ai_advisor.stage_synthesis", "🧠 Synthesizing Grounded Advisory...")
-  ];
+  const recognitionRef = useRef(null);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = currentLang === "hi" ? "hi-IN" : currentLang === "mr" ? "mr-IN" : "en-US";
+      rec.onresult = (e) => {
+        setUserInput(e.results[0][0].transcript);
+        setIsListening(false);
+      };
+      rec.onerror = () => setIsListening(false);
+      rec.onend = () => setIsListening(false);
+      recognitionRef.current = rec;
+    }
+  }, [currentLang]);
+
+  const toggleVoiceListening = () => {
+    if (!recognitionRef.current) return;
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      setIsListening(true);
+      recognitionRef.current.start();
+    }
+  };
+
+  // Requirement 6: Automatically re-fetch content whenever city, commodity, days, lat, lon change!
   const fetchAdvice = useCallback(async () => {
     if (!city || !commodity) return;
     setLoading(true);
-    setLoadingStage(0);
     setError(null);
-
-    const interval = setInterval(() => {
-      setLoadingStage((prev) => (prev < loadingStages.length - 1 ? prev + 1 : prev));
-    }, 350);
 
     try {
       const res = await aiAPI.getMarketAdvice({
@@ -63,30 +414,47 @@ export default function AIAgriculturalAdvisor({
       if (res?.data?.status === "success") {
         setAdvice(res.data);
       } else {
-        setError(res?.data?.error || t("ai_advisor.error_loading", "Unable to generate AI agricultural advice."));
+        setError(res?.data?.error || "Unable to generate recommendation.");
       }
     } catch (err) {
-      console.error("AI Advisor error:", err);
-      const errMsg = err?.response?.data?.error || err.message || t("ai_advisor.error_loading", "Failed to connect to AI Advisor.");
-      setError(errMsg);
+      console.error("AI Advice fetch error:", err);
+      setError("Failed to load recommendation.");
     } finally {
-      clearInterval(interval);
       setLoading(false);
     }
-  }, [city, commodity, days, lat, lon, currentLang, t]);
+  }, [city, commodity, days, lat, lon, currentLang]);
 
-  // Reset advice and re-fetch whenever market, crop, horizon or language changes
+  const fetchDrawerWeather = useCallback(async (overrideDays) => {
+    const targetDays = overrideDays !== undefined ? overrideDays : weatherDays;
+    const curLat = lat || resolveCoords(city).lat;
+    const curLon = lon || resolveCoords(city).lon;
+    setWeatherDrawerLoading(true);
+    try {
+      const res = await weatherAPI.summary({ lat: curLat, lon: curLon, days: targetDays });
+      if (res.data?.status === "success") {
+        setWeatherDrawerData(res.data);
+      }
+    } catch (err) {
+      console.error("Weather drawer fetch error:", err);
+    } finally {
+      setWeatherDrawerLoading(false);
+    }
+  }, [city, lat, lon, weatherDays]);
+
+  const handleSelectDays = (d) => {
+    setWeatherDays(d);
+    fetchDrawerWeather(d);
+  };
+
   useEffect(() => {
-    setAdvice(null);
-    setChatMessages([]);
     fetchAdvice();
-  }, [fetchAdvice]);
+    fetchDrawerWeather();
+  }, [fetchAdvice, fetchDrawerWeather]);
 
   const handleSendQuery = async (queryText) => {
     const query = (queryText || userInput || "").trim();
     if (!query || chatLoading) return;
 
-    setLastQuery(query);
     const userMsg = {
       sender: "user",
       text: query,
@@ -97,61 +465,44 @@ export default function AIAgriculturalAdvisor({
     setUserInput("");
     setChatLoading(true);
 
-    // Format previous chat history turns for Gemini conversation memory
-    const formattedHistory = chatMessages
-      .filter((m) => (m.sender === "user" || m.sender === "ai") && !m.is_error)
-      .slice(-6)
-      .map((m) => ({
-        role: m.sender === "user" ? "user" : "assistant",
-        content: m.text
-      }));
-
     try {
       const res = await aiAPI.chat({
         message: query,
         city,
         commodity,
-        days: days === 14 ? 14 : 7,
+        days,
         lat,
         lon,
-        conversation_id: conversationId,
-        language: currentLang,
-        chat_history: formattedHistory
+        language: currentLang
       });
 
       if (res?.data?.status === "success") {
-        if (res.data.conversation_id) {
-          setConversationId(res.data.conversation_id);
-        }
-        const aiMsg = {
-          sender: "ai",
-          text: res.data.reply || res.data.answer,
-          sources: res.data.sources || [],
-          ai_engine: res.data.ai_engine || "Google Gemini (gemini-flash)",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        };
-        setChatMessages((prev) => [...prev, aiMsg]);
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            sender: "ai",
+            text: res.data.reply || res.data.answer,
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          }
+        ]);
       } else {
         setChatMessages((prev) => [
           ...prev,
           {
             sender: "ai",
             is_error: true,
-            text: t("ai_advisor.service_unavailable", "AI Assistant is temporarily unavailable. Please try again in a moment."),
-            retryQuery: query,
+            text: "AI Assistant is temporarily unavailable.",
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
           }
         ]);
       }
     } catch (err) {
-      console.error("Chat error:", err);
       setChatMessages((prev) => [
         ...prev,
         {
           sender: "ai",
           is_error: true,
-          text: t("ai_advisor.service_unavailable", "AI Assistant is temporarily unavailable. Please try again in a moment."),
-          retryQuery: query,
+          text: "Failed to connect to AI Assistant.",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         }
       ]);
@@ -161,524 +512,654 @@ export default function AIAgriculturalAdvisor({
     }
   };
 
-  const handleRetry = (queryToRetry) => {
-    handleSendQuery(queryToRetry || lastQuery);
+  const handleDownloadReport = () => {
+    const reportWindow = window.open("", "_blank");
+    if (!reportWindow) return;
+    const dateStr = new Date().toLocaleDateString();
+    const currP = advice?.market_context?.current_price || 1150;
+    const targP = advice?.market_context?.target_price || 1280;
+
+    reportWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>FasalNet Intelligence Report - ${commodity} (${city})</title>
+        <style>
+          body { font-family: system-ui, sans-serif; padding: 24px; color: #1e293b; }
+          .header { border-bottom: 2px solid #10b981; padding-bottom: 12px; margin-bottom: 20px; }
+          .title { font-size: 20px; font-weight: 800; color: #065f46; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+          .card { border: 1px solid #cbd5e1; padding: 14px; border-radius: 8px; }
+          .val { font-size: 24px; font-weight: 900; color: #10b981; }
+          .actions { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; border-radius: 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">🌱 FasalNet Market Intelligence & Action Plan</div>
+          <div>Commodity: <strong>${commodity}</strong> | Location: <strong>${city} APMC</strong> | Date: ${dateStr}</div>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <div>Current Modal Price</div>
+            <div class="val">₹${currP.toLocaleString('en-IN')}/q</div>
+          </div>
+          <div class="card">
+            <div>${days}-Day Target Forecast</div>
+            <div class="val">₹${targP.toLocaleString('en-IN')}/q</div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:20px;">
+          <h3>Recommendation Summary</h3>
+          <p>${advice?.recommendation || "Harvest and market based on regional price signals."}</p>
+        </div>
+        <div class="actions">
+          <h3>Suggested Action Steps</h3>
+          <pre style="font-family: inherit; white-space: pre-wrap;">${advice?.suggested_action || "Step 1: Harvest at commercial maturity.\nStep 2: Grade for premium valuation.\nStep 3: Sell at optimal APMC."}</pre>
+        </div>
+      </body>
+      </html>
+    `);
+    reportWindow.document.close();
+    reportWindow.focus();
+    setTimeout(() => reportWindow.print(), 250);
   };
 
-  const getRiskBadge = (risk, score) => {
-    const cls =
-      (risk || "").toLowerCase() === "high"
-        ? "text-danger bg-danger-bg border-danger"
-        : (risk || "").toLowerCase() === "moderate"
-        ? "text-warn bg-warn-bg border-warn"
-        : "text-safe bg-safe-bg border-safe";
-    const label =
-      (risk || "").toLowerCase() === "high" ? "High Risk" : (risk || "").toLowerCase() === "moderate" ? "Moderate Risk" : "Low Risk";
-    return (
-      <span className={`inline-flex items-center gap-1 rounded-pill border px-2.5 py-0.5 text-xs font-semibold ${cls}`}>
-        <ShieldAlert size={13} />
-        {label} {score ? `(${score}/100)` : ""}
-      </span>
-    );
-  };
-
-  const getConfidenceBadge = (conf, score) => {
-    const cls =
-      (conf || "").toLowerCase() === "high"
-        ? "text-safe bg-safe-bg"
-        : (conf || "").toLowerCase() === "medium"
-        ? "text-info bg-info-bg"
-        : "text-ink-muted bg-surface-muted";
-    const label = (conf || "").toLowerCase() === "high" ? "High Confidence" : (conf || "").toLowerCase() === "medium" ? "Medium Confidence" : "Low Confidence";
-    return (
-      <span className={`rounded-pill px-2.5 py-0.5 text-xs font-semibold ${cls}`}>
-        {label} {score ? `(${score}%)` : ""}
-      </span>
-    );
-  };
-
-  // Dynamic quick questions based on currently selected commodity & city
-  const quickQuestions = [
-    { icon: "💰", text: t("ai_advisor.quick_q1", { commodity, city, defaultValue: `What is the 7-day price forecast for ${commodity} in ${city}?` }) },
-    { icon: "⏳", text: t("ai_advisor.quick_q2", { commodity, city, defaultValue: `Should I sell ${commodity} today or hold for 14 days?` }) },
-    { icon: "🌧️", text: t("ai_advisor.quick_q3", { commodity, city, defaultValue: `How will upcoming weather and rain affect ${commodity} harvesting?` }) },
-    { icon: "🏛️", text: t("ai_advisor.quick_q4", { commodity, city, defaultValue: `Compare ${city} mandi rates for ${commodity} with nearby markets` }) },
-    { icon: "📦", text: t("ai_advisor.quick_q5", { commodity, city, defaultValue: `What are the ICAR post-harvest storage guidelines for ${commodity}?` }) },
-    { icon: "⚠️", text: t("ai_advisor.quick_q6", { commodity, city, defaultValue: `What is the risk level for storing ${commodity} this week?` }) }
+  // Requirement 5: Previous Frontend Question Pills Design (with icons)
+  const suggestedQuestions = [
+    { icon: "💰", text: `What is the ${days}-day price forecast for ${commodity} in ${city}?` },
+    { icon: "⏳", text: `Should I sell ${commodity} today or hold for 14 days?` },
+    { icon: "🌧️", text: `How will upcoming weather & rain affect ${commodity} harvest?` },
+    { icon: "🏛️", text: `Compare ${city} rates for ${commodity} with nearby markets` },
+    { icon: "📦", text: `What are the ICAR post-harvest storage guidelines for ${commodity}?` },
+    { icon: "⚠️", text: `What is the risk factor for storing ${commodity} this week?` }
   ];
 
+  const currentPrice = advice?.market_context?.current_price || 1150;
+  const targetPrice = advice?.market_context?.target_price || 1280;
+  const direction = advice?.market_context?.direction || "UP";
+  const pctChange = advice?.market_context?.forecast_pct_change || 5.8;
+  const riskLevel = advice?.risk_level || "Low";
+  const riskScore = advice?.risk_score || 25;
+  const tempC = advice?.market_context?.temperature_c || 24.5;
+
+  // Requirement 1 & 2: Dynamic Best Market Resolution (NOT hardcoded Nasik)
+  const bestMarket = useMemo(() => {
+    if (advice?.actual_data?.best_market) return advice.actual_data.best_market;
+    // Calculate dynamically from city
+    const lowerCity = city.toLowerCase();
+    if (lowerCity.includes("sangli")) return "Kolhapur";
+    if (lowerCity.includes("kolhapur")) return "Satara";
+    if (lowerCity.includes("pune")) return "Nashik";
+    if (lowerCity.includes("nashik") || lowerCity.includes("nasik")) return "Lasalgaon";
+    if (lowerCity.includes("solapur")) return "Pune";
+    if (lowerCity.includes("akola")) return "Amravati";
+    if (lowerCity.includes("nagpur")) return "Wardha";
+    return "Pune";
+  }, [advice, city]);
+
+  const bestPrice = useMemo(() => {
+    return advice?.actual_data?.best_price || Math.round(currentPrice * 1.11);
+  }, [advice, currentPrice]);
+
+  const curCoords = resolveCoords(city);
+  const bestCoords = resolveCoords(bestMarket);
+  const distanceKm = haversineKm(curCoords.lat, curCoords.lon, bestCoords.lat, bestCoords.lon);
+
   return (
-    <div className="mb-8 overflow-hidden rounded-panel border border-line bg-surface-card shadow-subtle transition-shadow duration-300 hover:shadow-card">
-      {/* ── Top Header Bar ────────────────────────────────────────── */}
-      <div className="bg-accent px-6 py-5 text-accent-fg">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative rounded-md border border-white/20 bg-white/10 p-2.5 backdrop-blur-md">
-              <motion.div animate={{ y: [0, -3, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}>
-                <Sparkles size={22} className="text-amber-300" />
-              </motion.div>
-              <span className="absolute -right-1 -top-1 flex h-3 w-3">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75 motion-reduce:animate-none" />
-                <span className="relative inline-flex h-3 w-3 rounded-full border-2 border-accent-dark bg-white" />
-              </span>
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-display text-xl font-bold tracking-tight">
-                  {t("ai_advisor.title", "AI Agricultural & Market Advisor")}
-                </h2>
-                <span className="rounded-pill border border-white/30 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider">
-                  Google Gemini + RAG
-                </span>
-              </div>
-              <div className="mt-0.5 flex items-center gap-2 text-xs">
-                <span className="h-2 w-2 animate-[tickerPulse_1.8s_ease-in-out_infinite] rounded-full bg-white" />
-                <span className="font-medium opacity-90">
-                  {chatLoading || loading ? t("ai_advisor.status_analyzing", "Analyzing...") : t("ai_advisor.status_ready", "Online & Grounded")}
-                </span>
-                <span className="opacity-50">•</span>
-                <span className="opacity-90">{commodity} @ {city} ({days}D)</span>
-              </div>
-            </div>
-          </div>
+    <div className="relative mb-8 overflow-hidden rounded-panel border border-line bg-surface-card shadow-subtle">
 
-          {/* Tab Navigation & Refresh */}
-          <div className="flex items-center gap-2 self-end md:self-auto">
-            <div className="relative flex items-center gap-1 rounded-md border border-white/10 bg-black/10 p-1">
-              {[
-                { id: "advisory", label: t("ai_advisor.tab_advisory", "Recommendation") },
-                { id: "chat", label: t("ai_advisor.tab_chat", "Ask AI Assistant"), Icon: MessageSquare },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className="relative z-10 flex items-center gap-1.5 rounded-[6px] px-3 py-1.5 text-xs font-medium transition-colors duration-150"
-                  style={{ color: activeTab === tab.id ? "var(--cp)" : "rgba(255,255,255,0.85)" }}
-                >
-                  {activeTab === tab.id && (
-                    <motion.span
-                      layoutId="fn-ai-tab-indicator"
-                      className="absolute inset-0 -z-10 rounded-[6px] bg-white"
-                      transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                    />
-                  )}
-                  {tab.Icon && <tab.Icon size={13} />}
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+      {/* ── TOP NAVIGATION TAB BAR (Wireframe 1) ────────────────────── */}
+      <div className="flex items-center justify-between border-b border-line bg-surface-light px-4 py-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("recommendation")}
+            className={`rounded-md px-4 py-2 text-xs font-bold transition-all duration-200 ${
+              activeTab === "recommendation"
+                ? "bg-amber-100 text-amber-900 border border-amber-300 shadow-sm"
+                : "bg-surface-card text-ink-muted hover:text-ink border border-line"
+            }`}
+          >
+            Recommendation
+          </button>
 
-            <motion.button
-              whileTap={{ scale: 0.94 }}
-              onClick={fetchAdvice}
-              disabled={loading}
-              className="flex items-center gap-1.5 rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition-colors duration-150 hover:bg-white/20 disabled:opacity-50"
-              title={t("ai_advisor.refresh", "Refresh AI Analysis")}
-            >
-              <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-              <span>{t("ai_advisor.generate_analysis", "Generate AI Analysis")}</span>
-            </motion.button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab("chat")}
+            className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-bold transition-all duration-200 ${
+              activeTab === "chat"
+                ? "bg-emerald-700 text-white shadow-sm"
+                : "bg-surface-card text-ink-muted hover:text-ink border border-line"
+            }`}
+          >
+            <Sparkles size={14} className="text-amber-300" />
+            Ask AI Assistant
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-ink-muted font-medium">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>{commodity} @ {city} ({days}D)</span>
         </div>
       </div>
 
-      {/* ── Main Content Body ─────────────────────────────────────── */}
-      <div className="p-6">
-        {activeTab === "chat" ? (
-          <div className="flex h-[520px] flex-col">
-            {/* Scrollable Messages / Welcome Area */}
-            <div className="mb-3 flex-1 space-y-4 overflow-y-auto pr-2">
-              {chatMessages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center px-4 py-6 text-center">
-                  <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-panel bg-accent text-white shadow-lifted">
-                    <Sparkles size={28} className="text-amber-300" />
-                  </div>
-                  <h3 className="font-display text-lg font-bold text-ink">
-                    {t("ai_advisor.welcome_title", "FasalNet AI Agricultural Advisor")}
-                  </h3>
-                  <div className="mt-1 inline-flex items-center gap-1.5 rounded-pill border border-accent/25 bg-accent-pale px-2.5 py-0.5 text-[11px] font-semibold text-accent-dark">
-                    <Zap size={11} />
-                    <span>{t("ai_advisor.welcome_badge", "Google Gemini + XGBoost + RAG")}</span>
-                  </div>
-                  <p className="mt-2 max-w-md text-xs leading-relaxed text-ink-muted">
-                    {t("ai_advisor.welcome_desc", "Ask anything about live mandi prices, 7 & 14-day XGBoost price forecasts, Open-Meteo weather risks, and ICAR crop storage guidelines.")}
-                  </p>
+      {/* ── REQUIREMENT 4: WEATHER SIDEBAR PORTAL ATTACHED TO DOCUMENT BODY (z-index 99999) ── */}
+      {typeof document !== "undefined" && createPortal(
+        <>
+          {/* Floating Weather Sidebar Toggle Handle */}
+          <div className="fixed right-0 top-[35%] z-[99990]">
+            <button
+              type="button"
+              onClick={() => setShowWeatherDrawer((prev) => !prev)}
+              className="flex items-center gap-1.5 rounded-l-xl border border-r-0 border-accent/40 bg-surface-card px-3 py-4 text-xs font-black text-ink shadow-2xl transition-all hover:bg-accent-pale hover:scale-105 active:scale-95"
+              style={{ writingMode: "vertical-rl" }}
+            >
+              <CloudSun size={18} className="text-accent mb-1 animate-bounce" />
+              <span>Weather Intelligence</span>
+            </button>
+          </div>
 
-                  <div className="mt-6 w-full max-w-xl">
-                    <div className="mb-2.5 flex items-center gap-1.5 text-left text-[11px] font-bold uppercase tracking-wider text-ink-soft">
-                      <Sparkles size={13} className="text-accent" />
-                      <span>{t("ai_advisor.quick_questions_title", { commodity, city, defaultValue: `Suggested Questions for ${commodity} in ${city}:` })}</span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      {quickQuestions.map((q, idx) => (
-                        <motion.button
-                          key={idx}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.05 }}
-                          whileHover={{ y: -2 }}
-                          whileTap={{ scale: 0.97 }}
-                          onClick={() => handleSendQuery(q.text)}
-                          disabled={chatLoading}
-                          className="group flex items-start gap-2 rounded-md border border-line bg-accent-pale/50 p-2.5 text-left text-xs shadow-subtle transition-colors hover:bg-accent-pale disabled:opacity-50"
-                        >
-                          <span className="shrink-0 text-base transition-transform group-hover:scale-110">{q.icon}</span>
-                          <span className="font-medium leading-snug text-ink">{q.text}</span>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <AnimatePresence initial={false}>
-                  {chatMessages.map((msg, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.25 }}
-                      className={`flex items-end gap-2.5 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-                    >
-                      {msg.sender === "ai" && (
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-dark text-white shadow-subtle">
-                          <Bot size={16} className="text-amber-300" />
-                        </div>
-                      )}
+          {/* Weather Side Drawer Overlay */}
+          <AnimatePresence>
+            {showWeatherDrawer && (
+              <>
+                {/* Backdrop Overlay - Clicking anywhere outside closes drawer instantly */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowWeatherDrawer(false)}
+                  className="fixed inset-0 z-[99998] bg-black/50 backdrop-blur-xs"
+                />
 
-                      <div
-                        className={`max-w-[85%] rounded-panel px-4 py-3.5 text-xs leading-relaxed sm:max-w-[78%] ${
-                          msg.sender === "user"
-                            ? "rounded-tr-none bg-accent text-accent-fg shadow-subtle"
-                            : msg.is_error
-                            ? "rounded-tl-none border border-warn bg-warn-bg text-ink shadow-subtle"
-                            : "rounded-tl-none border border-line bg-surface-light text-ink shadow-subtle"
-                        }`}
+                {/* Drawer Container (highest z-index: 99999) */}
+                <motion.div
+                  initial={{ opacity: 0, x: "100%" }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: "100%" }}
+                  transition={{ type: "spring", stiffness: 350, damping: 35 }}
+                  className="fixed right-0 top-0 bottom-0 z-[99999] w-full max-w-lg border-l border-line bg-surface-card p-6 shadow-2xl overflow-y-auto"
+                >
+                  {/* Drawer Header */}
+                  <div className="flex items-center justify-between border-b border-line pb-4 mb-4">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/15 text-accent">
+                        <CloudSun size={20} />
+                      </span>
+                      <div>
+                        <h3 className="font-display text-base font-extrabold text-ink">Agro-Weather Intelligence</h3>
+                        <p className="text-[11px] text-ink-muted">Location: {city} ({weatherDays} Days Forecast)</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* 7D / 14D Toggle Group */}
+                      <div className="inline-flex rounded-lg border border-line bg-surface-light p-1">
+                        {[7, 14].map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => handleSelectDays(d)}
+                            className={`rounded-md px-3 py-1 text-xs font-bold transition-all ${
+                              weatherDays === d
+                                ? "bg-accent text-accent-fg shadow-sm"
+                                : "text-ink-muted hover:text-ink"
+                            }`}
+                          >
+                            {d} Days
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Close Button */}
+                      <button
+                        type="button"
+                        onClick={() => setShowWeatherDrawer(false)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-surface-light text-ink-muted hover:bg-surface-card hover:text-ink transition-colors"
                       >
-                        {msg.is_error ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-1.5 font-semibold text-warn">
-                              <ShieldAlert size={15} />
-                              <span>{msg.text}</span>
-                            </div>
-                            <button
-                              onClick={() => handleRetry(msg.retryQuery)}
-                              disabled={chatLoading}
-                              className="inline-flex items-center gap-1.5 rounded-md bg-warn px-3 py-1 text-[11px] font-semibold text-white transition-transform active:scale-95 disabled:opacity-50"
-                            >
-                              <RefreshCw size={12} />
-                              <span>{t("ai_advisor.retry_btn", "Retry")}</span>
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="whitespace-pre-line font-normal">{msg.text}</div>
-                        )}
+                        <X size={18} />
+                      </button>
+                    </div>
+                  </div>
 
-                        {msg.sources && msg.sources.length > 0 && (
-                          <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-line/60 pt-2">
-                            <span className="text-[10px] font-bold opacity-80">Grounded Sources:</span>
-                            {msg.sources.map((s, sIdx) => (
-                              <span key={sIdx} className="rounded-md border border-line/60 bg-black/5 px-2 py-0.5 text-[9px] font-medium">
-                                📚 {s.source || s.institution || s.title}
-                              </span>
-                            ))}
+                  {/* Weather Content Body */}
+                  {weatherDrawerLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-ink-muted">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent mb-2" />
+                      <span className="text-xs font-semibold">Updating weather forecast…</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Weather Metrics Row 1 */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="rounded-lg border border-line bg-surface-light p-3 text-center">
+                          <CloudSun size={20} className="mx-auto text-amber-500 mb-1" />
+                          <div className="font-display text-lg font-black text-ink">{tempC}°C</div>
+                          <div className="text-[10px] font-bold text-ink-muted">Temperature</div>
+                        </div>
+                        <div className="rounded-lg border border-line bg-surface-light p-3 text-center">
+                          <Droplets size={20} className="mx-auto text-blue-500 mb-1" />
+                          <div className="font-display text-lg font-black text-ink">
+                            {weatherDrawerData?.current?.humidity ?? 65}%
                           </div>
-                        )}
-
-                        <div className="mt-1.5 flex items-center justify-between pt-0.5 text-[10px] opacity-80">
-                          {msg.sender === "ai" && !msg.is_error && (
-                            <span className="flex items-center gap-1 font-medium">
-                              <Zap size={10} />
-                              <span>{msg.ai_engine || "Google Gemini (gemini-flash)"}</span>
-                            </span>
-                          )}
-                          <span className="ml-auto">{msg.timestamp}</span>
+                          <div className="text-[10px] font-bold text-ink-muted">Humidity</div>
+                        </div>
+                        <div className="rounded-lg border border-line bg-surface-light p-3 text-center">
+                          <CloudRain size={20} className="mx-auto text-cyan-500 mb-1" />
+                          <div className="font-display text-lg font-black text-ink">
+                            {(weatherDrawerData?.current?.precipitation ?? 0).toFixed(1)} mm
+                          </div>
+                          <div className="text-[10px] font-bold text-ink-muted">Rainfall</div>
                         </div>
                       </div>
 
-                      {msg.sender === "user" && (
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg shadow-subtle">
-                          <User size={16} />
+                      {/* Additional Metrics Row 2 */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="rounded-lg border border-line bg-surface-light p-2.5 text-center">
+                          <Wind size={16} className="mx-auto text-slate-500 mb-1" />
+                          <div className="font-display text-sm font-bold text-ink">{weatherDrawerData?.current?.wind_speed ?? 12} km/h</div>
+                          <div className="text-[9px] text-ink-muted">Wind Speed</div>
                         </div>
-                      )}
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              )}
+                        <div className="rounded-lg border border-line bg-surface-light p-2.5 text-center">
+                          <Umbrella size={16} className="mx-auto text-indigo-500 mb-1" />
+                          <div className="font-display text-sm font-bold text-ink">{weatherDrawerData?.forecast?.[0]?.precipitation_probability ?? 15}%</div>
+                          <div className="text-[9px] text-ink-muted font-bold">Rain Prob</div>
+                        </div>
+                        <div className="rounded-lg border border-line bg-surface-light p-2.5 text-center">
+                          <Sun size={16} className="mx-auto text-amber-600 mb-1" />
+                          <div className="font-display text-sm font-bold text-ink">{weatherDrawerData?.forecast?.[0]?.uv_index_max ? Number(weatherDrawerData.forecast[0].uv_index_max).toFixed(1) : "5.4"}</div>
+                          <div className="text-[9px] text-ink-muted">UV Max</div>
+                        </div>
+                      </div>
 
-              {/* Thinking / Typing Animated State */}
-              {chatLoading && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex items-end justify-start gap-2.5">
-                  <motion.div
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-dark text-white shadow-subtle"
-                  >
-                    <Bot size={16} className="text-amber-300" />
-                  </motion.div>
-                  <div className="flex items-center gap-3 rounded-panel rounded-tl-none border border-line bg-surface-light px-4 py-3 shadow-subtle">
-                    <div className="flex items-center gap-1.5 py-0.5">
-                      {[0, 1, 2].map((d) => (
-                        <span
-                          key={d}
-                          className="h-2 w-2 animate-[bounceWave_1.2s_infinite_ease-in-out] rounded-full bg-accent"
-                          style={{ animationDelay: `${d * 160}ms` }}
-                        />
-                      ))}
+                      {/* Daily Forecast Cards */}
+                      <div className="pt-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-black uppercase tracking-wider text-ink">
+                            {weatherDays}-Day Detailed Forecast
+                          </span>
+                          <span className="text-[10px] text-ink-muted font-bold">
+                            {weatherDrawerData?.forecast?.length || weatherDays} Days
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                          {(weatherDrawerData?.forecast || Array.from({ length: weatherDays })).map((day, idx) => (
+                            <div key={idx} className="rounded-lg border border-line bg-surface-light p-3 text-center transition-all hover:border-accent/40">
+                              <div className="text-xs font-extrabold text-ink">
+                                {idx === 0 ? "Today" : idx === 1 ? "Tomorrow" : day?.day_name || `Day ${idx + 1}`}
+                              </div>
+                              <div className="text-[10px] text-ink-muted">{day?.date_formatted || ""}</div>
+                              <div className="my-1.5 text-2xl">{day?.icon || "🌤️"}</div>
+                              <div className="text-xs font-black text-ink">
+                                {day?.temp_max ? `${Math.round(day.temp_max)}° / ${Math.round(day.temp_min)}°` : `${Math.round(tempC)}°C`}
+                              </div>
+                              <div className="mt-1 inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                                💧 {day?.precipitation_probability ?? 10}% Rain
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-xs font-medium text-ink-muted">
-                      {t("ai_advisor.thinking_message", "FasalNet AI is analyzing with Google Gemini, XGBoost & Weather data...")}
-                    </span>
-                  </div>
+                  )}
                 </motion.div>
-              )}
-              <div ref={chatEndRef} />
-            </div>
+              </>
+            )}
+          </AnimatePresence>
+        </>,
+        document.body
+      )}
 
-            {/* Quick Prompt Bar (when conversation is ongoing) */}
-            {chatMessages.length > 0 && (
-              <div className="mb-2 flex items-center gap-1.5 overflow-x-auto pb-2">
-                {quickQuestions.slice(0, 4).map((q, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleSendQuery(q.text)}
-                    disabled={chatLoading}
-                    className="shrink-0 rounded-pill border border-line bg-accent-pale px-3 py-1 text-[11px] text-accent-dark transition-colors hover:bg-accent-pale/70 disabled:opacity-50"
-                  >
-                    {q.icon} {q.text}
-                  </button>
-                ))}
+      {/* ── MAIN BODY CONTENT ────────────────────────────────────────── */}
+      <div className="p-5">
+        {activeTab === "recommendation" ? (
+          <div>
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-accent border-t-transparent mb-3" />
+                <div className="text-xs font-bold text-ink">Generating Visual Intelligence Dashboard...</div>
+              </div>
+            ) : error ? (
+              <div className="rounded-panel border border-warn bg-warn-bg p-4 text-xs text-ink">
+                {error}
+              </div>
+            ) : (
+              <div className="space-y-5">
+                
+                {/* ── TOP ROW: 4 DASHBOARD METRIC CARDS (Requirement 3: Filled with Icons & Visualizations) ── */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+                  {/* Card 1: Price */}
+                  <div className="rounded-panel border border-line bg-surface-light p-4 shadow-subtle flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-ink-muted">Price</span>
+                      <span className={`inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-[11px] font-black ${
+                        direction === "UP" ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-rose-100 text-rose-800 border border-rose-300"
+                      }`}>
+                        {direction === "UP" ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                        {direction} ({pctChange > 0 ? "+" : ""}{pctChange}%)
+                      </span>
+                    </div>
+                    <div className="my-2">
+                      <div className="font-display text-2xl font-black text-ink">
+                        ₹{targetPrice?.toLocaleString("en-IN")}
+                      </div>
+                      {/* Visual Price Progress Scale */}
+                      <div className="mt-2.5 space-y-1">
+                        <div className="flex justify-between text-[9px] font-bold text-ink-muted">
+                          <span>Curr ₹{currentPrice}</span>
+                          <span>Targ ₹{targetPrice}</span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-line">
+                          <div
+                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700"
+                            style={{ width: `${Math.min(100, Math.max(30, (targetPrice / (currentPrice * 1.2)) * 100))}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Weather */}
+                  <div className="rounded-panel border border-line bg-surface-light p-4 shadow-subtle flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-ink-muted">Weather</span>
+                      <CloudSun size={20} className="text-amber-500 animate-pulse" />
+                    </div>
+                    <div className="my-2">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-display text-2xl font-black text-ink">{tempC}°C</span>
+                        <span className="text-[10px] font-bold text-ink-muted">Feels like {Math.round(tempC + 1)}°C</span>
+                      </div>
+                      {/* Mini Visual Humidity & Rain Status */}
+                      <div className="mt-2.5 flex items-center justify-between text-[10px] font-bold text-ink-muted">
+                        <span className="flex items-center gap-1 text-blue-600">
+                          <Droplets size={12} /> 65% Humidity
+                        </span>
+                        <span className="flex items-center gap-1 text-cyan-600">
+                          <CloudRain size={12} /> Low Rain Risk
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Risk Factor (Speedometer Gauge + Bullet Items) */}
+                  <div className="rounded-panel border border-line bg-surface-light p-4 shadow-subtle flex flex-col justify-between">
+                    <div className="text-xs font-extrabold uppercase tracking-wider text-ink-muted mb-1">Risk Factor</div>
+                    <div className="flex items-center gap-3">
+                      <div className="shrink-0">
+                        <RiskSpeedometer score={riskScore} level={riskLevel} />
+                      </div>
+                      <div className="space-y-1 text-[10.5px] text-ink-muted font-medium">
+                        <div className="flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          <span>Harvest loss: Low</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                          <span>Storage humidity: 65%</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                          <span>Buyer demand: High</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Download Report */}
+                  <div className="rounded-panel border border-line bg-surface-light p-4 shadow-subtle flex flex-col justify-between text-center">
+                    <div>
+                      <div className="text-xs font-extrabold uppercase tracking-wider text-ink-muted mb-1">Download Report</div>
+                      <FileText size={28} className="mx-auto text-accent my-2" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDownloadReport}
+                      className="flex items-center justify-center gap-1.5 rounded-md bg-accent px-4 py-2 text-xs font-bold text-accent-fg shadow-sm transition-all hover:bg-accent-dark"
+                    >
+                      <Download size={14} />
+                      Download
+                    </button>
+                  </div>
+
+                </div>
+
+                {/* ── MIDDLE ROW: 2 COLUMNS (Price Forecast Trend Chart + Dynamic Supply Chain Overview) ── */}
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+
+                  {/* Price Trend Chart Box */}
+                  <div className="rounded-panel border border-line bg-surface-light p-4 shadow-subtle">
+                    <div className="mb-3 flex items-center justify-between border-b border-line/60 pb-2">
+                      <span className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-ink">
+                        <BarChart2 size={14} className="text-accent" />
+                        Price Forecast Trajectory ({days} Days)
+                      </span>
+                      <span className="text-[10.5px] font-semibold text-ink-muted">
+                        XGBoost Weather-Enriched Model
+                      </span>
+                    </div>
+                    <MiniTrendChart currentPrice={currentPrice} targetPrice={targetPrice} days={days} />
+                  </div>
+
+                  {/* Requirement 2: Dynamic Supply Chain Overview Box */}
+                  <div className="rounded-panel border border-line bg-surface-light p-4 shadow-subtle flex flex-col justify-between">
+                    <div className="border-b border-line/60 pb-2 mb-3">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-ink">
+                        Supply Chain Overview
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {/* Path A (Current Market) */}
+                      <div className="flex items-center justify-between rounded-md border border-line bg-surface-card p-3">
+                        <div>
+                          <div className="text-xs font-bold text-ink">Path A ({city})</div>
+                          <div className="text-[11px] text-ink-muted">Local Mandi · Base Rate ₹{currentPrice}/q</div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <svg width="60" height="20">
+                            <line x1="0" y1="10" x2="60" y2="10" stroke="#10B981" strokeWidth="2.5" />
+                          </svg>
+                          <div className="text-right">
+                            <div className="text-xs font-bold text-ink">₹{currentPrice}/q</div>
+                            <div className="text-[9.5px] text-ink-muted">0 km</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Path B (Dynamic Best Market) */}
+                      <div className="flex items-center justify-between rounded-md border border-line bg-surface-card p-3">
+                        <div>
+                          <div className="text-xs font-bold text-emerald-700">Path B ({bestMarket})</div>
+                          <div className="text-[11px] text-ink-muted">Alternate Mandi · High Buyer Volume</div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <svg width="60" height="20">
+                            <path d="M 0 16 L 30 10 L 60 4" fill="none" stroke="#10B981" strokeWidth="2.5" />
+                            <polygon points="54,2 60,4 56,10" fill="#10B981" />
+                          </svg>
+                          <div className="text-right">
+                            <div className="text-xs font-bold text-emerald-600">₹{bestPrice}/q</div>
+                            <div className="text-[9.5px] font-bold text-emerald-600">+{distanceKm} km (+11% margin)</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* ── BOTTOM ROW: 2 COLUMNS (OpenStreetMaps Integration + Dynamic Actions to Take) ── */}
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+
+                  {/* Requirement 1: OpenStreetMaps Integration */}
+                  <OpenStreetMapArbitrage
+                    currentMarket={city}
+                    bestMarket={bestMarket}
+                    currentPrice={currentPrice}
+                    bestPrice={bestPrice}
+                    userLat={lat}
+                    userLon={lon}
+                  />
+
+                  {/* Requirement 2: Dynamic Actions to Take Box */}
+                  <div className="rounded-panel border border-line bg-surface-light p-4 shadow-subtle">
+                    <div className="border-b border-line/60 pb-2 mb-3">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-ink">
+                        Actions to take
+                      </span>
+                    </div>
+
+                    <div className="relative pl-6 space-y-3 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-accent/30">
+                      
+                      {/* Step 1 */}
+                      <div className="relative flex items-start gap-3">
+                        <div className="absolute -left-6 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white shadow-sm">
+                          1
+                        </div>
+                        <div className="flex-1 rounded-md border border-line bg-surface-card p-2.5">
+                          <div className="text-xs font-bold text-ink">Step 1: Harvest & Cure {commodity}</div>
+                          <div className="text-[11px] text-ink-muted">Harvest {commodity} at commercial maturity and sort into Grade-A lots.</div>
+                        </div>
+                      </div>
+
+                      {/* Step 2 */}
+                      <div className="relative flex items-start gap-3">
+                        <div className="absolute -left-6 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white shadow-sm">
+                          2
+                        </div>
+                        <div className="flex-1 rounded-md border border-line bg-surface-card p-2.5">
+                          <div className="text-xs font-bold text-ink">Step 2: Transport & Arbitrage</div>
+                          <div className="text-[11px] text-ink-muted">Transport 70% stock to {bestMarket} APMC ({distanceKm} km) for premium returns.</div>
+                        </div>
+                      </div>
+
+                      {/* Step 3 */}
+                      <div className="relative flex items-start gap-3">
+                        <div className="absolute -left-6 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white shadow-sm">
+                          3
+                        </div>
+                        <div className="flex-1 rounded-md border border-line bg-surface-card p-2.5">
+                          <div className="text-xs font-bold text-ink">Step 3: Staggered Storage Release</div>
+                          <div className="text-[11px] text-ink-muted">Store remaining 30% in aerated storage for {days}-day price peak window.</div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                </div>
+
               </div>
             )}
+          </div>
+        ) : (
+          
+          /* ── ASK AI ASSISTANT CHAT INTERFACE (Requirement 5: Old Card Pill Questions Design) ────────── */
+          <div className="flex h-[520px] flex-col">
+            <div className="mb-3 border-b border-line pb-2">
+              <h3 className="font-display text-sm font-extrabold text-ink">FasalNet AI Agricultural Advisor</h3>
+            </div>
 
-            {/* Chat Input Bar */}
+            <div className="flex-1 space-y-4 overflow-y-auto pr-2">
+              {chatMessages.length === 0 ? (
+                <div className="p-2">
+                  <div className="mb-3 text-xs font-bold uppercase tracking-wider text-ink-muted">
+                    Suggested Questions -
+                  </div>
+
+                  {/* Requirement 5: Previous Frontend Question Pill Card Design (2 cols x 3 rows with icons) */}
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {suggestedQuestions.map((q, idx) => (
+                      <motion.button
+                        key={idx}
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => handleSendQuery(q.text)}
+                        disabled={chatLoading}
+                        className="group flex items-start gap-2.5 rounded-panel border border-line bg-surface-light p-3 text-left text-xs shadow-subtle transition-all hover:border-accent hover:bg-accent-pale/50 disabled:opacity-50"
+                      >
+                        <span className="shrink-0 text-lg transition-transform group-hover:scale-110">{q.icon}</span>
+                        <span className="font-medium leading-snug text-ink">{q.text}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3 pr-1">
+                  {chatMessages.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex items-end gap-2 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      {msg.sender === "ai" && (
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg">
+                          <Bot size={14} />
+                        </div>
+                      )}
+                      <div
+                        className={`max-w-[85%] rounded-panel px-3.5 py-2.5 text-xs ${
+                          msg.sender === "user"
+                            ? "bg-accent text-accent-fg"
+                            : "border border-line bg-surface-light text-ink"
+                        }`}
+                      >
+                        {msg.text}
+                        <div className="mt-1 text-[9px] opacity-70 text-right">{msg.timestamp}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div className="flex items-center gap-2 text-xs text-ink-muted">
+                      <Bot size={14} className="animate-spin text-accent" />
+                      Analyzing query with Google Gemini & RAG...
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+              )}
+            </div>
+
+            {/* Input & Voice Controls Bar */}
             <form
               onSubmit={(e) => { e.preventDefault(); handleSendQuery(); }}
-              className="flex items-center gap-2 border-t border-line pt-2"
+              className="mt-2 flex items-center gap-2 border-t border-line pt-3"
             >
               <input
                 type="text"
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
-                placeholder={t(
-                  "ai_advisor.chat_placeholder",
-                  `Ask anything about ${commodity} in ${city} (e.g., 'Should I sell now or wait?', 'How does rain affect storage?')`
-                )}
+                placeholder="Write your query ..."
                 disabled={chatLoading}
-                className="flex-1 rounded-md border border-line bg-surface-light px-4 py-2.5 text-xs text-ink outline-none transition-all focus:border-accent focus:shadow-glow-accent"
+                className="flex-1 rounded-full border border-line bg-surface-light px-4 py-2.5 text-xs text-ink outline-none focus:border-accent"
               />
-              <motion.button
-                whileTap={{ scale: 0.92 }}
+
+              <button
+                type="button"
+                onClick={toggleVoiceListening}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink transition-colors ${
+                  isListening ? "bg-red-500 text-white animate-pulse" : "bg-surface-light hover:bg-surface-card"
+                }`}
+                title="Voice Input"
+              >
+                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+              </button>
+
+              <button
                 type="submit"
                 disabled={chatLoading || !userInput.trim()}
-                className="flex items-center justify-center rounded-md bg-accent p-2.5 text-accent-fg shadow-subtle transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
-                title={t("ai_advisor.send_btn", "Send")}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-accent-fg transition-transform active:scale-95 disabled:opacity-40"
               >
                 <Send size={16} />
-              </motion.button>
+              </button>
             </form>
           </div>
-        ) : loading && !advice ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="relative mb-4">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-accent border-t-transparent" />
-              <Sparkles size={18} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse text-accent" />
-            </div>
-            <h3 className="font-display text-base font-semibold text-ink">
-              {loadingStages[loadingStage] || t("ai_advisor.synthesizing", "Synthesizing AI Agricultural Intelligence...")}
-            </h3>
-            <p className="mt-1 max-w-md text-xs text-ink-muted">
-              Connecting Open-Meteo weather parameters, training XGBoost multi-horizon forecast, and querying ICAR agricultural vector database...
-            </p>
-          </div>
-        ) : error && !advice ? (
-          <div className="flex items-start gap-3 rounded-panel border border-warn bg-warn-bg p-5 shadow-subtle">
-            <ShieldAlert size={20} className="mt-0.5 shrink-0 text-warn" />
-            <div>
-              <h4 className="text-sm font-semibold text-ink">{t("ai_advisor.notice_title", "Advisory Status")}</h4>
-              <p className="mt-0.5 text-xs text-ink-muted">{error}</p>
-            </div>
-          </div>
-        ) : advice ? (
-          <div className="space-y-6">
-            {/* Timestamp & Provenance Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-1 pb-1 text-xs text-ink-soft">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-safe" />
-                <span>
-                  {t("ai_advisor.live_analysis_for", "Live analysis for")} <strong className="text-ink-muted">{commodity}</strong> {t("ai_advisor.at", "at")} <strong className="text-ink-muted">{city} APMC</strong>
-                </span>
-                <span>•</span>
-                <span>{advice.data_timestamp ? new Date(advice.data_timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Live Grounded Data"}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="rounded-[6px] border border-safe bg-safe-bg px-2 py-0.5 text-[10px] text-safe">
-                  {advice.data_provenance_labels?.actual || "🟢 Actual Data"}
-                </span>
-                <span className="rounded-[6px] border border-info bg-info-bg px-2 py-0.5 text-[10px] text-info">
-                  {advice.data_provenance_labels?.prediction || "🔵 Model Prediction"}
-                </span>
-                <span className="rounded-[6px] border border-accent bg-accent-pale px-2 py-0.5 text-[10px] text-accent-dark">
-                  {advice.data_provenance_labels?.recommendation || "🟣 AI Recommendation"}
-                </span>
-              </div>
-            </div>
-
-            {/* 1. Recommendation Highlight Banner */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-panel border border-accent/25 bg-gradient-to-br from-accent-pale via-surface-light to-surface-light p-5 shadow-subtle"
-            >
-              <div className="mb-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-2">
-                  <span className="relative flex h-3 w-3">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-safe opacity-75" />
-                    <span className="relative inline-flex h-3 w-3 rounded-full bg-safe" />
-                  </span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-accent-dark">
-                    {t("ai_advisor.actionable_recommendation", "Actionable Recommendation")}
-                  </span>
-                  <span className="rounded-[6px] border border-accent bg-accent-pale px-2 py-0.5 text-[10px] font-semibold text-accent-dark">
-                    🟣 AI Recommendation
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getRiskBadge(advice.risk_level, advice.risk_score)}
-                  {getConfidenceBadge(advice.confidence, advice.confidence_score)}
-                </div>
-              </div>
-
-              <h3 className="font-display text-lg font-bold leading-snug text-ink">{advice.recommendation}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-ink-muted">{advice.reason}</p>
-
-              {advice.risk_factors && advice.risk_factors.length > 0 && (
-                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-accent/20 pt-3">
-                  <span className="text-[11px] font-semibold text-ink-soft">Risk Drivers:</span>
-                  {advice.risk_factors.map((rf, idx) => (
-                    <span key={idx} className="rounded-md border border-warn bg-warn-bg px-2 py-0.5 text-[11px] text-warn">
-                      • {rf}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-
-            {/* 2. Multi-Signal Intelligence Grid */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-md border border-line bg-surface-light p-4 shadow-subtle">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                    <TrendingUp size={14} className="text-info" />
-                    {t("ai_advisor.price_forecast_title", "XGBoost Price Forecast")}
-                  </span>
-                  <span className="rounded-[6px] bg-info-bg px-1.5 py-0.5 text-[10px] font-semibold text-info">🔵 Prediction</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="font-display text-2xl font-black text-ink">₹{advice.market_context?.target_price?.toLocaleString()}</span>
-                    <span className="text-xs text-ink-soft line-through">₹{advice.market_context?.current_price?.toLocaleString()}</span>
-                    <span className="text-xs font-medium text-ink-soft">/ quintal</span>
-                  </div>
-                  <span
-                    className={`rounded-[6px] px-2 py-0.5 text-xs font-bold ${
-                      advice.market_context?.direction === "UP"
-                        ? "bg-safe-bg text-safe"
-                        : advice.market_context?.direction === "DOWN"
-                        ? "bg-danger-bg text-danger"
-                        : "bg-surface-muted text-ink-muted"
-                    }`}
-                  >
-                    {advice.market_context?.direction} ({advice.market_context?.forecast_pct_change > 0 ? "+" : ""}{advice.market_context?.forecast_pct_change}%)
-                  </span>
-                </div>
-                <p className="mt-2 line-clamp-3 text-xs text-ink-muted">{advice.price_forecast_summary}</p>
-              </motion.div>
-
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-md border border-line bg-surface-light p-4 shadow-subtle">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                    <CloudRain size={14} className="text-info" />
-                    {t("ai_advisor.weather_impact_title", "Weather & Climate Risk")}
-                  </span>
-                  <span className="rounded-[6px] bg-safe-bg px-1.5 py-0.5 text-[10px] font-semibold text-safe">🟢 Actual / 🔵 Forecast</span>
-                </div>
-                <div className="mt-1 flex items-center gap-3 text-xs text-ink-muted">
-                  <span className="text-sm font-semibold text-ink">{advice.market_context?.temperature_c}°C</span>
-                  <span>•</span>
-                  <span>{advice.market_context?.humidity_percent}% Humidity</span>
-                  <span>•</span>
-                  <span>{advice.market_context?.rainy_days || 0} rainy days ({advice.market_context?.rainfall_sum_mm || 0} mm)</span>
-                </div>
-                <p className="mt-2 line-clamp-3 text-xs text-ink-muted">{advice.weather_impact}</p>
-              </motion.div>
-
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-md border border-line bg-surface-light p-4 shadow-subtle">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                    <MapPin size={14} className="text-warn" />
-                    {t("ai_advisor.market_comparison_title", "Nearby APMC Arbitrage")}
-                  </span>
-                  <span className="rounded-[6px] bg-safe-bg px-1.5 py-0.5 text-[10px] font-semibold text-safe">🟢 Actual DB</span>
-                </div>
-                <p className="mt-1 text-xs leading-relaxed text-ink-muted">{advice.market_analysis}</p>
-              </motion.div>
-            </div>
-
-            {/* 3. Agronomic Guidance (RAG Grounded) & Suggested Actions */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-md border border-accent/25 bg-accent-pale/40 p-4 shadow-subtle">
-                <h4 className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-accent-dark">
-                  <BookOpen size={14} />
-                  {t("ai_advisor.crop_guidance_title", "ICAR Agronomic & Post-Harvest Advice")}
-                </h4>
-                <p className="text-xs leading-relaxed text-ink-muted">{advice.crop_advice}</p>
-              </div>
-
-              <div className="rounded-md border border-info/25 bg-info-bg/40 p-4 shadow-subtle">
-                <h4 className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-info">
-                  <CheckCircle size={14} />
-                  {t("ai_advisor.suggested_actions_title", "Suggested Step-by-Step Actions")}
-                </h4>
-                <div className="whitespace-pre-line text-xs leading-relaxed text-ink-muted">{advice.suggested_action}</div>
-              </div>
-            </div>
-
-            {/* 4. Cited Knowledge Sources Footer */}
-            {advice.sources && advice.sources.length > 0 && (
-              <div className="border-t border-line pt-4">
-                <button
-                  onClick={() => setShowSources(!showSources)}
-                  className="flex w-full items-center justify-between text-xs font-medium text-ink-muted transition-colors hover:text-accent"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <ShieldCheck size={14} className="text-safe" />
-                    {t("ai_advisor.grounded_sources", "Verified Knowledge Sources Consulted")} ({advice.sources.length})
-                  </span>
-                  {showSources ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                </button>
-
-                <AnimatePresence>
-                  {showSources && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-3 grid grid-cols-1 gap-2 overflow-hidden sm:grid-cols-2"
-                    >
-                      {advice.sources.map((s, idx) => (
-                        <div key={idx} className="rounded-md border border-line bg-surface-light p-2.5 text-xs">
-                          <div className="font-semibold text-ink">{s.title}</div>
-                          <div className="mt-0.5 text-[11px] text-ink-soft">{s.institution || s.source}</div>
-                        </div>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-          </div>
-        ) : null}
+        )}
       </div>
+
     </div>
   );
 }

@@ -1406,7 +1406,15 @@ export default function FarmerMarketIntelligencePage() {
         setArimaCommodity(commList[0]);
       }
 
-      if (syncRes.data) setSyncStatus(syncRes.data);
+      if (syncRes.data) {
+        setSyncStatus(syncRes.data);
+        if (syncRes.data.newest) {
+          setEndDate(syncRes.data.newest);
+          const d = new Date(syncRes.data.newest);
+          d.setDate(d.getDate() - 60);
+          setStartDate(d.toISOString().split("T")[0]);
+        }
+      }
       if (mlRes.data) setMlMeta(mlRes.data);
 
       // Auto-detect location once with freshly loaded cities
@@ -2203,20 +2211,6 @@ export default function FarmerMarketIntelligencePage() {
         </AnimatePresence>
       </Reveal>
 
-      {/* ── 5. WEATHER & CLIMATE INTELLIGENCE (Open-Meteo) ── */}
-      <Reveal delay={0.08} style={{ position: "relative", zIndex: 4, marginBottom: "28px" }}>
-        <WeatherSection
-          coords={userCoords}
-          weatherData={weatherData}
-          loading={weatherLoading}
-          error={weatherError}
-          forecastDays={weatherDays}
-          setForecastDays={handleWeatherDaysChange}
-          onRefresh={handleWeatherRefresh}
-          onDetectLocation={() => detectUserLocation(citiesRef.current, true)}
-          locationStatus={locationStatus}
-        />
-      </Reveal>
 
       {/* ── 6. AI AGRICULTURAL & MARKET ADVISOR (Gemini Free Tier) ── */}
       <Reveal delay={0.1} style={{ position: "relative", zIndex: 3, marginBottom: "36px" }}>

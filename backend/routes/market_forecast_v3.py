@@ -319,8 +319,8 @@ def _fetch_historical_prices(
             ROUND(AVG(max_price)::numeric,   2)    AS max_price,
             COUNT(*)                               AS record_count
         FROM {TABLE}
-        WHERE LOWER(market)    = LOWER(:city)
-          AND LOWER(commodity) = LOWER(:commodity)
+        WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(market, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', ''))) = LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(:city, '(?i)^APMC\\s+', ''), '(?i)\\s+APMC$', '')))
+          AND LOWER(TRIM(commodity)) = LOWER(TRIM(:commodity))
           AND arrival_date::date BETWEEN :start_date AND :end_date
         GROUP BY arrival_date::date
         ORDER BY arrival_date::date ASC
